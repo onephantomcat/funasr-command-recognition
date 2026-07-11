@@ -12,7 +12,24 @@ output from DataSetA labels.
 
 ## External Train/Tuning Set
 
-Build an external set from the local AISHELL subset:
+Preferred flow: download a public dataset, then convert it to the competition
+format. AISHELL-1 from OpenSLR SLR33 is currently implemented. The full archive
+is large (about 15 GB), so the command supports resume and can reuse existing
+files:
+
+```powershell
+cd C:\Users\13238\Desktop\挑战杯1号语音识别\新\funasr_project
+.\.venv\Scripts\python.exe prepare_public_dataset.py --dataset aishell1 --out data\public_train\aishell1
+```
+
+For a quick local verification using the already-present AISHELL subset:
+
+```powershell
+.\.venv\Scripts\python.exe prepare_public_dataset.py --use-existing-local --out data\public_train\aishell1_local
+```
+
+The older direct builder is still available when wav/transcript paths are
+already known:
 
 ```powershell
 cd C:\Users\13238\Desktop\挑战杯1号语音识别\新\funasr_project

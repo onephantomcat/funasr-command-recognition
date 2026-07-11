@@ -36,11 +36,18 @@ FIELD_CMD_TEXT = "识别文本"
 
 def read_transcripts(csv_path):
     texts = {}
-    with open(csv_path, encoding="utf-8") as f:
-        for row in csv.reader(f):
-            if not row or not row[0].endswith(".wav"):
-                continue
-            texts[Path(row[0]).stem] = row[1]
+    path = Path(csv_path)
+    with open(path, encoding="utf-8") as f:
+        if path.suffix.lower() == ".csv":
+            for row in csv.reader(f):
+                if not row or not row[0].endswith(".wav"):
+                    continue
+                texts[Path(row[0]).stem] = row[1]
+        else:
+            for line in f:
+                parts = line.strip().split(maxsplit=1)
+                if len(parts) == 2:
+                    texts[parts[0]] = parts[1].replace(" ", "")
     return texts
 
 
