@@ -16,6 +16,7 @@ DataSetA itself must remain test-only.
 """
 import argparse
 import tarfile
+import time
 import urllib.request
 from pathlib import Path
 from types import SimpleNamespace
@@ -34,11 +35,48 @@ DATASETS = {
 
 
 def human_size(n):
+    if n is None:
+        return "unknown"
     for unit in ("B", "KB", "MB", "GB", "TB"):
         if n < 1024:
             return f"{n:.1f}{unit}"
         n /= 1024
     return f"{n:.1f}PB"
+
+
+def human_duration(seconds):
+    if seconds is None:
+        return "unknown"
+    seconds = max(0, int(seconds))
+    h, rem = divmod(seconds, 3600)
+    m, s = divmod(rem, 60)
+    if h:
+        return f"{h:d}h{m:02d}m{s:02d}s"
+    if m:
+        return f"{m:d}m{s:02d}s"
+    return f"{s:d}s"
+
+
+def print_progress(done, total, started_at, last_update=False):
+    elapsed = max(time.time() - started_at, 1e-6)
+    speed = done / elapsed
+    if total:
+        ratio = min(max(done / total, 0.0), 1.0)
+        bar_width = 30
+        filled = int(round(bar_width * ratio))
+        bar = "#" * filled + "-" * (bar_width - filled)
+        eta = (total - done) / speed if speed > 0 else None
+        line = (
+            f"\r[{bar}] {ratio * 100:6.2f}% "
+            f"{human_size(done)} / {human_size(total)} "
+            f"{human_size(speed)}/s ETA {human_duration(eta)}"
+        )
+    else:
+        line = (
+            f"\rDownloaded {human_size(done)} "
+            f"at {human_size(speed)}/s elapsed {human_duration(elapsed)}"
+        )
+    print(line, end="\n" if last_update else "", flush=True)
 
 
 def download_with_resume(url, dest):
@@ -55,11 +93,17 @@ def download_with_resume(url, dest):
 
     req = urllib.request.Request(url, headers=headers)
     with urllib.request.urlopen(req) as resp:
+        status = getattr(resp, "status", None)
+        if start and status == 200:
+            print("Server did not honor Range; restarting download from 0.")
+            start = 0
         mode = "ab" if start else "wb"
         total_header = resp.headers.get("Content-Length")
         total = int(total_header) + start if total_header else None
         done = start
-        last_print_gb = int(done // (512 * 1024 * 1024))
+        started_at = time.time()
+        last_print_at = 0.0
+        print_progress(done, total, started_at)
         with open(tmp, mode) as f:
             while True:
                 chunk = resp.read(1024 * 1024)
@@ -67,11 +111,11 @@ def download_with_resume(url, dest):
                     break
                 f.write(chunk)
                 done += len(chunk)
-                current_print_gb = int(done // (512 * 1024 * 1024))
-                if current_print_gb > last_print_gb:
-                    last_print_gb = current_print_gb
-                    suffix = f" / {human_size(total)}" if total else ""
-                    print(f"  downloaded {human_size(done)}{suffix}")
+                now = time.time()
+                if now - last_print_at >= 0.5:
+                    last_print_at = now
+                    print_progress(done, total, started_at)
+        print_progress(done, total, started_at, last_update=True)
     tmp.replace(dest)
     print(f"Downloaded: {dest}")
 
