@@ -1,0 +1,47 @@
+[
+  {
+    "audio": "test_audio/target_cmd.wav",
+    "condition": "目标说话人-干净",
+    "speaker_similarity": 0.8781,
+    "accepted": true,
+    "text": "请 帮 我 打 开 空 调 温 度 调 到 二 十 六 度",
+    "command": "打开空调",
+    "latency_sec": 0.9
+  },
+  {
+    "audio": "test_audio/target_cmd_5db.wav",
+    "condition": "目标说话人-5dB噪声",
+    "speaker_similarity": 0.6541,
+    "accepted": true,
+    "text": "请 帮 我 打 开 空 调 温 度 调 到 二 十 六 度",
+    "command": "打开空调",
+    "latency_sec": 0.67
+  },
+  {
+    "audio": "test_audio/stranger_cmd.wav",
+    "condition": "陌生人1-干净",
+    "speaker_similarity": 0.556,
+    "accepted": false,
+    "text": "",
+    "command": null,
+    "latency_sec": 0.03
+  },
+  {
+    "audio": "test_audio/stranger_cmd_5db.wav",
+    "condition": "陌生人1-5dB噪声",
+    "speaker_similarity": 0.467,
+    "accepted": false,
+    "text": "",
+    "command": null,
+    "latency_sec": 0.02
+  },
+  {
+    "audio": "test_audio/stranger2_cmd.wav",
+    "condition": "陌生人2-干净",
+    "speaker_similarity": 0.3276,
+    "accepted": false,
+    "text": "",
+    "command": null,
+    "latency_sec": 0.02
+  }
+]

@@ -1,0 +1,13 @@
+funasr
+modelscope
+transformers
+tiktoken
+sentencepiece
+kaldiio
+jamo
+jaconv
+umap-learn
+pypinyin
+librosa
+torch
+torchaudio

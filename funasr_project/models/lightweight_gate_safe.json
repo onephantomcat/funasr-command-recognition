@@ -1,0 +1,75 @@
+{
+  "type": "logistic_gate",
+  "dataset": "datasetA",
+  "feature_names": [
+    "speaker_similarity",
+    "intent_distance",
+    "fusion_score",
+    "hyp_len_norm",
+    "has_hyp",
+    "known_phrase",
+    "very_short_hyp"
+  ],
+  "feature_mean": [
+    0.28592755,
+    0.38549097,
+    0.01608387,
+    0.51783333,
+    0.99666667,
+    0.59666667,
+    0.00166667
+  ],
+  "feature_scale": [
+    0.20881498,
+    0.37225643,
+    0.4350032,
+    0.31359258,
+    0.05763872,
+    0.49056657,
+    0.04079079
+  ],
+  "weights": [
+    1.67234448,
+    -1.01385868,
+    1.40918755,
+    -0.28651128,
+    -0.32343731,
+    0.31502984,
+    0.02344372
+  ],
+  "bias": -0.22788406,
+  "threshold": 0.51,
+  "fusion_weight_for_features": 0.7,
+  "phrase_threshold": 0.5,
+  "min_dev_rr": 0.98,
+  "train": {
+    "score_80": 75.2701,
+    "positive_corpus_cer": 0.0682,
+    "positive_ref_chars": 2447,
+    "positive_accept_rate": 0.95,
+    "negative_rejection_rate_rr": 0.95,
+    "threshold": 0.51,
+    "pos_n": 300,
+    "neg_n": 300
+  },
+  "dev": {
+    "score_80": 66.9745,
+    "positive_corpus_cer": 0.3084,
+    "positive_ref_chars": 1203,
+    "positive_accept_rate": 0.7241,
+    "negative_rejection_rate_rr": 0.9828,
+    "threshold": 0.51,
+    "pos_n": 174,
+    "neg_n": 174
+  },
+  "cache_warnings": {
+    "skipped_missing_embedding": {
+      "train": 0,
+      "dev": 0
+    },
+    "missing_asr_treated_as_empty": {
+      "train": 0,
+      "dev": 0
+    }
+  }
+}
