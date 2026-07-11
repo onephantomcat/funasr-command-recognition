@@ -28,10 +28,10 @@ import soundfile as sf
 SR = 16000
 
 FIELD_ID = "id"
-FIELD_WAKE_AUDIO = "鍞ら啋闊抽"
-FIELD_WAKE_TEXT = "鍞ら啋鏂囨湰"
-FIELD_CMD_AUDIO = "璇嗗埆闊抽"
-FIELD_CMD_TEXT = "璇嗗埆鏂囨湰"
+FIELD_WAKE_AUDIO = "唤醒音频"
+FIELD_WAKE_TEXT = "唤醒文本"
+FIELD_CMD_AUDIO = "识别音频"
+FIELD_CMD_TEXT = "识别文本"
 
 
 def read_transcripts(csv_path):
