@@ -27,7 +27,8 @@ from build_external_trainset import build
 DATASETS = {
     "aishell1": {
         "homepage": "https://www.openslr.org/33/",
-        "url": "https://www.openslr.org/resources/33/data_aishell.tgz",
+        "official_url": "https://www.openslr.org/resources/33/data_aishell.tgz",
+        "mirror_url": "http://openslr.magicdatatech.com/resources/33/data_aishell.tgz",
         "archive_name": "data_aishell.tgz",
         "size_hint": "15G",
     },
@@ -79,7 +80,20 @@ def print_progress(done, total, started_at, last_update=False):
     print(line, end="\n" if last_update else "", flush=True)
 
 
-def download_with_resume(url, dest):
+def build_url_opener(proxy=None):
+    if not proxy:
+        return urllib.request.build_opener()
+    if "://" not in proxy:
+        proxy = f"http://{proxy}"
+    return urllib.request.build_opener(
+        urllib.request.ProxyHandler({
+            "http": proxy,
+            "https": proxy,
+        })
+    )
+
+
+def download_with_resume(url, dest, proxy=None):
     dest = Path(dest)
     dest.parent.mkdir(parents=True, exist_ok=True)
     tmp = dest.with_suffix(dest.suffix + ".part")
@@ -91,8 +105,9 @@ def download_with_resume(url, dest):
     else:
         print(f"Downloading {url}")
 
+    opener = build_url_opener(proxy)
     req = urllib.request.Request(url, headers=headers)
-    with urllib.request.urlopen(req) as resp:
+    with opener.open(req) as resp:
         status = getattr(resp, "status", None)
         if start and status == 200:
             print("Server did not honor Range; restarting download from 0.")
@@ -118,6 +133,21 @@ def download_with_resume(url, dest):
         print_progress(done, total, started_at, last_update=True)
     tmp.replace(dest)
     print(f"Downloaded: {dest}")
+
+
+def download_from_candidates(urls, dest, proxy=None):
+    last_error = None
+    for idx, url in enumerate(urls, start=1):
+        try:
+            print(f"Download source {idx}/{len(urls)}: {url}")
+            if proxy:
+                print(f"Using proxy: {proxy}")
+            download_with_resume(url, dest, proxy=proxy)
+            return
+        except Exception as exc:
+            last_error = exc
+            print(f"Download failed from {url}: {exc}")
+    raise RuntimeError(f"All download sources failed. Last error: {last_error}")
 
 
 def extract_tar(archive, extract_root):
@@ -180,7 +210,15 @@ def prepare(args):
     else:
         if not args.skip_download and not archive.exists():
             print(f"{args.dataset} archive is large ({spec['size_hint']}).")
-            download_with_resume(args.url or spec["url"], archive)
+            if args.url:
+                urls = [args.url]
+            elif args.source == "official":
+                urls = [spec["official_url"]]
+            elif args.source == "mirror":
+                urls = [spec["mirror_url"]]
+            else:
+                urls = [spec["mirror_url"], spec["official_url"]]
+            download_from_candidates(urls, archive, proxy=args.proxy)
         elif archive.exists():
             print(f"Using existing archive: {archive}")
         else:
@@ -214,6 +252,10 @@ def main():
     parser.add_argument("--public-root", default="data/public")
     parser.add_argument("--out", default="data/public_train/aishell1")
     parser.add_argument("--url", default=None, help="Override dataset download URL.")
+    parser.add_argument("--source", choices=("auto", "mirror", "official"), default="mirror",
+                        help="Download source. mirror uses a China-friendly OpenSLR mirror.")
+    parser.add_argument("--proxy", default=None,
+                        help="Optional HTTP/HTTPS proxy, e.g. http://127.0.0.1:7890.")
     parser.add_argument("--archive", default=None, help="Existing or target archive path.")
     parser.add_argument("--extract-root", default=None)
     parser.add_argument("--skip-download", action="store_true",
