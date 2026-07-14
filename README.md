@@ -1,148 +1,99 @@
 # FunASR 目标发音人抗干扰语音指令识别
 
-当前版本：`v0.3.0-public-data`
+当前版本：`v0.3.1-asr-dev`
 
-本仓库是“复杂交互场景抗干扰语音指令识别”项目代码。系统目标是在远场噪声、多人说话和非目标发音人干扰下，只识别目标发音人的语音指令；若输入来自非目标发音人，则输出空字符串完成拒识。
+本项目面向“目标发音人语音指令识别 + 非目标发音人拒识”任务。在远场噪声、多人重叠语音和非目标说话人干扰下，系统只输出目标说话人的识别文本；非目标说话人则输出空字符串。
 
-核心工程目录：
-
-```text
-funasr_project/
-```
-
-完整使用说明见：[funasr_project/README.md](./funasr_project/README.md)
+核心代码位于 [funasr_project](./funasr_project)。完整操作手册见 [funasr_project/README.md](./funasr_project/README.md)。
 
 ## 任务指标
 
-- 目标发音人识别字错率 CER：`DataSetA/pos` 用于测试识别文本准确率。
-- 非目标语音拒识率 RR：`DataSetA/neg` 用于测试拒识能力。
-- 推理效率：关注推理时间和内存占用。
+- CER：使用 `DataSetA/pos` 计算目标发音人的字错率，越低越好。
+- RR：使用 `DataSetA/neg` 计算非目标语音的正确拒识率，越高越好。
+- 推理效率：关注单条推理时间和内存占用。
 
-注意：`DataSetA` 只作为测试集，不能用其中的 `识别文本` 字段训练模型、调阈值或构建短语库。
+`DataSetA` 是最终测试集：其中的 `识别文本` 只能作为评测标签，不能用于训练、阈值调优或构建短语库。
 
-## 当前方案
+## 系统流程
 
 ```text
-唤醒音频 / 识别音频
+唤醒音频 + 识别音频
         |
         v
-CAM++ 声纹验证
+CAM++ 目标说话人验证
         |
-        +-- 非目标：输出 ""
-        |
-        v
-FSMN-VAD + Paraformer ASR
+        +-- 非目标说话人 -> 输出 ""
         |
         v
-文本归一化 + 指令匹配 + 融合门控
+FSMN-VAD + Paraformer-large ASR
+        |
+        +-- 可选：CAM++ 引导的目标语音净化
         |
         v
-输出识别文本或空字符串
+文本归一化 + 指令短语匹配 + 轻量门控
+        |
+        v
+识别文本或空字符串
 ```
 
-主要模型：
+主要模型：Paraformer-large ASR、FSMN-VAD、CAM++ 声纹验证，以及 Logistic Regression 轻量拒识门控。
 
-- ASR：FunASR Paraformer-large
-- VAD：FSMN-VAD
-- 声纹验证：CAM++
-- 拒识增强：轻量 Logistic Regression 门控
+## 版本记录
 
-## 本仓库主要修改
+### v0.3.1-asr-dev
+
+- 修复 AISHELL-1 内部说话人分卷的自动展开，并避免解压全部语料。
+- 新增纯净、说话人隔离的 ASR 训练/开发清单构建脚本。
+- 新增独立 ASR CER 评测入口和公开开发实验记录。
+- 为目标语音净化加入 `--purify-sim-trigger`，可仅对低相似度语音启用。
+- 公开开发基线：100 条纯净开发语音的 CER 为 `1.19%`，平均 ASR 推理为 `0.363 s/条`。
+- 公开重叠语音 smoke test：目标净化将 CER 从 `35.43%` 降至 `25.56%`。
 
 ### v0.3.0-public-data
 
-- 增加公开训练集构建脚本：`funasr_project/prepare_public_dataset.py`
-- 支持 AISHELL-1 下载并转换为比赛格式：`pos/neg/jsonl/phrase_bank.txt`
-- 默认使用国内 OpenSLR 镜像，并支持下载进度条、断点续传和 `7890` 本地代理
-- 合并 `Fix tar extraction EOFError` 对话中的修复：下载提前中断时保留 `.part` 文件，不把不完整压缩包替换成正式 `.tgz`
-- 补充 ModelScope AISHELL-1 备用下载方式，以及隐藏临时目录 `._____temp` 的进度监控说明
-- 修改 DataSetA 评测流程，默认不再使用测试集标签构造短语库
-- 增加外部短语库参数 `--phrase-bank`
-- 增加轻量拒识门控训练与加载流程
-- 排除大文件、数据集、虚拟环境和模型缓存，避免 GitHub 仓库过大
+- 支持 AISHELL-1 国内镜像、ModelScope 备源、下载进度、断点续传和代理。
+- 将公开语料转换为比赛所需的 `pos/neg/jsonl/phrase_bank.txt` 格式。
+- 约束 DataSetA 仅用于最终测试，并支持外部短语库和轻量门控训练。
 
 ## 快速开始
 
-进入项目目录：
-
 ```powershell
-cd C:\Users\13238\Desktop\挑战杯1号语音识别\新\funasr_project
-```
-
-安装依赖：
-
-```powershell
+cd funasr_project
 python -m venv .venv
 .\.venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-构建公开训练集：
+构建公开训练数据：
 
 ```powershell
 .\.venv\Scripts\python.exe prepare_public_dataset.py --dataset aishell1 --out data\public_train\aishell1
 ```
 
-如果需要走本地代理/VPN：
+对 DataSetA 进行最终评测时，使用外部短语库：
 
 ```powershell
-.\.venv\Scripts\python.exe prepare_public_dataset.py --dataset aishell1 --out data\public_train\aishell1 --source auto --proxy http://127.0.0.1:7890
+.\.venv\Scripts\python.exe eval_datasetA.py `
+  --root data\datasetA `
+  --phrase-bank data\public_train\aishell1\phrase_bank.txt
 ```
 
-如果 OpenSLR 镜像仍不稳定，可使用 ModelScope 备用下载：
+## 主要文件
 
-```powershell
-$env:HTTP_PROXY = "http://127.0.0.1:7890"
-$env:HTTPS_PROXY = "http://127.0.0.1:7890"
-.\.venv\Scripts\python.exe -m modelscope.cli.cli download --dataset OmniData/AISHELL-1 --local_dir data\public\aishell1\modelscope --max-workers 4
-```
-
-下载完成后用归档文件转换训练集：
-
-```powershell
-.\.venv\Scripts\python.exe prepare_public_dataset.py --archive data\public\aishell1\modelscope\raw\33\data_aishell.tgz --skip-download --out data\public_train\aishell1
-```
-
-监控 ModelScope 下载进度时要包含隐藏临时目录：
-
-```powershell
-Get-ChildItem data\public\aishell1\modelscope -Recurse -File -Force |
-  Measure-Object -Property Length -Sum
-```
-
-DataSetA 公平测试：
-
-```powershell
-.\.venv\Scripts\python.exe eval_datasetA.py --root data\datasetA --phrase-bank data\public_train\aishell1\phrase_bank.txt
-```
-
-生成提交结果：
-
-```powershell
-.\.venv\Scripts\python.exe eval_datasetA.py --root data\datasetA --phrase-bank data\public_train\aishell1\phrase_bank.txt --submission-out outputs\submission.json
-```
-
-## 重要文件
-
-| 路径 | 说明 |
-|---|---|
-| `funasr_project/README.md` | 完整项目说明和使用方法 |
-| `funasr_project/eval_datasetA.py` | DataSetA CER/RR 评测入口 |
-| `funasr_project/prepare_public_dataset.py` | 公开数据集下载与格式转换 |
-| `funasr_project/build_external_trainset.py` | 本地语音数据转比赛格式 |
+| 文件 | 作用 |
+| --- | --- |
+| `funasr_project/prepare_public_dataset.py` | 下载 AISHELL-1 并转换比赛格式 |
+| `funasr_project/prepare_asr_finetune_manifest.py` | 构建纯净、说话人隔离的 ASR 清单 |
+| `funasr_project/eval_asr_manifest.py` | 在纯净开发集计算 ASR CER 和延迟 |
+| `funasr_project/eval_datasetA.py` | 端到端 CER、RR 和耗时评测 |
 | `funasr_project/train_lightweight_gate.py` | 训练轻量拒识门控 |
-| `funasr_project/asr_demo.py` | ASR 基础识别 |
-| `funasr_project/speaker_verify.py` | 声纹验证与拒识 |
-| `funasr_project/docs/DATASET_A_FAIR_TUNING.md` | DataSetA 公平调参说明 |
+| `funasr_project/docs/ASR_PUBLIC_DEV.md` | ASR 公开数据实验与结论 |
 
-## 数据与大文件说明
+## 文档
 
-以下内容默认不上传 GitHub：
+- [完整使用手册](./funasr_project/README.md)
+- [DataSetA 公平调参说明](./funasr_project/docs/DATASET_A_FAIR_TUNING.md)
+- [ASR 公开开发记录](./funasr_project/docs/ASR_PUBLIC_DEV.md)
+- [轻量门控训练计划](./funasr_project/docs/LIGHTWEIGHT_TRAINING_PLAN.md)
 
-- `datasetA/`
-- `funasr_project/data/`
-- `.venv/`
-- 模型缓存
-- 评测输出和中间缓存
-
-公开数据集下载后请保留在本地 `funasr_project/data/` 下使用。
+数据集、模型缓存、虚拟环境和评测输出均保留在本地，不上传 GitHub。
