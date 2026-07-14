@@ -1,6 +1,6 @@
 # 复杂交互场景抗干扰语音指令识别系统
 
-版本：`v0.3.1-asr-dev`
+版本：`v0.3.2-datasetA-baseline`
 
 本目录包含比赛项目的完整实现。系统以唤醒音频注册目标说话人，通过 CAM++ 声纹验证过滤非目标说话人，再对通过的语音执行 VAD、Paraformer ASR、文本归一化和指令匹配。
 
@@ -103,6 +103,28 @@ data/public_train/aishell1/
 
 公开重叠语音 smoke test 中，净化将 CER 从 `35.43%` 降至 `25.56%`。这是开发阶段结论，DataSetA 不参与该调参。
 
+## DataSetA 全量公平基线
+
+DataSetA 是比赛最终测试集。为了避免标签泄漏，本轮基线不构建 DataSetA 短语库，不启用意图过滤或短语纠错：
+
+```powershell
+.\.venv\Scripts\python.exe eval_datasetA.py `
+  --root data\datasetA `
+  --decision-policy hard --sv-threshold 0.30 `
+  --no-intent-filter --no-phrase-correct `
+  --out data\datasetA\eval_report_fair_v032_full.json
+```
+
+| 项目 | 全量公平基线 |
+| --- | ---: |
+| 正样本 / 负样本 | 1,364 / 474 |
+| 语料级 CER | 52.87%（9,367 个参考字） |
+| 正样本接收率 | 69.35% |
+| RR | 91.14%（432 / 474） |
+| 端到端耗时 | 408.4 s，约 0.222 s/条 |
+
+此结果不同于 AISHELL 纯净开发集的 1.19% CER，也不同于公开混叠 smoke test 的 25.56% CER：前两者分别衡量基础转写能力与净化增益；本表衡量真实比赛端到端效果，包含声纹门控的误拒绝损失。内存峰值尚未单独采样。
+
 ## 训练轻量拒识门控
 
 ```powershell
@@ -124,12 +146,13 @@ data/datasetA/
   neg.jsonl
 ```
 
-使用外部短语库评测：
+全量公平评测：
 
 ```powershell
 .\.venv\Scripts\python.exe eval_datasetA.py `
   --root data\datasetA `
-  --phrase-bank data\public_train\aishell1\phrase_bank.txt
+  --decision-policy hard --sv-threshold 0.30 `
+  --no-intent-filter --no-phrase-correct
 ```
 
 生成提交格式 JSON：
@@ -137,7 +160,8 @@ data/datasetA/
 ```powershell
 .\.venv\Scripts\python.exe eval_datasetA.py `
   --root data\datasetA `
-  --phrase-bank data\public_train\aishell1\phrase_bank.txt `
+  --decision-policy hard --sv-threshold 0.30 `
+  --no-intent-filter --no-phrase-correct `
   --submission-out outputs\submission.json
 ```
 

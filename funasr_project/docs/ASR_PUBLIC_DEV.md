@@ -42,6 +42,32 @@ The largest improvement was on the 5 dB overlap group: 44.00% to 4.00% CER.
 The 0 dB overlap group did not materially improve in this small smoke test, so
 purification remains opt-in rather than a default contest configuration.
 
+## DataSetA full fair baseline
+
+DataSetA is not a development set. The following full evaluation is the
+current competition-facing baseline and does not use DataSetA labels for a
+phrase bank, intent filtering, or phrase correction.
+
+```powershell
+.\.venv\Scripts\python.exe eval_datasetA.py `
+  --root data\datasetA `
+  --decision-policy hard --sv-threshold 0.30 `
+  --no-intent-filter --no-phrase-correct
+```
+
+| Metric | Result |
+| --- | ---: |
+| Positive / negative samples | 1,364 / 474 |
+| Corpus CER | 52.87% (9,367 reference characters) |
+| Positive accept rate | 69.35% |
+| Rejection rate (RR) | 91.14% (432 / 474) |
+| End-to-end elapsed time | 408.4 s (about 0.222 s/sample) |
+
+This result is intentionally not comparable to the 1.19% clean AISHELL dev
+CER or the 25.56% public overlap smoke test. It includes the real DataSetA
+noise/domain gap and CER loss from target speech rejected by the speaker gate.
+Peak memory has not yet been measured separately.
+
 ## Recommended commands
 
 ```powershell

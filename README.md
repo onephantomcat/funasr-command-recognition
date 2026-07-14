@@ -1,6 +1,6 @@
 # FunASR 目标发音人抗干扰语音指令识别
 
-当前版本：`v0.3.1-asr-dev`
+当前版本：`v0.3.2-datasetA-baseline`
 
 本项目面向“目标发音人语音指令识别 + 非目标发音人拒识”任务。在远场噪声、多人重叠语音和非目标说话人干扰下，系统只输出目标说话人的识别文本；非目标说话人则输出空字符串。
 
@@ -40,6 +40,13 @@ FSMN-VAD + Paraformer-large ASR
 
 ## 版本记录
 
+### v0.3.2-datasetA-baseline
+
+- 新增 DataSetA 全量公平端到端基线：1,364 条正样本、474 条负样本。
+- 公平配置为硬声纹门控 `--sv-threshold 0.30`，禁用意图过滤和短语纠错。
+- 基线结果：语料级 CER `52.87%`、RR `91.14%`（432/474）、端到端耗时 `408.4 s`。
+- 明确区分 AISHELL 纯净开发 CER、公开重叠语音 smoke test 与 DataSetA 比赛端到端指标。
+
 ### v0.3.1-asr-dev
 
 - 修复 AISHELL-1 内部说话人分卷的自动展开，并避免解压全部语料。
@@ -70,13 +77,16 @@ pip install -r requirements.txt
 .\.venv\Scripts\python.exe prepare_public_dataset.py --dataset aishell1 --out data\public_train\aishell1
 ```
 
-对 DataSetA 进行最终评测时，使用外部短语库：
+对 DataSetA 进行全量公平基线评测：
 
 ```powershell
 .\.venv\Scripts\python.exe eval_datasetA.py `
   --root data\datasetA `
-  --phrase-bank data\public_train\aishell1\phrase_bank.txt
+  --decision-policy hard --sv-threshold 0.30 `
+  --no-intent-filter --no-phrase-correct
 ```
+
+当前全量结果：CER `52.87%`、RR `91.14%`、正样本接收率 `69.35%`、耗时 `408.4 s`。
 
 ## 主要文件
 
