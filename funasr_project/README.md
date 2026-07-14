@@ -1,5 +1,7 @@
 # 复杂交互场景抗干扰语音指令识别系统
 
+当前版本：`v0.3.0-public-data`
+
 本项目面向“目标发音人语音指令识别 + 非目标发音人拒识”的比赛任务。系统输入一轮交互中的唤醒音频、唤醒文本和识别音频，输出目标发音人的识别文本；若识别音频来自非目标发音人，则输出空字符串。
 
 当前代码重点覆盖三类指标：
@@ -37,12 +39,18 @@ FSMN-VAD + Paraformer ASR
 
 ## 本轮主要修改
 
+### v0.3.0-public-data
+
 - 新增公开数据集构建脚本：[prepare_public_dataset.py](./prepare_public_dataset.py)
   - 支持下载 AISHELL-1 并转换成比赛需要的 `pos/neg/jsonl/phrase_bank.txt` 格式。
   - 默认使用国内 OpenSLR 镜像 `openslr.magicdatatech.com`。
   - 支持断点续传、下载进度条、速度和 ETA。
   - 支持 `--proxy http://127.0.0.1:7890` 走本地代理/VPN。
   - 下载连接提前中断时会保留 `.part` 文件，不会将不完整压缩包误标记为已下载。
+- 合并 `Fix tar extraction EOFError` 对话中的处理经验：
+  - 不完整的 `data_aishell.tgz` 会导致 `gzip EOFError`。
+  - 当前下载器会校验已接收字节数，未完整下载时保留 `.part` 供续传。
+  - 文档补充了 ModelScope 备用下载、代理设置和隐藏临时目录进度监控方式。
 - 新增/完善外部训练集构建脚本：[build_external_trainset.py](./build_external_trainset.py)
   - 将公开语音数据转换为比赛格式。
   - `识别文本` 字段只作为训练/验证标签，不使用 DataSetA 标签泄漏。

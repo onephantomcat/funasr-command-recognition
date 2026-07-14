@@ -1,5 +1,7 @@
 # FunASR 目标发音人抗干扰语音指令识别
 
+当前版本：`v0.3.0-public-data`
+
 本仓库是“复杂交互场景抗干扰语音指令识别”项目代码。系统目标是在远场噪声、多人说话和非目标发音人干扰下，只识别目标发音人的语音指令；若输入来自非目标发音人，则输出空字符串完成拒识。
 
 核心工程目录：
@@ -47,9 +49,13 @@ FSMN-VAD + Paraformer ASR
 
 ## 本仓库主要修改
 
+### v0.3.0-public-data
+
 - 增加公开训练集构建脚本：`funasr_project/prepare_public_dataset.py`
 - 支持 AISHELL-1 下载并转换为比赛格式：`pos/neg/jsonl/phrase_bank.txt`
 - 默认使用国内 OpenSLR 镜像，并支持下载进度条、断点续传和 `7890` 本地代理
+- 合并 `Fix tar extraction EOFError` 对话中的修复：下载提前中断时保留 `.part` 文件，不把不完整压缩包替换成正式 `.tgz`
+- 补充 ModelScope AISHELL-1 备用下载方式，以及隐藏临时目录 `._____temp` 的进度监控说明
 - 修改 DataSetA 评测流程，默认不再使用测试集标签构造短语库
 - 增加外部短语库参数 `--phrase-bank`
 - 增加轻量拒识门控训练与加载流程
@@ -81,6 +87,27 @@ pip install -r requirements.txt
 
 ```powershell
 .\.venv\Scripts\python.exe prepare_public_dataset.py --dataset aishell1 --out data\public_train\aishell1 --source auto --proxy http://127.0.0.1:7890
+```
+
+如果 OpenSLR 镜像仍不稳定，可使用 ModelScope 备用下载：
+
+```powershell
+$env:HTTP_PROXY = "http://127.0.0.1:7890"
+$env:HTTPS_PROXY = "http://127.0.0.1:7890"
+.\.venv\Scripts\python.exe -m modelscope.cli.cli download --dataset OmniData/AISHELL-1 --local_dir data\public\aishell1\modelscope --max-workers 4
+```
+
+下载完成后用归档文件转换训练集：
+
+```powershell
+.\.venv\Scripts\python.exe prepare_public_dataset.py --archive data\public\aishell1\modelscope\raw\33\data_aishell.tgz --skip-download --out data\public_train\aishell1
+```
+
+监控 ModelScope 下载进度时要包含隐藏临时目录：
+
+```powershell
+Get-ChildItem data\public\aishell1\modelscope -Recurse -File -Force |
+  Measure-Object -Property Length -Sum
 ```
 
 DataSetA 公平测试：
