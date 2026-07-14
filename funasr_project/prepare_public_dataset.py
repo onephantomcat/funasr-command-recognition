@@ -175,6 +175,40 @@ def extract_tar(archive, extract_root):
     marker.write_text(str(archive), encoding="utf-8")
 
 
+def expand_aishell_speaker_archives(extract_root, speaker_count):
+    """Expand only the AISHELL speaker archives needed by the train builder."""
+    root = Path(extract_root)
+    archives = sorted(root.glob("**/wav/S*.tar.gz"))
+    if not archives:
+        return None
+
+    selected = archives[:speaker_count]
+    if len(selected) < speaker_count:
+        raise SystemExit(
+            f"Need {speaker_count} AISHELL speaker archives, found {len(selected)}"
+        )
+
+    output_root = selected[0].parent.parent / "wav_expanded"
+    marker = output_root / f".expanded_{speaker_count}_speakers"
+    if marker.exists():
+        print(f"AISHELL speaker archives already expanded: {output_root}")
+        return output_root
+
+    output_root.mkdir(parents=True, exist_ok=True)
+    print(f"Expanding {len(selected)} AISHELL speaker archives -> {output_root}")
+    for index, archive in enumerate(selected, start=1):
+        print(f"  [{index}/{len(selected)}] {archive.name}")
+        with tarfile.open(archive, "r:gz") as tar:
+            base = output_root.resolve()
+            for member in tar.getmembers():
+                target = (output_root / member.name).resolve()
+                if base not in (target, *target.parents):
+                    raise RuntimeError(f"Unsafe archive member path: {member.name}")
+            tar.extractall(output_root)
+    marker.write_text("\n".join(item.name for item in selected), encoding="utf-8")
+    return output_root
+
+
 def first_existing(candidates):
     for item in candidates:
         if item and Path(item).exists():
@@ -185,7 +219,10 @@ def first_existing(candidates):
 def find_aishell_paths(extract_root):
     root = Path(extract_root)
     wav_candidates = (
-        list(root.glob("**/wav/train"))
+        list(root.glob("**/wav_expanded/train"))
+        + list(root.glob("**/wav_expanded/dev"))
+        + list(root.glob("**/wav_expanded/test"))
+        + list(root.glob("**/wav/train"))
         + list(root.glob("**/wav/dev"))
         + list(root.glob("**/wav/test"))
         + list(root.glob("**/aishell_test"))
@@ -232,6 +269,10 @@ def prepare(args):
 
         if not args.no_extract:
             extract_tar(archive, extract_root)
+        expand_aishell_speaker_archives(
+            extract_root,
+            args.expand_speakers or args.target_speakers + args.interferer_speakers,
+        )
         wav_root, transcript = find_aishell_paths(extract_root)
 
     print(f"Converting public dataset:")
@@ -272,6 +313,12 @@ def main():
                         help="Use the local AISHELL subset already in data/aishell_test.")
     parser.add_argument("--local-wav-root", default="data/aishell_test")
     parser.add_argument("--local-transcript", default="data/aishell1_test.csv")
+    parser.add_argument(
+        "--expand-speakers",
+        type=int,
+        default=None,
+        help="Number of AISHELL speaker archives to expand (defaults to target + interferer speakers).",
+    )
     parser.add_argument("--target-speakers", type=int, default=8)
     parser.add_argument("--interferer-speakers", type=int, default=8)
     parser.add_argument("--enroll-count", type=int, default=3)

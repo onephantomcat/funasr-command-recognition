@@ -121,6 +121,14 @@ def extract_embedding_quiet(sv_model, path):
         return extract_embedding(sv_model, path)
 
 
+def should_purify(args, speaker_similarity):
+    if not args.purify or args.asr_only:
+        return False
+    if args.purify_sim_trigger is None:
+        return True
+    return speaker_similarity is not None and speaker_similarity <= args.purify_sim_trigger
+
+
 def read_jsonl(path):
     with open(path, encoding="utf-8") as f:
         for line in f:
@@ -164,6 +172,9 @@ def build_report(args, pos_rows, neg_rows, details, pairs, rejected, started_at,
         "phrase_bank": None if args.asr_only else args.phrase_bank,
         "use_test_label_phrase_bank": False if args.asr_only else args.use_test_label_phrase_bank,
         "purify": False if args.asr_only else args.purify,
+        "purify_sim_trigger": (
+            None if args.asr_only or not args.purify else args.purify_sim_trigger
+        ),
         "embedding_cache": bool(args.embedding_cache),
         "asr_cache": bool(args.asr_cache),
         "pos_n": len(pos_rows),
@@ -326,6 +337,12 @@ def main():
                         help="Directory for purified wav files.")
     parser.add_argument("--purify-keep-ratio", type=float, default=0.45)
     parser.add_argument("--purify-floor-gain", type=float, default=0.03)
+    parser.add_argument(
+        "--purify-sim-trigger",
+        type=float,
+        default=None,
+        help="Only purify accepted audio at or below this speaker similarity; default purifies all accepted audio.",
+    )
     args = parser.parse_args()
     if args.sv_threshold is None:
         args.sv_threshold = (
@@ -410,7 +427,8 @@ def main():
                 accepted = sim >= args.sv_threshold
         asr_path = path
         purify_info = None
-        if accepted and args.purify and not args.asr_only:
+        purify_applied = accepted and should_purify(args, sim)
+        if purify_applied:
             purify_name = f"pos_{Path(path).stem}_kr{args.purify_keep_ratio:.2f}_fg{args.purify_floor_gain:.2f}.wav"
             asr_path = os.path.join(args.purify_dir, purify_name)
             if not os.path.exists(asr_path):
@@ -466,6 +484,7 @@ def main():
             "decision_score": round(decision_score, 4) if decision_score is not None else None,
             "gate_probability": round(gate_probability, 4) if gate_probability is not None else None,
             "purify_info": purify_info,
+            "purify_applied": purify_applied,
             "accepted": accepted,
             "cer": round(c, 4),
             "ref_len": ref_len,
@@ -499,7 +518,8 @@ def main():
                 accepted = sim >= args.sv_threshold
         asr_path = path
         purify_info = None
-        if accepted and args.purify and not args.asr_only:
+        purify_applied = accepted and should_purify(args, sim)
+        if purify_applied:
             purify_name = f"neg_{Path(path).stem}_kr{args.purify_keep_ratio:.2f}_fg{args.purify_floor_gain:.2f}.wav"
             asr_path = os.path.join(args.purify_dir, purify_name)
             if not os.path.exists(asr_path):
@@ -553,6 +573,7 @@ def main():
             "decision_score": round(decision_score, 4) if decision_score is not None else None,
             "gate_probability": round(gate_probability, 4) if gate_probability is not None else None,
             "purify_info": purify_info,
+            "purify_applied": purify_applied,
             "accepted": accepted,
             "rejected": is_rejected,
             "asr_latency_sec": round(asr_elapsed, 3),
