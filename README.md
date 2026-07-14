@@ -106,4 +106,8 @@ pip install -r requirements.txt
 - [ASR 公开开发记录](./funasr_project/docs/ASR_PUBLIC_DEV.md)
 - [轻量门控训练计划](./funasr_project/docs/LIGHTWEIGHT_TRAINING_PLAN.md)
 
+## 团队协作
+
+仓库负责人需先在 GitHub `Settings -> Collaborators` 邀请队员。队员接受邀请后，应从 `main` 创建自己的功能分支、提交并推送分支，再通过 Pull Request 合并；不要直接推送 `main`。详细本地协作规范见 [项目协作要求](./funasr_project/README.md#团队协作要求)。
+
 数据集、模型缓存、虚拟环境和评测输出均保留在本地，不上传 GitHub。

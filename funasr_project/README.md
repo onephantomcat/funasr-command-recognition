@@ -180,6 +180,36 @@ data/datasetA/
 | `target_purify.py` | 可选目标语音净化 |
 | `docs/ASR_PUBLIC_DEV.md` | ASR 公开开发实验记录 |
 
+## 团队协作要求
+
+仓库负责人在 GitHub `Settings -> Collaborators` 邀请队员；队员必须先接受邀请，才能推送自己的分支。
+
+首次获取项目：
+
+```powershell
+git clone https://github.com/onephantomcat/funasr-command-recognition.git
+cd funasr-command-recognition
+git checkout main
+git pull origin main
+```
+
+每项工作都从最新 `main` 创建独立分支。分支名使用 `feature/<姓名或模块>-<工作内容>`，例如 `feature/zhangsan-asr-purify`：
+
+```powershell
+git checkout -b feature/<name>-<task>
+# 修改并验证代码
+git add <changed-files>
+git commit -m "Describe the change"
+git push -u origin feature/<name>-<task>
+```
+
+推送后在 GitHub 创建 Pull Request，写明改动、验证命令和结果，由至少一名队员检查后再合并。`main` 只接受已审核的 Pull Request，不直接推送。
+
+- 合并前先同步最新 `main`，处理冲突后重新验证。
+- 不提交 `data/`、模型缓存、`.venv/`、评测输出、音频数据或 Office 临时文件。
+- 不得将 DataSetA 的 `识别文本` 用作训练、短语库、阈值调优或提交前的标签泄漏。
+- 每次修改评测逻辑都要说明使用的配置；正式成绩必须关闭缓存并保留报告文件名。
+
 ## 注意事项
 
 - `DataSetA` 的 `识别文本` 不得用于训练、短语库构建或阈值调优。
