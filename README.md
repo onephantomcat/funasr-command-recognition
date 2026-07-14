@@ -4,7 +4,7 @@
 
 本项目面向“目标发音人语音指令识别 + 非目标发音人拒识”任务。在远场噪声、多人重叠语音和非目标说话人干扰下，系统只输出目标说话人的识别文本；非目标说话人则输出空字符串。
 
-核心代码位于 [funasr_project](./funasr_project)。完整操作手册见 [funasr_project/README.md](./funasr_project/README.md)。
+核心代码位于 [funasr_project](./funasr_project)。完整操作手册见 [funasr_project/README.md](./funasr_project/README.md)，ASR 实验结果见 [ASR 公开数据实验记录](./funasr_project/docs/ASR_PUBLIC_DEV.md)。
 
 ## 任务指标
 
