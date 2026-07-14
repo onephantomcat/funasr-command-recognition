@@ -42,6 +42,7 @@ FSMN-VAD + Paraformer ASR
   - 默认使用国内 OpenSLR 镜像 `openslr.magicdatatech.com`。
   - 支持断点续传、下载进度条、速度和 ETA。
   - 支持 `--proxy http://127.0.0.1:7890` 走本地代理/VPN。
+  - 下载连接提前中断时会保留 `.part` 文件，不会将不完整压缩包误标记为已下载。
 - 新增/完善外部训练集构建脚本：[build_external_trainset.py](./build_external_trainset.py)
   - 将公开语音数据转换为比赛格式。
   - `识别文本` 字段只作为训练/验证标签，不使用 DataSetA 标签泄漏。
@@ -113,6 +114,29 @@ data/public_train/aishell1/
   pos.jsonl
   neg.jsonl
   phrase_bank.txt
+```
+
+### 使用 ModelScope 下载（推荐的备用方式）
+
+如果 OpenSLR 下载不稳定，可改用 ModelScope 的 AISHELL-1 镜像。先在项目目录执行：
+
+```powershell
+$env:HTTP_PROXY = "http://127.0.0.1:7890"
+$env:HTTPS_PROXY = "http://127.0.0.1:7890"
+.\.venv\Scripts\python.exe -m modelscope.cli.cli download --dataset OmniData/AISHELL-1 --local_dir data\public\aishell1\modelscope --max-workers 4
+```
+
+代理未使用时，删除前两行即可。ModelScope 下载完成后，复用下载到的归档文件构建训练集：
+
+```powershell
+.\.venv\Scripts\python.exe prepare_public_dataset.py --archive data\public\aishell1\modelscope\raw\33\data_aishell.tgz --skip-download --out data\public_train\aishell1
+```
+
+下载过程中若要按文件大小监控进度，扫描时需包含 ModelScope 的隐藏临时目录：
+
+```powershell
+Get-ChildItem data\public\aishell1\modelscope -Recurse -File -Force |
+  Measure-Object -Property Length -Sum
 ```
 
 样本字段格式：

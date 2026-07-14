@@ -108,8 +108,9 @@ def download_with_resume(url, dest, proxy=None):
     opener = build_url_opener(proxy)
     req = urllib.request.Request(url, headers=headers)
     with opener.open(req) as resp:
-        status = getattr(resp, "status", None)
-        if start and status == 200:
+        status = getattr(resp, "status", None) or resp.getcode()
+        content_range = resp.headers.get("Content-Range", "")
+        if start and (status != 206 or not content_range.startswith(f"bytes {start}-")):
             print("Server did not honor Range; restarting download from 0.")
             start = 0
         mode = "ab" if start else "wb"
@@ -131,6 +132,11 @@ def download_with_resume(url, dest, proxy=None):
                     last_print_at = now
                     print_progress(done, total, started_at)
         print_progress(done, total, started_at, last_update=True)
+    if total is not None and done != total:
+        raise IOError(
+            f"Download incomplete: received {human_size(done)} of {human_size(total)}. "
+            f"Partial file kept for resume: {tmp}"
+        )
     tmp.replace(dest)
     print(f"Downloaded: {dest}")
 
