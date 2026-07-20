@@ -1,6 +1,6 @@
 # FunASR 目标发音人抗干扰语音指令识别
 
-当前版本：`v0.3.4-asr-output-cleanup`
+当前版本：`v0.3.5-gpu-runtime`
 
 本项目面向“目标发音人语音指令识别 + 非目标发音人拒识”任务。在远场噪声、多人重叠语音和非目标说话人干扰下，系统只输出目标说话人的识别文本；非目标说话人则输出空字符串。
 
@@ -39,6 +39,12 @@ FSMN-VAD + Paraformer-large ASR
 主要模型：Paraformer-large ASR、FSMN-VAD、CAM++ 声纹验证，以及 Logistic Regression 轻量拒识门控。
 
 ## 版本记录
+
+### v0.3.5-gpu-runtime
+
+- 为 NVIDIA 环境增加 `requirements-gpu-cu118.txt`，固定 `torch/torchaudio 2.7.1+cu118`。
+- 已在 RTX 4060 Laptop（8GB）上验证 CUDA 张量计算、CAM++、VAD 与 Paraformer GPU 推理。
+- 新增 GPU 配置、验证与团队复现说明。
 
 ### v0.3.4-asr-output-cleanup
 
@@ -86,6 +92,15 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
+在 NVIDIA GPU 环境中，继续安装 CUDA 版 PyTorch（项目已验证 RTX 4060 Laptop）：
+
+```powershell
+pip install -r requirements-gpu-cu118.txt
+python -c "import torch; print(torch.cuda.is_available(), torch.cuda.get_device_name(0))"
+```
+
+详细配置与验收记录见 [GPU 环境说明](./funasr_project/docs/GPU_SETUP.md)。
+
 构建公开训练数据：
 
 ```powershell
@@ -124,6 +139,7 @@ pip install -r requirements.txt
 | `funasr_project/train_lightweight_gate.py` | 训练轻量拒识门控 |
 | `funasr_project/docs/ASR_PUBLIC_DEV.md` | ASR 公开数据实验与结论 |
 | `funasr_project/docs/ASR_OPTIMIZATION_V034.md` | v0.3.4 指标优化记录与后续计划 |
+| `funasr_project/requirements-gpu-cu118.txt` | NVIDIA GPU 的 CUDA PyTorch 依赖 |
 
 ## 文档
 
@@ -131,6 +147,7 @@ pip install -r requirements.txt
 - [DataSetA 公平调参说明](./funasr_project/docs/DATASET_A_FAIR_TUNING.md)
 - [ASR 公开开发记录](./funasr_project/docs/ASR_PUBLIC_DEV.md)
 - [ASR 优化记录](./funasr_project/docs/ASR_OPTIMIZATION_V034.md)
+- [GPU 环境说明](./funasr_project/docs/GPU_SETUP.md)
 - [轻量门控训练计划](./funasr_project/docs/LIGHTWEIGHT_TRAINING_PLAN.md)
 
 ## 团队协作

@@ -1,6 +1,6 @@
 # 复杂交互场景抗干扰语音指令识别系统
 
-版本：`v0.3.4-asr-output-cleanup`
+版本：`v0.3.5-gpu-runtime`
 
 本目录包含比赛项目的完整实现。系统以唤醒音频注册目标说话人，通过 CAM++ 声纹验证过滤非目标说话人，再对通过的语音执行 VAD、Paraformer ASR、文本归一化和指令匹配。
 
@@ -24,6 +24,15 @@ python -m venv .venv
 .\.venv\Scripts\activate
 pip install -r requirements.txt
 ```
+
+如使用 NVIDIA GPU，请继续安装已验证的 CUDA 运行时版本：
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-gpu-cu118.txt
+.\.venv\Scripts\python.exe -c "import torch; print(torch.__version__); print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0))"
+```
+
+项目已在 RTX 4060 Laptop + 驱动 610.62 上验证 `torch 2.7.1+cu118`。无需安装完整 CUDA Toolkit 或 `nvcc`；`asr_demo.py` 和 `speaker_verify.py` 会在可用时自动选择 CUDA。详见 [docs/GPU_SETUP.md](./docs/GPU_SETUP.md)。
 
 首次运行会下载 FunASR/CAM++ 模型；下载完成后可复用本地缓存。
 
