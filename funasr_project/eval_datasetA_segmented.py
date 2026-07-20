@@ -241,19 +241,23 @@ def build_report(args, details, started_at):
 
 
 def build_submission(report):
+    results = []
+    for item in report["details"]:
+        sample_id = item.get("id")
+        if sample_id is None or sample_id == "":
+            sample_id = Path(item["audio"]).stem
+        results.append({
+            "id": sample_id,
+            "content": item.get("hyp", ""),
+            "label": item.get("ref", "") or "",
+            "cer": item.get("cer", 0.0),
+        })
     return {
         "result": {
-            "results": [
-                {
-                    "id": Path(item["audio"]).stem,
-                    "content": normalize(item.get("hyp", "")),
-                    "label": item.get("ref", ""),
-                    "cer": f"{item.get('cer', ''):.4f}" if isinstance(item.get("cer"), float) else item.get("cer", ""),
-                }
-                for item in report["details"]
-            ],
-            "final_cer": f"{report['positive_corpus_cer']:.4f}",
-            "duration": f"{report['elapsed_sec']:.2f}",
+            "results": results,
+            "avg_cer": report["positive_corpus_cer"],
+            "avg_rr": report["negative_rejection_rate_rr"],
+            "duration": round(report["elapsed_sec"] * 1000, 2),
         }
     }
 

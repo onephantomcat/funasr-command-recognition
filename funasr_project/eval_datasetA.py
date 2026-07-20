@@ -11,6 +11,8 @@ Usage:
 """
 import argparse
 import contextlib
+import ctypes
+from ctypes import wintypes
 import io
 import json
 import os
@@ -145,13 +147,65 @@ def normalize_wake_text(text):
     return (text or "").replace(" ", "").lower()
 
 
+def process_working_set_mb():
+    """Return the current Windows process working set without extra packages."""
+    if os.name != "nt":
+        return None
+    try:
+        class ProcessMemoryCountersEx(ctypes.Structure):
+            _fields_ = [
+                ("cb", ctypes.c_ulong),
+                ("PageFaultCount", ctypes.c_ulong),
+                ("PeakWorkingSetSize", ctypes.c_size_t),
+                ("WorkingSetSize", ctypes.c_size_t),
+                ("QuotaPeakPagedPoolUsage", ctypes.c_size_t),
+                ("QuotaPagedPoolUsage", ctypes.c_size_t),
+                ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t),
+                ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
+                ("PagefileUsage", ctypes.c_size_t),
+                ("PeakPagefileUsage", ctypes.c_size_t),
+                ("PrivateUsage", ctypes.c_size_t),
+            ]
+
+        counters = ProcessMemoryCountersEx()
+        counters.cb = ctypes.sizeof(counters)
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        psapi = ctypes.WinDLL("psapi", use_last_error=True)
+        kernel32.GetCurrentProcess.restype = wintypes.HANDLE
+        psapi.GetProcessMemoryInfo.argtypes = [
+            wintypes.HANDLE,
+            ctypes.POINTER(ProcessMemoryCountersEx),
+            wintypes.DWORD,
+        ]
+        psapi.GetProcessMemoryInfo.restype = wintypes.BOOL
+        ok = psapi.GetProcessMemoryInfo(
+            kernel32.GetCurrentProcess(), ctypes.byref(counters), ctypes.sizeof(counters)
+        )
+        return round(counters.WorkingSetSize / (1024 * 1024), 2) if ok else None
+    except (AttributeError, OSError):
+        return None
+
+
+def memory_metrics():
+    """Collect local memory diagnostics; organizer measurements remain final."""
+    metrics = {"process_working_set_mb": process_working_set_mb()}
+    if torch.cuda.is_available():
+        metrics.update({
+            "cuda_allocated_mb": round(torch.cuda.memory_allocated() / (1024 * 1024), 2),
+            "cuda_peak_allocated_mb": round(torch.cuda.max_memory_allocated() / (1024 * 1024), 2),
+        })
+    else:
+        metrics.update({"cuda_allocated_mb": None, "cuda_peak_allocated_mb": None})
+    return metrics
+
+
 def build_report(args, pos_rows, neg_rows, details, pairs, rejected, started_at, complete):
     pos_done = sum(1 for d in details if d["split"] == "pos")
     neg_done = sum(1 for d in details if d["split"] == "neg")
     pos_cers = [d["cer"] for d in details if d["split"] == "pos"]
     pos_accepted = sum(1 for d in details if d["split"] == "pos" and d.get("accepted", True))
     sent_cer = sum(pos_cers) / max(1, pos_done)
-    total_cer, total_chars = corpus_cer(pairs)
+    total_cer, total_chars = corpus_cer(pairs, do_norm=args.local_normalize)
     rr = rejected / max(1, neg_done)
     return {
         "dataset": "datasetA",
@@ -185,9 +239,12 @@ def build_report(args, pos_rows, neg_rows, details, pairs, rejected, started_at,
         "positive_sentence_avg_cer": round(sent_cer, 4),
         "positive_corpus_cer": round(total_cer, 4),
         "positive_ref_chars": total_chars,
+        "cer_mode": "local_normalized_debug" if args.local_normalize else "raw_character_debug",
+        "official_scorer_note": "Use the organizer scorer for official results.",
         "negative_rejection_rate_rr": round(rr, 4),
         "negative_rejected": rejected,
         "elapsed_sec": round(time.time() - started_at, 2),
+        "memory": memory_metrics(),
         "details": details,
     }
 
@@ -202,21 +259,21 @@ def save_report(out, report):
 def build_submission(report):
     results = []
     for item in report["details"]:
-        label = item.get("ref") or ""
-        cer_value = item.get("cer", "")
-        if isinstance(cer_value, float):
-            cer_value = f"{cer_value:.4f}"
+        sample_id = item.get("id")
+        if sample_id is None or sample_id == "":
+            sample_id = Path(item["audio"]).stem
         results.append({
-            "id": Path(item["audio"]).stem,
-            "content": normalize(item.get("hyp", "")),
-            "label": label,
-            "cer": cer_value,
+            "id": sample_id,
+            "content": item.get("hyp", ""),
+            "label": item.get("ref") or "",
+            "cer": item.get("cer", 0.0),
         })
     return {
         "result": {
             "results": results,
-            "final_cer": f"{report['positive_corpus_cer']:.4f}",
-            "duration": f"{report['elapsed_sec']:.2f}",
+            "avg_cer": report["positive_corpus_cer"],
+            "avg_rr": report["negative_rejection_rate_rr"],
+            "duration": round(report["elapsed_sec"] * 1000, 2),
         }
     }
 
@@ -298,16 +355,16 @@ def main():
                         help="Skip this many rows from each split before applying --limit.")
     parser.add_argument("--out", default=None)
     parser.add_argument("--submission-out", default=None,
-                        help="Optional contest-format JSON output path.")
+                        help="Optional DataSetA temporary-leaderboard JSON output path.")
     parser.add_argument("--asr-only", action="store_true",
                         help="Disable speaker rejection and run the old pure-ASR baseline.")
     parser.add_argument("--sv-threshold", type=float, default=None,
                         help="Speaker pre-gate threshold. Defaults: 0.0 for fusion, 0.30 for hard.")
-    parser.add_argument("--intent-filter", action=argparse.BooleanOptionalAction, default=True,
+    parser.add_argument("--intent-filter", action=argparse.BooleanOptionalAction, default=False,
                         help="Reject accepted audio when ASR text is far from the datasetA command phrase bank.")
     parser.add_argument("--intent-threshold", type=float, default=DATASETA_DEFAULT_INTENT_THRESHOLD,
                         help="Maximum normalized distance to a known command phrase when --intent-filter is enabled.")
-    parser.add_argument("--decision-policy", choices=("hard", "fusion"), default=DATASETA_DEFAULT_DECISION_POLICY,
+    parser.add_argument("--decision-policy", choices=("hard", "fusion"), default="hard",
                         help="hard: speaker threshold + intent threshold; fusion: sim - w*intent joint score.")
     parser.add_argument("--gate-model", default=None,
                         help="Optional tiny trained gate JSON from train_lightweight_gate.py.")
@@ -319,7 +376,7 @@ def main():
                         help="Reject rows whose wake text is not in --allowed-wake-texts.")
     parser.add_argument("--allowed-wake-texts", default=DATASETA_DEFAULT_ALLOWED_WAKE_TEXTS,
                         help="Comma-separated target wake texts for --wake-guard.")
-    parser.add_argument("--phrase-correct", action=argparse.BooleanOptionalAction, default=True,
+    parser.add_argument("--phrase-correct", action=argparse.BooleanOptionalAction, default=False,
                         help="Normalize accepted ASR output to the nearest known datasetA phrase.")
     parser.add_argument("--phrase-threshold", type=float, default=DATASETA_DEFAULT_PHRASE_THRESHOLD,
                         help="Maximum nearest-phrase distance for --phrase-correct.")
@@ -331,6 +388,11 @@ def main():
                         help="Optional pickle cache for speaker embeddings during tuning runs.")
     parser.add_argument("--asr-cache", default=None,
                         help="Optional pickle cache for ASR text during tuning runs; do not use for formal timing.")
+    parser.add_argument(
+        "--local-normalize",
+        action="store_true",
+        help="Apply this project's text normalizer for local debugging only; organizer scoring remains authoritative.",
+    )
     parser.add_argument("--purify", action="store_true",
                         help="Run optional target-speaker purification before ASR.")
     parser.add_argument("--purify-dir", default=os.path.join(ROOT, "purified_cache"),
@@ -395,6 +457,8 @@ def main():
     sv_model = None
     emb_cache = EmbeddingCache(args.embedding_cache)
     asr_cache = AsrCache(args.asr_cache)
+    if torch.cuda.is_available():
+        torch.cuda.reset_peak_memory_stats()
     if not args.asr_only:
         print("Loading speaker model...")
         sv_model = build_sv_model()
@@ -464,7 +528,7 @@ def main():
                 hyp = nearest_phrase
         elapsed = time.time() - t_item
         ref = row["识别文本"] or ""
-        c, ref_len = cer(ref, hyp)
+        c, ref_len = cer(ref, hyp, do_norm=args.local_normalize)
         pairs.append((ref, hyp))
         details.append({
             "split": "pos",
@@ -600,6 +664,8 @@ def main():
     print(f"  negative RR:               {report['negative_rejection_rate_rr']:.4f} "
           f"({rejected}/{len(neg_rows)})")
     print(f"  elapsed:                   {time.time() - t0:.1f}s")
+    print(f"  process working set:       {report['memory']['process_working_set_mb']} MB")
+    print(f"  cuda peak allocated:       {report['memory']['cuda_peak_allocated_mb']} MB")
     print(f"Report saved: {out}")
     if args.submission_out:
         print(f"Submission saved: {args.submission_out}")

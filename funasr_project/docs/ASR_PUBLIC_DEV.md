@@ -2,8 +2,9 @@
 
 ## Scope
 
-This record uses only AISHELL-1 public data. DataSetA remains the final contest
-test set and its labels are not used for ASR tuning.
+This record uses only AISHELL-1 public data. DataSetA is retained for stage
+evaluation, while the organizer's test set B is used for the final ranking;
+neither set's labels are used for ASR tuning.
 
 ## Model and runtime configuration
 
@@ -42,11 +43,11 @@ The largest improvement was on the 5 dB overlap group: 44.00% to 4.00% CER.
 The 0 dB overlap group did not materially improve in this small smoke test, so
 purification remains opt-in rather than a default contest configuration.
 
-## DataSetA full fair baseline
+## DataSetA full stage baseline
 
-DataSetA is not a development set. The following full evaluation is the
-current competition-facing baseline and does not use DataSetA labels for a
-phrase bank, intent filtering, or phrase correction.
+DataSetA is not a training set. The following full evaluation is a stage
+baseline and does not use DataSetA labels for a phrase bank, intent filtering,
+or phrase correction. It is not a final test set B result.
 
 ```powershell
 .\.venv\Scripts\python.exe eval_datasetA.py `
@@ -58,15 +59,20 @@ phrase bank, intent filtering, or phrase correction.
 | Metric | Result |
 | --- | ---: |
 | Positive / negative samples | 1,364 / 474 |
-| Corpus CER | 52.87% (9,367 reference characters) |
+| Local raw-character CER | 119.17% (9,515 reference characters) |
 | Positive accept rate | 69.35% |
 | Rejection rate (RR) | 91.14% (432 / 474) |
-| End-to-end elapsed time | 408.4 s (about 0.222 s/sample) |
+| End-to-end elapsed time | 618.4 s (about 0.336 s/sample) |
 
 This result is intentionally not comparable to the 1.19% clean AISHELL dev
 CER or the 25.56% public overlap smoke test. It includes the real DataSetA
 noise/domain gap and CER loss from target speech rejected by the speaker gate.
-Peak memory has not yet been measured separately.
+CER can exceed 100% when insertions, substitutions, and deletions together
+exceed the reference-character count. The v0.3.2 52.87% value used this
+project's text normalizer and is not directly comparable. The organizer scorer
+on test set B remains authoritative. Future `eval_datasetA.py` reports include
+local process working-set and CUDA peak-allocation diagnostics; the organizer's
+uniform-hardware memory measurement remains the official one.
 
 ## Recommended commands
 
@@ -91,4 +97,5 @@ fine-tuning of Paraformer-large is not recommended on this hardware. The clean
 manifest is ready for a low-batch LoRA or frozen-frontend experiment, but the
 current public dev baseline is already strong. Any such experiment should be
 accepted only if it improves the held-out AISHELL dev CER and does not regress
-the public overlap test; DataSetA is reserved for the final single evaluation.
+the public overlap test; DataSetA is reserved for stage reporting and test set
+B is reserved for the final organizer evaluation.

@@ -1,14 +1,16 @@
 # DataSetA Fair Tuning Notes
 
-DataSetA is a test set:
+DataSetA is a stage-development and temporary-leaderboard set. Test set B is
+the final script-validation and ranking set:
 
 - `pos` evaluates target-speaker character error rate (CER).
 - `neg` evaluates non-target rejection rate (RR).
 - The `识别文本` / `璇嗗埆鏂囨湰` field is label-only.
 - Wake audio, wake text, and recognition audio are model inputs.
 
-Therefore, do not train, tune thresholds, build a phrase bank, or correct ASR
-output from DataSetA labels.
+Therefore, do not train, build a phrase bank, or correct ASR output from
+DataSetA labels. Do not use the `pos/neg` directory split as an inference
+feature: test set B may mix both types and will not expose this split.
 
 ## External Train/Tuning Set
 
@@ -55,7 +57,8 @@ data/external_train/
 ```
 
 Use `data/external_train` for threshold search, small gate training, and phrase
-bank construction. Use DataSetA only for final reporting.
+bank construction. Use DataSetA only for stage reporting. Use test set B for
+the final organizer run when it becomes available.
 
 ## Fair DataSetA Evaluation
 

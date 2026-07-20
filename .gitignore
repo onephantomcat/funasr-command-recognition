@@ -5,6 +5,7 @@ __pycache__/
 .mypy_cache/
 .idea/
 .vscode/
+.learnings/
 .DS_Store
 
 # Virtual environments
