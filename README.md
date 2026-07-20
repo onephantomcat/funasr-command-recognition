@@ -1,6 +1,6 @@
 # FunASR 目标发音人抗干扰语音指令识别
 
-当前版本：`v0.3.5-gpu-runtime`
+当前版本：`v0.3.6-augmentation-assets`
 
 本项目面向“目标发音人语音指令识别 + 非目标发音人拒识”任务。在远场噪声、多人重叠语音和非目标说话人干扰下，系统只输出目标说话人的识别文本；非目标说话人则输出空字符串。
 
@@ -39,6 +39,12 @@ FSMN-VAD + Paraformer-large ASR
 主要模型：Paraformer-large ASR、FSMN-VAD、CAM++ 声纹验证，以及 Logistic Regression 轻量拒识门控。
 
 ## 版本记录
+
+### v0.3.6-augmentation-assets
+
+- 新增 MUSAN 与 RIRS_NOISES 的断点续传下载及安全解压脚本。
+- 外部训练集支持背景噪声、远场混响、混响加噪、重叠语音和多说话人 babble 正样本。
+- 保持 DataSetA 与所有增强资源隔离，并新增增强数据使用说明。
 
 ### v0.3.5-gpu-runtime
 
@@ -107,6 +113,20 @@ python -c "import torch; print(torch.cuda.is_available(), torch.cuda.get_device_
 .\.venv\Scripts\python.exe prepare_public_dataset.py --dataset aishell1 --out data\public_train\aishell1
 ```
 
+下载 MUSAN 与 RIRS_NOISES 并构建抗噪、远场外部训练集：
+
+```powershell
+.\.venv\Scripts\python.exe prepare_augmentation_assets.py `
+  --assets musan,rirs_noises --source official
+
+.\.venv\Scripts\python.exe build_external_trainset.py `
+  --wav-root data\public\aishell1\extracted\data_aishell\wav_expanded\train `
+  --csv data\public\aishell1\extracted\data_aishell\transcript\aishell_transcript_v0.8.txt `
+  --out data\public_train\aishell1_musan_rirs `
+  --noise-root data\public\augmentations\musan\extracted `
+  --rir-root data\public\augmentations\rirs_noises\extracted
+```
+
 对 DataSetA 进行全量阶段基线评测：
 
 ```powershell
@@ -132,6 +152,7 @@ python -c "import torch; print(torch.cuda.is_available(), torch.cuda.get_device_
 | 文件 | 作用 |
 | --- | --- |
 | `funasr_project/prepare_public_dataset.py` | 下载 AISHELL-1 并转换比赛格式 |
+| `funasr_project/prepare_augmentation_assets.py` | 下载 MUSAN 与 RIRS_NOISES 增强资源 |
 | `funasr_project/prepare_asr_finetune_manifest.py` | 构建纯净、说话人隔离的 ASR 清单 |
 | `funasr_project/eval_asr_manifest.py` | 在纯净开发集计算 ASR CER 和延迟 |
 | `funasr_project/eval_datasetA.py` | 端到端 CER、RR 和耗时评测 |
@@ -139,6 +160,7 @@ python -c "import torch; print(torch.cuda.is_available(), torch.cuda.get_device_
 | `funasr_project/train_lightweight_gate.py` | 训练轻量拒识门控 |
 | `funasr_project/docs/ASR_PUBLIC_DEV.md` | ASR 公开数据实验与结论 |
 | `funasr_project/docs/ASR_OPTIMIZATION_V034.md` | v0.3.4 指标优化记录与后续计划 |
+| `funasr_project/docs/AUGMENTATION_DATASETS.md` | MUSAN/RIRS 下载与增强训练集构建说明 |
 | `funasr_project/requirements-gpu-cu118.txt` | NVIDIA GPU 的 CUDA PyTorch 依赖 |
 
 ## 文档
@@ -148,6 +170,7 @@ python -c "import torch; print(torch.cuda.is_available(), torch.cuda.get_device_
 - [ASR 公开开发记录](./funasr_project/docs/ASR_PUBLIC_DEV.md)
 - [ASR 优化记录](./funasr_project/docs/ASR_OPTIMIZATION_V034.md)
 - [GPU 环境说明](./funasr_project/docs/GPU_SETUP.md)
+- [MUSAN/RIRS 增强说明](./funasr_project/docs/AUGMENTATION_DATASETS.md)
 - [轻量门控训练计划](./funasr_project/docs/LIGHTWEIGHT_TRAINING_PLAN.md)
 
 ## 团队协作

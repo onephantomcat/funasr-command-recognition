@@ -1,6 +1,6 @@
 # 复杂交互场景抗干扰语音指令识别系统
 
-版本：`v0.3.5-gpu-runtime`
+版本：`v0.3.6-augmentation-assets`
 
 本目录包含比赛项目的完整实现。系统以唤醒音频注册目标说话人，通过 CAM++ 声纹验证过滤非目标说话人，再对通过的语音执行 VAD、Paraformer ASR、文本归一化和指令匹配。
 
@@ -81,6 +81,28 @@ data/public_train/aishell1/
 ```
 
 其中 `pos.jsonl` 的 `识别文本` 是目标说话人标签；`neg.jsonl` 的 `识别文本` 为空，用于拒识训练和验证。
+
+### MUSAN + RIRS_NOISES 增强
+
+下载外部噪声和房间脉冲响应资源：
+
+```powershell
+.\.venv\Scripts\python.exe prepare_augmentation_assets.py `
+  --assets musan,rirs_noises --source official
+```
+
+在已有 AISHELL 训练音频上构建比赛格式的增强集：
+
+```powershell
+.\.venv\Scripts\python.exe build_external_trainset.py `
+  --wav-root data\public\aishell1\extracted\data_aishell\wav_expanded\train `
+  --csv data\public\aishell1\extracted\data_aishell\transcript\aishell_transcript_v0.8.txt `
+  --out data\public_train\aishell1_musan_rirs `
+  --noise-root data\public\augmentations\musan\extracted `
+  --rir-root data\public\augmentations\rirs_noises\extracted
+```
+
+构建器会生成 clean、两人重叠、babble、MUSAN 噪声、RIR 混响和混响加噪正样本；负样本保持异说话人语音与空标签。详见 [docs/AUGMENTATION_DATASETS.md](./docs/AUGMENTATION_DATASETS.md)。
 
 ## ASR 开发与评测
 

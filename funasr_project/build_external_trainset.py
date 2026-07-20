@@ -64,11 +64,16 @@ def scan_wavs(wav_root):
 
 def read_wav(path):
     x, sr = sf.read(path)
-    if sr != SR:
-        raise ValueError(f"{path}: sample rate {sr} != {SR}")
     if x.ndim > 1:
         x = x.mean(axis=1)
-    return x.astype(np.float32)
+    x = x.astype(np.float32)
+    if sr == SR:
+        return x
+    # Noise/RIR assets can use a different sample rate. Linear resampling is
+    # sufficient for augmentation and avoids another runtime dependency.
+    target_len = max(1, round(len(x) * SR / sr))
+    source_positions = np.linspace(0, len(x) - 1, target_len)
+    return np.interp(source_positions, np.arange(len(x)), x).astype(np.float32)
 
 
 def write_wav(path, x):
@@ -87,6 +92,27 @@ def mix_at_ratio(target, interferer, ratio_db):
     pi = np.mean(interferer ** 2) + 1e-12
     scale = np.sqrt(pt / (pi * 10 ** (ratio_db / 10.0)))
     return target + scale * interferer
+
+
+def discover_audio_files(root):
+    if not root:
+        return []
+    root = Path(root)
+    if not root.exists():
+        raise SystemExit(f"Augmentation root does not exist: {root}")
+    suffixes = {".wav", ".flac", ".ogg", ".mp3"}
+    return sorted(path for path in root.rglob("*") if path.suffix.lower() in suffixes)
+
+
+def apply_rir(audio, rir):
+    """Convolve audio with an aligned, energy-normalized room impulse response."""
+    if not len(rir):
+        return audio
+    direct = int(np.argmax(np.abs(rir)))
+    rir = rir[direct:direct + int(0.8 * SR)]
+    energy = float(np.sqrt(np.sum(rir ** 2)) + 1e-12)
+    rir = rir / energy
+    return np.convolve(audio, rir, mode="full")[:len(audio)].astype(np.float32)
 
 
 def copy_wav(src, dst):
@@ -109,13 +135,20 @@ def build(args):
 
     texts = read_transcripts(args.csv)
     speakers = scan_wavs(args.wav_root)
+    noise_paths = discover_audio_files(getattr(args, "noise_root", None))
+    rir_paths = discover_audio_files(getattr(args, "rir_root", None))
+    source_blocks = 4 + int(bool(noise_paths)) + int(bool(rir_paths))
     usable = [
         spk for spk, wavs in sorted(speakers.items())
-        if len(wavs) >= args.enroll_count + args.trials_per_speaker * 5
+        if len(wavs) >= args.enroll_count + args.trials_per_speaker * source_blocks
     ]
     need = args.target_speakers + args.interferer_speakers
     if len(usable) < need:
-        raise SystemExit(f"Need at least {need} usable speakers, found {len(usable)}")
+        raise SystemExit(
+            f"Need at least {need} usable speakers with "
+            f"{args.enroll_count + args.trials_per_speaker * source_blocks} wavs each; "
+            f"found {len(usable)}"
+        )
 
     targets = usable[:args.target_speakers]
     interferers = usable[args.target_speakers:need]
@@ -196,6 +229,53 @@ def build(args):
             })
             row_id += 1
 
+        next_block = 4
+        if noise_paths:
+            for j in range(args.trials_per_speaker):
+                src = pool[args.trials_per_speaker * next_block + j]
+                noise = read_wav(noise_paths[(idx * args.trials_per_speaker + j) % len(noise_paths)])
+                cmd_rel = f"pos/cmd_{row_id}_noise{args.noise_snr_db:g}.wav"
+                write_wav(out / cmd_rel, mix_at_ratio(read_wav(src), noise, args.noise_snr_db))
+                ref = texts.get(src.stem, "")
+                if ref and ref not in phrase_bank:
+                    phrase_bank.append(ref)
+                pos_rows.append({
+                    FIELD_ID: row_id,
+                    FIELD_WAKE_AUDIO: make_wake(pos_dir, row_id),
+                    FIELD_WAKE_TEXT: args.wake_text,
+                    FIELD_CMD_AUDIO: cmd_rel,
+                    FIELD_CMD_TEXT: ref,
+                })
+                row_id += 1
+            next_block += 1
+
+        if rir_paths:
+            for j in range(args.trials_per_speaker):
+                src = pool[args.trials_per_speaker * next_block + j]
+                target = apply_rir(
+                    read_wav(src),
+                    read_wav(rir_paths[(idx * args.trials_per_speaker + j) % len(rir_paths)]),
+                )
+                if noise_paths:
+                    noise = read_wav(noise_paths[(row_id + j) % len(noise_paths)])
+                    target = mix_at_ratio(target, noise, args.reverb_noise_snr_db)
+                    suffix = f"reverb_noise{args.reverb_noise_snr_db:g}"
+                else:
+                    suffix = "reverb"
+                cmd_rel = f"pos/cmd_{row_id}_{suffix}.wav"
+                write_wav(out / cmd_rel, target)
+                ref = texts.get(src.stem, "")
+                if ref and ref not in phrase_bank:
+                    phrase_bank.append(ref)
+                pos_rows.append({
+                    FIELD_ID: row_id,
+                    FIELD_WAKE_AUDIO: make_wake(pos_dir, row_id),
+                    FIELD_WAKE_TEXT: args.wake_text,
+                    FIELD_CMD_AUDIO: cmd_rel,
+                    FIELD_CMD_TEXT: ref,
+                })
+                row_id += 1
+
         for j in range(args.trials_per_speaker * 2):
             src = interferer_wavs[args.enroll_count + j]
             cmd_rel = f"neg/cmd_{row_id}.wav"
@@ -217,6 +297,7 @@ def build(args):
 
     print(f"targets={targets}")
     print(f"interferers={interferers}")
+    print(f"noise assets={len(noise_paths)}  RIR assets={len(rir_paths)}")
     print(f"wrote {len(pos_rows)} pos and {len(neg_rows)} neg rows to {out}")
     print(f"phrase bank: {out / 'phrase_bank.txt'} ({len(phrase_bank)} phrases)")
 
@@ -231,6 +312,12 @@ def main():
     parser.add_argument("--enroll-count", type=int, default=3)
     parser.add_argument("--trials-per-speaker", type=int, default=4)
     parser.add_argument("--wake-text", default="hi colmo")
+    parser.add_argument("--noise-root", default=None,
+                        help="Optional MUSAN audio root for noise/babble augmentation.")
+    parser.add_argument("--rir-root", default=None,
+                        help="Optional RIRS_NOISES root for far-field augmentation.")
+    parser.add_argument("--noise-snr-db", type=float, default=5.0)
+    parser.add_argument("--reverb-noise-snr-db", type=float, default=5.0)
     parser.add_argument("--seed", type=int, default=2026)
     build(parser.parse_args())
 
