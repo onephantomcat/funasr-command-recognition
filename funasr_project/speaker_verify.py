@@ -8,6 +8,7 @@ import os
 
 import numpy as np
 from funasr import AutoModel
+import torch
 
 # 声纹模型支持自动下载并缓存
 SV_DIR = "iic/speech_campplus_sv_zh-cn_16k-common"
@@ -35,8 +36,10 @@ def search_threshold(scores, labels, step=0.01):
     return best_t, best_err
 
 
-def build_sv_model():
-    return AutoModel(model=SV_DIR, device="cpu", disable_update=True)
+def build_sv_model(device=None):
+    """Prefer CUDA when it is available, while keeping CPU compatibility."""
+    resolved_device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+    return AutoModel(model=SV_DIR, device=resolved_device, disable_update=True)
 
 
 def extract_embedding(sv_model, wav_path):

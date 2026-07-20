@@ -59,20 +59,22 @@ or phrase correction. It is not a final test set B result.
 | Metric | Result |
 | --- | ---: |
 | Positive / negative samples | 1,364 / 474 |
-| Local raw-character CER | 119.17% (9,515 reference characters) |
+| Local raw-character CER | 53.43% (9,515 reference characters) |
 | Positive accept rate | 69.35% |
 | Rejection rate (RR) | 91.14% (432 / 474) |
-| End-to-end elapsed time | 618.4 s (about 0.336 s/sample) |
+| End-to-end elapsed time | 438.9 s (about 0.239 s/sample) |
+| Local process working set | 3,073.22 MB |
 
 This result is intentionally not comparable to the 1.19% clean AISHELL dev
 CER or the 25.56% public overlap smoke test. It includes the real DataSetA
 noise/domain gap and CER loss from target speech rejected by the speaker gate.
-CER can exceed 100% when insertions, substitutions, and deletions together
-exceed the reference-character count. The v0.3.2 52.87% value used this
-project's text normalizer and is not directly comparable. The organizer scorer
-on test set B remains authoritative. Future `eval_datasetA.py` reports include
-local process working-set and CUDA peak-allocation diagnostics; the organizer's
-uniform-hardware memory measurement remains the official one.
+The v0.3.4 result removes whitespace inserted by Paraformer between Chinese
+characters before emitting the hypothesis; it does not use labels, phrase
+correction, or a command vocabulary. The v0.3.3 119.17% value includes those
+formatting spaces as raw CER insertions. The organizer scorer on test set B
+remains authoritative. `eval_datasetA.py` reports local process working-set
+and CUDA peak-allocation diagnostics; the organizer's uniform-hardware memory
+measurement remains the official one.
 
 ## Recommended commands
 

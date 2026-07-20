@@ -1,6 +1,6 @@
 # FunASR 目标发音人抗干扰语音指令识别
 
-当前版本：`v0.3.3-competition-compliance`
+当前版本：`v0.3.4-asr-output-cleanup`
 
 本项目面向“目标发音人语音指令识别 + 非目标发音人拒识”任务。在远场噪声、多人重叠语音和非目标说话人干扰下，系统只输出目标说话人的识别文本；非目标说话人则输出空字符串。
 
@@ -39,6 +39,13 @@ FSMN-VAD + Paraformer-large ASR
 主要模型：Paraformer-large ASR、FSMN-VAD、CAM++ 声纹验证，以及 Logistic Regression 轻量拒识门控。
 
 ## 版本记录
+
+### v0.3.4-asr-output-cleanup
+
+- Paraformer 输出统一移除格式空白，避免汉字间空格被当作 CER 插入错误；不使用任何标签或短语纠错。
+- 检测到 CUDA 时，ASR 与 CAM++ 自动使用 GPU；没有 CUDA 时自动回退 CPU。
+- 同一 DataSetA 公平配置的全量复测：本地原始字符 CER 从 `119.17%` 降至 `53.43%`，RR 保持 `91.14%`。
+- 新增 [ASR 优化记录](./funasr_project/docs/ASR_OPTIMIZATION_V034.md)，记录公开数据上的净化收益、效率代价和下一步计划。
 
 ### v0.3.2-datasetA-baseline
 
@@ -94,7 +101,7 @@ pip install -r requirements.txt
   --no-intent-filter --no-phrase-correct
 ```
 
-当前全量结果：本地原始字符 CER `119.17%`（9,515 个参考字）、RR `91.14%`、正样本接收率 `69.35%`、耗时 `618.4 s`（约 `0.336 s/条`）。这是 DataSetA 阶段基线，不代表测试集 B 的最终成绩；历史 v0.3.2 的 `52.87%` 使用项目文本归一化，不能直接横向比较。
+当前全量结果：本地原始字符 CER `53.43%`（9,515 个参考字）、RR `91.14%`、正样本接收率 `69.35%`、耗时 `438.9 s`（约 `0.239 s/条`）、进程工作集 `3073.22 MB`。这是 DataSetA 阶段基线，不代表测试集 B 的最终成绩；输出空白清理不依赖标签，历史 v0.3.3 的 `119.17%` 是未清理空白的格式错误基线。
 
 测试集 B 到达后，使用无标签推理入口：
 
@@ -116,12 +123,14 @@ pip install -r requirements.txt
 | `funasr_project/predict_jsonl.py` | 测试集 B 无标签、无 pos/neg 标识的推理入口 |
 | `funasr_project/train_lightweight_gate.py` | 训练轻量拒识门控 |
 | `funasr_project/docs/ASR_PUBLIC_DEV.md` | ASR 公开数据实验与结论 |
+| `funasr_project/docs/ASR_OPTIMIZATION_V034.md` | v0.3.4 指标优化记录与后续计划 |
 
 ## 文档
 
 - [完整使用手册](./funasr_project/README.md)
 - [DataSetA 公平调参说明](./funasr_project/docs/DATASET_A_FAIR_TUNING.md)
 - [ASR 公开开发记录](./funasr_project/docs/ASR_PUBLIC_DEV.md)
+- [ASR 优化记录](./funasr_project/docs/ASR_OPTIMIZATION_V034.md)
 - [轻量门控训练计划](./funasr_project/docs/LIGHTWEIGHT_TRAINING_PLAN.md)
 
 ## 团队协作

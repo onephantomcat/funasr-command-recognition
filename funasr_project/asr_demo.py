@@ -10,6 +10,7 @@ import sys
 import time
 
 from funasr import AutoModel
+import torch
 
 # 模型加载支持自动下载并缓存
 ASR_DIR = "iic/speech_seaco_paraformer_large_asr_nat-zh-cn-16k-common-vocab8404-pytorch"
@@ -17,13 +18,29 @@ VAD_DIR = "iic/speech_fsmn_vad_zh-cn-16k-common-pytorch"
 PUNC_DIR = "iic/punc_ct-transformer_zh-cn-common-vocab272727-pytorch"
 
 
-def build_model(with_punc=True):
+def resolve_device(device=None):
+    """Use an explicit device when given, otherwise prefer CUDA when present."""
+    if device:
+        return device
+    return "cuda" if torch.cuda.is_available() else "cpu"
+
+
+def compact_asr_text(text):
+    """Remove formatting whitespace that Paraformer inserts between Han chars.
+
+    This is output serialization, not label-based correction: it never changes
+    lexical characters and is safe for unknown test-set transcripts.
+    """
+    return "".join(ch for ch in str(text or "") if not ch.isspace())
+
+
+def build_model(with_punc=True, device=None):
     """with_punc=False 时不加载标点模型, 省约0.5GB内存(指令匹配场景用不到标点)"""
     kwargs = dict(
         model=ASR_DIR,                  # 非流式 Paraformer-large 中文模型
         vad_model=VAD_DIR,              # 语音端点检测, 过滤静音和长音频切分
         vad_kwargs={"max_single_segment_time": 30000},
-        device="cpu",
+        device=resolve_device(device),
         disable_update=True,
     )
     if with_punc:
@@ -36,7 +53,7 @@ def recognize(model, wav_path):
     res = model.generate(input=wav_path, batch_size_s=60)
     elapsed = time.time() - t0
     text = res[0]["text"] if res else ""
-    return text, elapsed
+    return compact_asr_text(text), elapsed
 
 
 if __name__ == "__main__":
