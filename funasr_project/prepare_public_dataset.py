@@ -18,6 +18,7 @@ import argparse
 import tarfile
 import time
 import urllib.request
+from urllib.error import HTTPError
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -93,7 +94,20 @@ def build_url_opener(proxy=None):
     )
 
 
-def download_with_resume(url, dest, proxy=None):
+def _range_total(content_range):
+    """Return the complete object size advertised by an HTTP Range response."""
+    try:
+        unit, byte_range = content_range.split(None, 1)
+        range_part, total_part = byte_range.split("/", 1)
+        if unit != "bytes" or range_part == "*" or total_part == "*":
+            return None
+        int(range_part.split("-", 1)[0])
+        return int(total_part)
+    except (AttributeError, ValueError):
+        return None
+
+
+def download_with_resume(url, dest, proxy=None, timeout=60):
     dest = Path(dest)
     dest.parent.mkdir(parents=True, exist_ok=True)
     tmp = dest.with_suffix(dest.suffix + ".part")
@@ -107,7 +121,18 @@ def download_with_resume(url, dest, proxy=None):
 
     opener = build_url_opener(proxy)
     req = urllib.request.Request(url, headers=headers)
-    with opener.open(req) as resp:
+    try:
+        response = opener.open(req, timeout=timeout)
+    except HTTPError as exc:
+        # A completed partial file can yield HTTP 416 before it is renamed.
+        complete_size = _range_total(exc.headers.get("Content-Range", ""))
+        if exc.code == 416 and start and complete_size == start:
+            tmp.replace(dest)
+            print(f"Downloaded: {dest}")
+            return
+        raise
+
+    with response as resp:
         status = getattr(resp, "status", None) or resp.getcode()
         content_range = resp.headers.get("Content-Range", "")
         if start and (status != 206 or not content_range.startswith(f"bytes {start}-")):
@@ -115,14 +140,22 @@ def download_with_resume(url, dest, proxy=None):
             start = 0
         mode = "ab" if start else "wb"
         total_header = resp.headers.get("Content-Length")
-        total = int(total_header) + start if total_header else None
+        # Content-Range contains the authoritative complete size. A few CDNs
+        # return the object size (not the remaining range) in Content-Length.
+        total = _range_total(content_range) if status == 206 else None
+        if total is None:
+            total = int(total_header) + start if total_header else None
         done = start
         started_at = time.time()
         last_print_at = 0.0
         print_progress(done, total, started_at)
         with open(tmp, mode) as f:
+            # read1() returns promptly with buffered data instead of waiting for
+            # a full megabyte. This matters for OpenSLR connections that trickle
+            # a response before stalling.
+            read_chunk = getattr(resp, "read1", resp.read)
             while True:
-                chunk = resp.read(1024 * 1024)
+                chunk = read_chunk(64 * 1024)
                 if not chunk:
                     break
                 f.write(chunk)
@@ -141,18 +174,30 @@ def download_with_resume(url, dest, proxy=None):
     print(f"Downloaded: {dest}")
 
 
-def download_from_candidates(urls, dest, proxy=None):
+def download_from_candidates(
+    urls,
+    dest,
+    proxy=None,
+    retries=1,
+    retry_delay_sec=2.0,
+    timeout=60,
+):
+    """Download from candidate URLs, retrying resumable transfers on transient errors."""
     last_error = None
     for idx, url in enumerate(urls, start=1):
-        try:
-            print(f"Download source {idx}/{len(urls)}: {url}")
-            if proxy:
-                print(f"Using proxy: {proxy}")
-            download_with_resume(url, dest, proxy=proxy)
-            return
-        except Exception as exc:
-            last_error = exc
-            print(f"Download failed from {url}: {exc}")
+        for attempt in range(1, max(1, retries) + 1):
+            try:
+                print(f"Download source {idx}/{len(urls)} (attempt {attempt}/{max(1, retries)}): {url}")
+                if proxy:
+                    print(f"Using proxy: {proxy}")
+                download_with_resume(url, dest, proxy=proxy, timeout=timeout)
+                return
+            except Exception as exc:
+                last_error = exc
+                print(f"Download failed from {url}: {exc}")
+                if attempt < max(1, retries):
+                    print(f"Retrying the same source in {retry_delay_sec:g}s; partial file will resume.")
+                    time.sleep(retry_delay_sec)
     raise RuntimeError(f"All download sources failed. Last error: {last_error}")
 
 
@@ -261,7 +306,12 @@ def prepare(args):
                 urls = [spec["mirror_url"]]
             else:
                 urls = [spec["mirror_url"], spec["official_url"]]
-            download_from_candidates(urls, archive, proxy=args.proxy)
+            download_from_candidates(
+                urls,
+                archive,
+                proxy=args.proxy,
+                timeout=args.download_timeout,
+            )
         elif archive.exists():
             print(f"Using existing archive: {archive}")
         else:
@@ -303,6 +353,8 @@ def main():
                         help="Download source. mirror uses a China-friendly OpenSLR mirror.")
     parser.add_argument("--proxy", default=None,
                         help="Optional HTTP/HTTPS proxy, e.g. http://127.0.0.1:7890.")
+    parser.add_argument("--download-timeout", type=float, default=60,
+                        help="Socket timeout in seconds for each download request.")
     parser.add_argument("--archive", default=None, help="Existing or target archive path.")
     parser.add_argument("--extract-root", default=None)
     parser.add_argument("--skip-download", action="store_true",

@@ -1,10 +1,10 @@
 # FunASR 目标发音人抗干扰语音指令识别
 
-当前版本：`v0.3.6-augmentation-assets`
+当前版本：`v0.3.8-target-enhancer-gpu`
 
 本项目面向“目标发音人语音指令识别 + 非目标发音人拒识”任务。在远场噪声、多人重叠语音和非目标说话人干扰下，系统只输出目标说话人的识别文本；非目标说话人则输出空字符串。
 
-核心代码位于 [funasr_project](./funasr_project)。完整操作手册见 [funasr_project/README.md](./funasr_project/README.md)，ASR 实验结果见 [ASR 公开数据实验记录](./funasr_project/docs/ASR_PUBLIC_DEV.md)。
+核心代码位于 [funasr_project](./funasr_project)。完整操作手册见 [funasr_project/README.md](./funasr_project/README.md)，ASR 实验结果见 [ASR 公开数据实验记录](./funasr_project/docs/ASR_PUBLIC_DEV.md)，CER 增强训练见 [目标语音增强实验](./funasr_project/docs/TARGET_ENHANCER.md)。
 
 ## 任务指标
 
@@ -39,6 +39,13 @@ FSMN-VAD + Paraformer-large ASR
 主要模型：Paraformer-large ASR、FSMN-VAD、CAM++ 声纹验证，以及 Logistic Regression 轻量拒识门控。
 
 ## 版本记录
+
+### v0.3.8-target-enhancer-gpu
+
+- 完成 `target_enhancer` GPU 加速训练与推理前端落地。
+- 在 AISHELL-1 目标语音 + MUSAN 噪声 + RIRS_NOISES 混响 + 跨说话人干扰上完成 8 个 Epoch 训练，验证集损失降低至 `0.04036`。
+- 在全量 DataSetA（1,364 正样本 + 474 负样本）相同公平配置下完成基线与增强模型对比评测（基线 CER `53.43%` / RR `91.14%` vs 增强 CER `61.44%` / RR `93.67%`）。
+- 明确评估结论：由于掩蔽造成部分声纹特征偏移导致误拒升高，增强前端暂不作为默认推理开启。
 
 ### v0.3.6-augmentation-assets
 

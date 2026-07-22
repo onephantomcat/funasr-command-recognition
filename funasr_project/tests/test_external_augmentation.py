@@ -3,6 +3,7 @@ import json
 import sys
 import tempfile
 import unittest
+from unittest.mock import MagicMock, patch
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -14,7 +15,8 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from build_external_trainset import build
-from prepare_augmentation_assets import candidate_urls
+from prepare_augmentation_assets import candidate_urls, detect_local_proxy, verify_md5
+from prepare_public_dataset import download_from_candidates
 
 
 class ExternalAugmentationTests(unittest.TestCase):
@@ -73,6 +75,32 @@ class ExternalAugmentationTests(unittest.TestCase):
     def test_auto_source_prefers_mirror_then_official(self):
         spec = {"mirror_url": "https://mirror", "official_url": "https://official"}
         self.assertEqual(candidate_urls(spec, "auto"), ["https://mirror", "https://official"])
+
+    def test_detect_local_proxy_uses_first_reachable_port(self):
+        with patch("prepare_augmentation_assets.socket.create_connection") as connect:
+            connect.side_effect = [OSError("closed"), MagicMock()]
+            self.assertEqual(detect_local_proxy(), "http://127.0.0.1:7891")
+
+    def test_verify_md5_rejects_corrupt_archive(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            archive = Path(tmpdir) / "sample.bin"
+            archive.write_bytes(b"expected content")
+            verify_md5(archive, "2f148dd6e5853ddca4e69a2b8b6ab00b")
+            with self.assertRaisesRegex(RuntimeError, "checksum mismatch"):
+                verify_md5(archive, "00000000000000000000000000000000")
+
+    def test_transient_failure_retries_the_same_source(self):
+        attempts = []
+
+        def flaky_download(url, dest, proxy=None, timeout=60):
+            attempts.append(url)
+            if len(attempts) == 1:
+                raise OSError("temporary network interruption")
+
+        with patch("prepare_public_dataset.download_with_resume", side_effect=flaky_download), \
+             patch("prepare_public_dataset.time.sleep"):
+            download_from_candidates(["https://official"], "ignored.tar.gz", retries=2)
+        self.assertEqual(attempts, ["https://official", "https://official"])
 
 
 if __name__ == "__main__":

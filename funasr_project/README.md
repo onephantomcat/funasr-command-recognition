@@ -1,6 +1,6 @@
 # 复杂交互场景抗干扰语音指令识别系统
 
-版本：`v0.3.6-augmentation-assets`
+版本：`v0.3.8-target-enhancer-gpu`
 
 本目录包含比赛项目的完整实现。系统以唤醒音频注册目标说话人，通过 CAM++ 声纹验证过滤非目标说话人，再对通过的语音执行 VAD、Paraformer ASR、文本归一化和指令匹配。
 
@@ -103,6 +103,10 @@ data/public_train/aishell1/
 ```
 
 构建器会生成 clean、两人重叠、babble、MUSAN 噪声、RIR 混响和混响加噪正样本；负样本保持异说话人语音与空标签。详见 [docs/AUGMENTATION_DATASETS.md](./docs/AUGMENTATION_DATASETS.md)。
+
+### CER 导向的目标语音增强训练
+
+`train_target_enhancer.py` 以 AISHELL-1 干净目标语音为监督，将 MUSAN、异说话人和 RIRS_NOISES 在线混入输入，训练唤醒音频条件化的频谱掩蔽前端。该前端在 CAM++ 与 Paraformer 前运行，因此直接作用于识别音频和 CER；它不是拒识门控训练，也不会读取 DataSetA 标签。完整训练与同配置对比命令见 [docs/TARGET_ENHANCER.md](./docs/TARGET_ENHANCER.md)。
 
 ## ASR 开发与评测
 
@@ -237,8 +241,11 @@ data/datasetA/
 | `prepare_public_dataset.py` | 公共数据下载、校验和比赛格式转换 |
 | `prepare_asr_finetune_manifest.py` | 纯净 ASR 训练/开发清单 |
 | `eval_asr_manifest.py` | 纯净 ASR 开发集 CER 评测 |
+| `target_enhancer.py` | 可训练的唤醒条件目标语音增强前端 |
+| `train_target_enhancer.py` | AISHELL-1 + MUSAN + RIRS 的 CER 前端训练 |
 | `target_purify.py` | 可选目标语音净化 |
 | `docs/ASR_PUBLIC_DEV.md` | ASR 公开开发实验记录 |
+| `docs/TARGET_ENHANCER.md` | CER 增强训练与公平评测说明 |
 
 ## 团队协作要求
 

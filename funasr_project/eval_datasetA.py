@@ -30,6 +30,7 @@ from command_match import edit_distance
 from lightweight_gate import accept as gate_accept
 from lightweight_gate import load_gate_model, make_features as make_gate_features
 from speaker_verify import build_sv_model, cosine_sim, extract_embedding
+from target_enhancer import enhance_file, load_target_enhancer
 from target_purify import purify_audio
 from text_norm import normalize
 
@@ -131,6 +132,24 @@ def should_purify(args, speaker_similarity):
     return speaker_similarity is not None and speaker_similarity <= args.purify_sim_trigger
 
 
+def enhanced_path_for_item(enhancer, wake_path, command_path, split, row_id, args):
+    """Create/reuse learned enhancement before speaker verification and ASR."""
+    stem = Path(command_path).stem
+    safe_id = str(row_id if row_id is not None else stem).replace(os.sep, "_")
+    out_path = os.path.join(args.enhancer_dir, f"{split}_{safe_id}_{stem}.wav")
+    info = None
+    if not os.path.exists(out_path):
+        info = enhance_file(
+            enhancer,
+            wake_path,
+            command_path,
+            out_path,
+            chunk_sec=args.enhancer_chunk_sec,
+            overlap_sec=args.enhancer_overlap_sec,
+        )
+    return out_path, info
+
+
 def read_jsonl(path):
     with open(path, encoding="utf-8") as f:
         for line in f:
@@ -226,6 +245,7 @@ def build_report(args, pos_rows, neg_rows, details, pairs, rejected, started_at,
         "phrase_bank": None if args.asr_only else args.phrase_bank,
         "use_test_label_phrase_bank": False if args.asr_only else args.use_test_label_phrase_bank,
         "purify": False if args.asr_only else args.purify,
+        "enhancer_model": None if args.asr_only else args.enhancer_model,
         "purify_sim_trigger": (
             None if args.asr_only or not args.purify else args.purify_sim_trigger
         ),
@@ -388,6 +408,12 @@ def main():
                         help="Optional pickle cache for speaker embeddings during tuning runs.")
     parser.add_argument("--asr-cache", default=None,
                         help="Optional pickle cache for ASR text during tuning runs; do not use for formal timing.")
+    parser.add_argument("--enhancer-model", default=None,
+                        help="Optional externally trained target enhancer checkpoint used before SV and ASR.")
+    parser.add_argument("--enhancer-dir", default=os.path.join(ROOT, "enhanced_cache"),
+                        help="Cache directory for learned-enhancement wav files.")
+    parser.add_argument("--enhancer-chunk-sec", type=float, default=8.0)
+    parser.add_argument("--enhancer-overlap-sec", type=float, default=1.0)
     parser.add_argument(
         "--local-normalize",
         action="store_true",
@@ -432,6 +458,9 @@ def main():
     gate_model = None
     if args.gate_model and not args.asr_only:
         gate_model = load_gate_model(args.gate_model)
+    enhancer = None
+    if args.enhancer_model and not args.asr_only:
+        enhancer = load_target_enhancer(args.enhancer_model)
 
     if not args.asr_only:
         if args.decision_policy == "fusion":
@@ -446,6 +475,8 @@ def main():
             print(f"Phrase correction: threshold={args.phrase_threshold}")
         if args.purify:
             print(f"Target purification: keep_ratio={args.purify_keep_ratio}, floor_gain={args.purify_floor_gain}")
+        if enhancer:
+            print(f"Learned target enhancement: {args.enhancer_model}")
     intent_phrases = []
     if (args.intent_filter or gate_model) and not args.asr_only:
         intent_phrases = build_intent_phrases(
@@ -476,6 +507,13 @@ def main():
         path = wav_path(args.root, row["识别音频"])
         t_item = time.time()
         wake_text = row.get("唤醒文本", "")
+        processing_path = path
+        enhancer_info = None
+        enhancer_applied = enhancer is not None
+        if enhancer:
+            processing_path, enhancer_info = enhanced_path_for_item(
+                enhancer, wake_path, path, "pos", row.get("id"), args,
+            )
         wake_allowed = (
             args.asr_only
             or (not args.wake_guard)
@@ -486,10 +524,10 @@ def main():
         if not args.asr_only:
             if accepted:
                 wake_emb = emb_cache.get(sv_model, wake_path)
-                cmd_emb = emb_cache.get(sv_model, path)
+                cmd_emb = emb_cache.get(sv_model, processing_path)
                 sim = cosine_sim(wake_emb, cmd_emb)
                 accepted = sim >= args.sv_threshold
-        asr_path = path
+        asr_path = processing_path
         purify_info = None
         purify_applied = accepted and should_purify(args, sim)
         if purify_applied:
@@ -497,7 +535,7 @@ def main():
             asr_path = os.path.join(args.purify_dir, purify_name)
             if not os.path.exists(asr_path):
                 purify_info = purify_audio(
-                    sv_model, wake_path, path, asr_path,
+                    sv_model, wake_path, processing_path, asr_path,
                     keep_ratio=args.purify_keep_ratio,
                     floor_gain=args.purify_floor_gain,
                 )
@@ -538,6 +576,8 @@ def main():
             "wake_audio": wake_path,
             "audio": path,
             "asr_audio": asr_path,
+            "enhancer_applied": enhancer_applied,
+            "enhancer_info": enhancer_info,
             "ref": ref,
             "hyp": hyp,
             "raw_hyp": raw_hyp,
@@ -567,6 +607,13 @@ def main():
         path = wav_path(args.root, row["识别音频"])
         t_item = time.time()
         wake_text = row.get("唤醒文本", "")
+        processing_path = path
+        enhancer_info = None
+        enhancer_applied = enhancer is not None
+        if enhancer:
+            processing_path, enhancer_info = enhanced_path_for_item(
+                enhancer, wake_path, path, "neg", row.get("id"), args,
+            )
         wake_allowed = (
             args.asr_only
             or (not args.wake_guard)
@@ -577,10 +624,10 @@ def main():
         if not args.asr_only:
             if accepted:
                 wake_emb = emb_cache.get(sv_model, wake_path)
-                cmd_emb = emb_cache.get(sv_model, path)
+                cmd_emb = emb_cache.get(sv_model, processing_path)
                 sim = cosine_sim(wake_emb, cmd_emb)
                 accepted = sim >= args.sv_threshold
-        asr_path = path
+        asr_path = processing_path
         purify_info = None
         purify_applied = accepted and should_purify(args, sim)
         if purify_applied:
@@ -588,7 +635,7 @@ def main():
             asr_path = os.path.join(args.purify_dir, purify_name)
             if not os.path.exists(asr_path):
                 purify_info = purify_audio(
-                    sv_model, wake_path, path, asr_path,
+                    sv_model, wake_path, processing_path, asr_path,
                     keep_ratio=args.purify_keep_ratio,
                     floor_gain=args.purify_floor_gain,
                 )
@@ -628,6 +675,8 @@ def main():
             "wake_audio": wake_path,
             "audio": path,
             "asr_audio": asr_path,
+            "enhancer_applied": enhancer_applied,
+            "enhancer_info": enhancer_info,
             "hyp": hyp,
             "raw_hyp": raw_hyp,
             "speaker_similarity": round(sim, 4) if sim is not None else None,

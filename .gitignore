@@ -25,6 +25,25 @@ funasr_project/*.log
 funasr_project/*cache*.pkl
 
 # Keep lightweight trained gate JSONs, but ignore model checkpoints if added later
+.DS_Store
+
+# Virtual environments
+.venv/
+venv/
+venv_mac/
+funasr_project/.venv/
+funasr_project/venv_mac/
+
+# Large datasets, generated audio, caches, and reports
+datasetA/
+funasr_project/data/
+funasr_project/outputs/
+funasr_project/.pycache_check/
+funasr_project/__pycache__/
+funasr_project/*.log
+funasr_project/*cache*.pkl
+
+# Keep lightweight trained gate JSONs, but ignore model checkpoints if added later
 *.pt
 *.pth
 *.onnx
@@ -34,3 +53,8 @@ funasr_project/*cache*.pkl
 # Local generated submissions/reports
 *eval_report*.json
 *submission*.json
+
+# Office temporary files
+*.pptx
+*.docx
+.docx_review/
