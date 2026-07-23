@@ -1,0 +1,49 @@
+{
+  "model_config": {
+    "n_fft": 512,
+    "hop_length": 128,
+    "channels": 64,
+    "blocks": 6
+  },
+  "epoch": 7,
+  "dev_loss": 0.040640855114907025,
+  "source": "AISHELL-1 + MUSAN + RIRS_NOISES external data only",
+  "train_speakers": [
+    "S0002",
+    "S0003",
+    "S0004",
+    "S0005",
+    "S0006",
+    "S0007",
+    "S0008",
+    "S0009",
+    "S0010",
+    "S0011",
+    "S0012",
+    "S0013",
+    "S0014"
+  ],
+  "dev_speakers": [
+    "S0015",
+    "S0016",
+    "S0017"
+  ],
+  "args": {
+    "wav_root": "data\\public\\aishell1\\extracted\\data_aishell\\wav_expanded\\train",
+    "noise_root": "data\\public\\augmentations\\musan\\extracted",
+    "rir_root": "data\\public\\augmentations\\rirs_noises\\extracted",
+    "out": "models\\target_enhancer_denoised_mix.pt",
+    "epochs": 8,
+    "batch_size": 6,
+    "steps_per_epoch": 250,
+    "dev_steps": 40,
+    "segment_sec": 3.0,
+    "dev_speakers": 3,
+    "channels": 64,
+    "blocks": 6,
+    "lr": 0.0002,
+    "mix_denoised_ratio": 0.5,
+    "seed": 2026,
+    "num_workers": 0
+  }
+}

@@ -41,6 +41,26 @@ def write_audio(path, audio, sample_rate=SR):
     sf.write(path, audio, sample_rate)
 
 
+def apply_spectral_denoise(audio, n_fft=512, hop_length=128):
+    """Lightweight stationary spectral subtraction noise reduction."""
+    if len(audio) < n_fft:
+        return np.asarray(audio, dtype=np.float32)
+    audio_tensor = torch.from_numpy(np.asarray(audio, dtype=np.float32)).unsqueeze(0)
+    window = torch.hann_window(n_fft)
+    spec = torch.stft(
+        audio_tensor, n_fft=n_fft, hop_length=hop_length, window=window, return_complex=True
+    ).squeeze(0)
+    mag = spec.abs()
+    phase = spec.angle()
+    noise_est = torch.quantile(mag, 0.10, dim=-1, keepdim=True)
+    clean_mag = torch.clamp(mag - 1.2 * noise_est, min=0.05 * mag)
+    clean_spec = torch.polar(clean_mag, phase)
+    restored = torch.istft(
+        clean_spec.unsqueeze(0), n_fft=n_fft, hop_length=hop_length, window=window, length=len(audio)
+    ).squeeze(0).numpy().astype(np.float32)
+    return restored
+
+
 class ResidualDilatedBlock(nn.Module):
     def __init__(self, channels, dilation):
         super().__init__()

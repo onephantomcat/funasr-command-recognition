@@ -17,7 +17,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 
 from build_external_trainset import apply_rir, discover_audio_files, mix_at_ratio, scan_wavs
-from target_enhancer import SR, TargetEnhancer, enhancement_loss, read_audio
+from target_enhancer import SR, TargetEnhancer, apply_spectral_denoise, enhancement_loss, read_audio
 
 
 def crop_or_pad(audio, length, rng):
@@ -28,7 +28,7 @@ def crop_or_pad(audio, length, rng):
 
 
 class ExternalMixtureDataset(Dataset):
-    def __init__(self, speakers, noise_paths, rir_paths, items, segment_sec, seed):
+    def __init__(self, speakers, noise_paths, rir_paths, items, segment_sec, seed, mix_denoised_ratio=0.0):
         self.speakers = {speaker: list(paths) for speaker, paths in speakers.items() if len(paths) >= 2}
         self.speaker_ids = sorted(self.speakers)
         self.noise_paths = list(noise_paths)
@@ -36,6 +36,7 @@ class ExternalMixtureDataset(Dataset):
         self.items = int(items)
         self.segment_len = int(segment_sec * SR)
         self.seed = int(seed)
+        self.mix_denoised_ratio = float(mix_denoised_ratio)
         if len(self.speaker_ids) < 2:
             raise ValueError("Need at least two speakers with two utterances each")
 
@@ -70,6 +71,10 @@ class ExternalMixtureDataset(Dataset):
         if self.rir_paths and rng.random() < 0.7:
             rir = read_audio(self.rir_paths[int(rng.integers(len(self.rir_paths)))])
             mixture = apply_rir(mixture, rir)
+
+        # Apply noise reduction preprocessing to a portion of synthetic samples if requested
+        if self.mix_denoised_ratio > 0 and rng.random() < self.mix_denoised_ratio:
+            mixture = apply_spectral_denoise(mixture)
 
         peak = max(float(np.max(np.abs(mixture))), 1e-6)
         if peak > 0.98:
@@ -142,6 +147,8 @@ def main():
     parser.add_argument("--channels", type=int, default=64)
     parser.add_argument("--blocks", type=int, default=6)
     parser.add_argument("--lr", type=float, default=2e-4)
+    parser.add_argument("--mix-denoised-ratio", type=float, default=0.0,
+                        help="Ratio of synthetic samples preprocessed with spectral denoise (0.0 to 1.0).")
     parser.add_argument("--seed", type=int, default=2026)
     parser.add_argument("--num-workers", type=int, default=0)
     args = parser.parse_args()
@@ -157,15 +164,18 @@ def main():
         raise SystemExit("No MUSAN audio found. Complete MUSAN extraction before training.")
     print(f"device={device} train_speakers={len(train_ids)} dev_speakers={len(dev_ids)}")
     print(f"noise_assets={len(noise_paths)} rir_assets={len(rir_paths)}")
+    print(f"mix_denoised_ratio={args.mix_denoised_ratio}")
     train_set = ExternalMixtureDataset(
         train_speakers, noise_paths, rir_paths,
         items=args.steps_per_epoch * args.batch_size,
         segment_sec=args.segment_sec, seed=args.seed,
+        mix_denoised_ratio=args.mix_denoised_ratio,
     )
     dev_set = ExternalMixtureDataset(
         dev_speakers, noise_paths, rir_paths,
         items=args.dev_steps * args.batch_size,
         segment_sec=args.segment_sec, seed=args.seed + 100000,
+        mix_denoised_ratio=args.mix_denoised_ratio,
     )
     train_loader = DataLoader(train_set, batch_size=args.batch_size, num_workers=args.num_workers)
     dev_loader = DataLoader(dev_set, batch_size=args.batch_size, num_workers=args.num_workers)

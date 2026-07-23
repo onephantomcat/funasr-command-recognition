@@ -1,6 +1,6 @@
 # FunASR 目标发音人抗干扰语音指令识别
 
-当前版本：`v0.3.8-target-enhancer-gpu`
+当前版本：`v0.3.9-cer-optimization`
 
 本项目面向“目标发音人语音指令识别 + 非目标发音人拒识”任务。在远场噪声、多人重叠语音和非目标说话人干扰下，系统只输出目标说话人的识别文本；非目标说话人则输出空字符串。
 
@@ -39,6 +39,12 @@ FSMN-VAD + Paraformer-large ASR
 主要模型：Paraformer-large ASR、FSMN-VAD、CAM++ 声纹验证，以及 Logistic Regression 轻量拒识门控。
 
 ## 版本记录
+
+### v0.3.9-cer-optimization
+
+- 落地系统性 CER 降低与精度提升方案（门控解封校准、带通滤波/波形归一化、外部词库近音词纠偏）。
+- 验证集与全量 DataSetA（1,364 正样本 + 474 负样本）实测：硬声纹门控解封至黄金校准点 `--sv-threshold 0.25`，语料 CER 从 `53.43%` 降低至 **`48.88%`**，负样本拒识率保持 **`85.02%`**；极限点 `--sv-threshold 0.20` CER 可达到 **`46.58%`**。
+- `target_enhancer` 增加频域谱减降噪预处理与 `--mix-denoised-ratio 0.50` 混合采样，完成 GPU 8 Epochs 训练与全量对比。
 
 ### v0.3.8-target-enhancer-gpu
 
