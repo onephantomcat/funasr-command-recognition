@@ -42,7 +42,8 @@ FSMN-VAD + Paraformer-large ASR
 
 ### v0.4.0-grid-search-tuning
 
-- 新增网格搜索超参数寻优工具 `grid_search_params.py`，支持多维超参数组合毫秒级帕累托寻优。
+- 新增网格搜索超参数寻优工具 [grid_search_params.py](./funasr_project/grid_search_params.py)，支持多维超参数组合毫秒级帕累托寻优。
+- 导出的全量 210 组超参数寻优数据见 [网格搜索全量结果 (JSON)](./funasr_project/docs/grid_search_results.json)。
 - 引入 `tqdm` 动态进度条，优化拼音近音词 $O(1)$ 哈希预计算算法，在全量 210 组超参数组合上实现 **5,000 倍极致计算加速**（1.16 秒完成全量搜寻）。
 - 在高拒识率约束 (RR $\ge 85\%$) 下锁定黄金参数组合 (`sv_threshold=0.25`, `phrase_correct=True`)，CER 从 `53.43%` 降至 **`48.88%`**，RR 保持 **`85.02%`**；极限低 CER 配置可达 **`44.39%`**。
 
