@@ -134,9 +134,13 @@ def run_grid_search(args):
 
     phrase_bank_path = args.phrase_bank or "data/public_train/aishell1/phrase_bank.txt"
     phrases = []
+    intent_cache = {}
     if os.path.exists(phrase_bank_path):
         phrases = build_intent_phrases(root, phrase_bank=phrase_bank_path)
         print(f"Loaded {len(phrases)} command phrases from {phrase_bank_path}.")
+        unique_texts = set(d["raw_text"] for d in pos_data + neg_data)
+        for txt in tqdm(unique_texts, desc="Pre-computing Pinyin Distances"):
+            intent_cache[txt] = nearest_intent(txt, phrases)
 
     # Define hyperparameter search grids
     sv_thresholds = [0.15, 0.18, 0.20, 0.22, 0.25, 0.28, 0.30, 0.32, 0.35, 0.40]
@@ -179,19 +183,21 @@ def run_grid_search(args):
             sim = item["sim"]
             accepted = sim >= sv_t
             if accepted and i_filter:
-                dist, _ = nearest_intent(item["raw_text"], phrases)
+                dist, _ = intent_cache.get(item["raw_text"], (1.0, ""))
                 if dist > i_t:
                     accepted = False
             if accepted:
                 pos_accepted += 1
                 hyp = item["raw_text"]
                 if p_correct and hyp:
-                    dist, match = nearest_intent(hyp, phrases)
+                    dist, match = intent_cache.get(hyp, (1.0, ""))
                     if dist <= p_t:
                         hyp = match
             else:
                 hyp = ""
-        valid_pairs = [(hyp, ref) for hyp, ref in pairs if ref]
+            pairs.append((item["ref"], hyp))
+
+        valid_pairs = [(ref, hyp) for ref, hyp in pairs if ref]
         if not valid_pairs:
             continue
         corpus_cer_val, total_chars = corpus_cer(valid_pairs, do_norm=False)
@@ -203,7 +209,7 @@ def run_grid_search(args):
             sim = item["sim"]
             accepted = sim >= sv_t
             if accepted and i_filter:
-                dist, _ = nearest_intent(item["raw_text"], phrases)
+                dist, _ = intent_cache.get(item["raw_text"], (1.0, ""))
                 if dist > i_t:
                     accepted = False
             if not accepted:
@@ -262,6 +268,8 @@ def run_grid_search(args):
     print("=" * 80)
 
     out_file = args.out or os.path.join(root, "grid_search_results.json")
+    if os.path.dirname(out_file):
+        os.makedirs(os.path.dirname(out_file), exist_ok=True)
     with open(out_file, "w", encoding="utf-8") as f:
         json.dump({
             "total_combos": len(grid),
