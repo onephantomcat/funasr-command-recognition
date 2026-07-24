@@ -39,6 +39,13 @@ FSMN-VAD + Paraformer-large ASR
 主要模型：Paraformer-large ASR、FSMN-VAD、CAM++ 声纹验证，以及 Logistic Regression 轻量拒识门控。
 
 ## 版本记录
+### v0.4.1-gate-v2-rejection-optimize
+
+- 门控特征由 7 维扩展至 13 维 [lightweight_gate.py](./funasr_project/lightweight_gate.py)：新增 `intent_perfect`、`sim_x_intent`、`perfect_x_sim` 等 6 个非线性/交互特征，使线性门控具备「ASR 完美命中时救援低声纹正样本」的组合判断能力。
+- 训练管线升级 [train_lightweight_gate.py](./funasr_project/train_lightweight_gate.py)：intent 统一为「文本归一化 + 拼音编辑距离」，与推理端完全一致，消除 train/serve 偏差；支持代价敏感训练与全量数据 FRR 约束选阈。
+- 声纹鲁棒性增强 [speaker_verify.py](./funasr_project/speaker_verify.py)：集成 FSMN-VAD 非语音裁剪 + 分块 embedding 平均，`SpeakerGate.enroll()` 支持多注册音频平均。
+- 新增统一数据预处理脚本 [precompute_items.py](./funasr_project/precompute_items.py)，保证训练与推理特征同源；v2 门控模型见 [lightweight_gate.json](./funasr_project/models/lightweight_gate.json)（阈值 `0.41`），v1 备份见 [lightweight_gate_v1_backup.json](./funasr_project/models/lightweight_gate_v1_backup.json)。
+- 在 FRR $\le 10\%$ 约束下锁定 v2 门控工作点，datasetA 全量 1838 条真实口径下 **FRR 从 `14.15%` 降至 `10.78%`**，RR 保持 **`87.34%`**，80 分制总分 **`62.25`**。
 
 ### v0.4.0-grid-search-tuning
 
