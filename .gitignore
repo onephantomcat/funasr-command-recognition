@@ -58,3 +58,8 @@ funasr_project/*cache*.pkl
 *.pptx
 *.docx
 .docx_review/
+
+# Local experiment / temp artifacts
+_*.txt
+_*.pkl
+_*.flag
