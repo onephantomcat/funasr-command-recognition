@@ -20,8 +20,10 @@ import random
 import numpy as np
 
 from cer import corpus_cer
-from command_match import edit_distance
-from lightweight_gate import DEFAULT_FEATURE_NAMES, make_features, save_gate_model, vectorize
+from command_match import edit_distance, to_pinyin
+from lightweight_gate import (
+    DEFAULT_FEATURE_NAMES, EXTENDED_FEATURE_NAMES, make_features, save_gate_model, vectorize,
+)
 from text_norm import normalize
 
 
@@ -66,16 +68,26 @@ def build_phrase_bank(root):
     return phrases
 
 
-def nearest_intent(text, phrases):
+def nearest_intent(text, phrases, phrases_py=None):
+    """Pinyin edit distance, SAME metric as eval_datasetA.nearest_intent.
+
+    The gate must be trained on the exact feature distribution used at
+    inference time; the old char-level distance caused a train/serve skew.
+    """
     hyp = normalize(text)
     if not hyp:
         return 1.0, ""
+    if phrases_py is None:
+        phrases_py = [to_pinyin(p) for p in phrases]
+    hyp_py = to_pinyin(hyp)
     best_score, best_phrase = 1.0, ""
-    for phrase in phrases:
-        if hyp in phrase or phrase in hyp:
-            score = abs(len(hyp) - len(phrase)) / max(len(hyp), len(phrase))
-        else:
-            score = edit_distance(hyp, phrase) / max(len(hyp), len(phrase))
+    lh = len(hyp_py)
+    for phrase, phrase_py in zip(phrases, phrases_py):
+        lp = len(phrase_py)
+        if abs(lh - lp) / max(lh, lp) >= best_score:  # length lower bound prune
+            continue
+        dist = edit_distance(hyp_py, phrase_py)
+        score = dist / max(lh, lp)
         if score < best_score:
             best_score, best_phrase = score, phrase
     return best_score, best_phrase
@@ -98,10 +110,12 @@ def split_rows(rows, train_ratio, seed):
     return rows[:n_train], rows[n_train:]
 
 
-def build_items(root, split, rows, emb_cache, asr_cache, phrases, fusion_weight):
+def build_items(root, split, rows, emb_cache, asr_cache, phrases, fusion_weight, phrases_py=None):
     items = []
     skipped = 0
     missing_asr = 0
+    if phrases_py is None:
+        phrases_py = [to_pinyin(p) for p in phrases]
     for row in rows:
         wake = wav_path(root, row["唤醒音频"])
         cmd = wav_path(root, row["识别音频"])
@@ -114,7 +128,7 @@ def build_items(root, split, rows, emb_cache, asr_cache, phrases, fusion_weight)
         else:
             missing_asr += 1
         sim = cosine_sim(emb_cache[wake], emb_cache[cmd])
-        intent, nearest_phrase = nearest_intent(hyp, phrases)
+        intent, nearest_phrase = nearest_intent(hyp, phrases, phrases_py)
         features = make_features(sim, hyp, intent, fusion_weight=fusion_weight)
         items.append({
             "split": split,
@@ -138,13 +152,13 @@ def standardize_matrix(items, feature_names):
     return np.clip(z, -10.0, 10.0), mean, scale
 
 
-def train_logistic(x, y, epochs, lr, l2, seed):
+def train_logistic(x, y, epochs, lr, l2, seed, pos_cost=1.0, neg_cost=1.0):
     rng = np.random.default_rng(seed)
     w = rng.normal(0.0, 0.01, size=x.shape[1]).astype(np.float64)
     b = 0.0
     y = y.astype(np.float64)
-    pos_weight = 0.5 / max(float(y.mean()), 1e-6)
-    neg_weight = 0.5 / max(float(1.0 - y.mean()), 1e-6)
+    pos_weight = pos_cost * 0.5 / max(float(y.mean()), 1e-6)
+    neg_weight = neg_cost * 0.5 / max(float(1.0 - y.mean()), 1e-6)
     sample_weight = np.where(y > 0.5, pos_weight, neg_weight).astype(np.float32)
 
     for _ in range(epochs):
@@ -208,13 +222,23 @@ def evaluate(items, probs, threshold, phrase_threshold):
     }
 
 
-def choose_threshold(items, probs, phrase_threshold, min_rr):
+def choose_threshold(items, probs, phrase_threshold, min_rr, max_frr=1.0):
     candidates = np.linspace(0.05, 0.95, 91)
     metrics = [evaluate(items, probs, float(t), phrase_threshold) for t in candidates]
-    feasible = [m for m in metrics if m["negative_rejection_rate_rr"] >= min_rr]
+    feasible = [m for m in metrics
+                if m["negative_rejection_rate_rr"] >= min_rr
+                and (1.0 - m["positive_accept_rate"]) <= max_frr]
     if feasible:
         metrics = feasible
     return max(metrics, key=lambda x: (x["score_80"], x["negative_rejection_rate_rr"], -x["positive_corpus_cer"]))
+
+
+def threshold_table(items, probs, phrase_threshold, top=10):
+    """All candidate thresholds ranked by score_80, for trade-off inspection."""
+    candidates = np.linspace(0.05, 0.95, 91)
+    metrics = [evaluate(items, probs, float(t), phrase_threshold) for t in candidates]
+    metrics.sort(key=lambda x: (x["score_80"], x["negative_rejection_rate_rr"]), reverse=True)
+    return metrics[:top]
 
 
 def main():
@@ -237,6 +261,21 @@ def main():
     parser.add_argument("--phrase-threshold", type=float, default=0.50)
     parser.add_argument("--min-dev-rr", type=float, default=0.0,
                         help="Optional safety constraint when selecting the probability threshold.")
+    parser.add_argument("--max-dev-frr", type=float, default=1.0,
+                        help="Optional FRR constraint when selecting the probability threshold.")
+    parser.add_argument("--feature-set", choices=("basic", "extended"), default="extended",
+                        help="basic=legacy 7 features; extended=+interaction/non-linear features.")
+    parser.add_argument("--pos-cost", type=float, default=1.0,
+                        help=">1 penalizes false rejects more (pushes FRR down).")
+    parser.add_argument("--neg-cost", type=float, default=1.0,
+                        help=">1 penalizes false accepts more (pushes RR up).")
+    parser.add_argument("--items-cache", default=None,
+                        help="Optional precomputed per-row items pickle (sim/intent/hyp/ref); "
+                             "skips embedding/ASR cache lookups.")
+    parser.add_argument("--select-on", choices=("dev", "full"), default="dev",
+                        help="dev=select threshold on the dev split (default); "
+                             "full=select on train+dev under the RR/FRR constraints "
+                             "(mirrors the strategy used for the deployed model).")
     parser.add_argument("--epochs", type=int, default=2000)
     parser.add_argument("--lr", type=float, default=0.02)
     parser.add_argument("--l2", type=float, default=0.001)
@@ -246,9 +285,11 @@ def main():
     random.seed(args.seed)
     np.random.seed(args.seed)
 
-    emb_cache = load_pickle(args.embedding_cache)
-    asr_cache = load_pickle(args.asr_cache)
+    emb_cache = load_pickle(args.embedding_cache) if not args.items_cache else None
+    asr_cache = load_pickle(args.asr_cache) if not args.items_cache else None
     phrases = build_phrase_bank(args.root)
+    phrases_py = [to_pinyin(p) for p in phrases]
+    precomputed = load_pickle(args.items_cache) if args.items_cache else None
 
     train_rows = []
     dev_rows = []
@@ -262,17 +303,42 @@ def main():
         train_rows.extend((split, row) for row in train_part)
         dev_rows.extend((split, row) for row in dev_part)
 
+    def items_for(split, row):
+        """One item per row, either from --items-cache or rebuilt from raw caches."""
+        if precomputed is not None:
+            key = (split, row.get("id"))
+            hit = pre_index.get(key)
+            if hit is None or hit["sim"] is None:
+                return [], 1, 0
+            features = make_features(hit["sim"], hit["hyp"], hit["intent"],
+                                     fusion_weight=args.fusion_weight)
+            return [{
+                "split": split,
+                "label": 1 if split == "pos" else 0,
+                "ref": row.get("识别文本") or "",
+                "hyp": hit["hyp"],
+                "nearest_phrase": hit.get("nearest_phrase") or "",
+                "intent": hit["intent"],
+                "features": features,
+            }], 0, 0
+        return build_items(args.root, split, [row], emb_cache, asr_cache, phrases,
+                           args.fusion_weight, phrases_py)
+
+    pre_index = {}
+    if precomputed is not None:
+        pre_index = {(x["split"], x["id"]): x for x in precomputed}
+
     train_items = []
     dev_items = []
     skipped = {"train": 0, "dev": 0}
     missing_asr = {"train": 0, "dev": 0}
     for split, row in train_rows:
-        items, s, m = build_items(args.root, split, [row], emb_cache, asr_cache, phrases, args.fusion_weight)
+        items, s, m = items_for(split, row)
         train_items.extend(items)
         skipped["train"] += s
         missing_asr["train"] += m
     for split, row in dev_rows:
-        items, s, m = build_items(args.root, split, [row], emb_cache, asr_cache, phrases, args.fusion_weight)
+        items, s, m = items_for(split, row)
         dev_items.extend(items)
         skipped["dev"] += s
         missing_asr["dev"] += m
@@ -282,23 +348,34 @@ def main():
     if not dev_items:
         dev_items = train_items
 
-    feature_names = DEFAULT_FEATURE_NAMES
+    feature_names = DEFAULT_FEATURE_NAMES if args.feature_set == "basic" else EXTENDED_FEATURE_NAMES
     x_train, mean, scale = standardize_matrix(train_items, feature_names)
     y_train = np.asarray([item["label"] for item in train_items], dtype=np.float64)
-    w, b = train_logistic(x_train, y_train, args.epochs, args.lr, args.l2, args.seed)
+    w, b = train_logistic(x_train, y_train, args.epochs, args.lr, args.l2, args.seed,
+                          pos_cost=args.pos_cost, neg_cost=args.neg_cost)
 
     x_dev_raw = np.asarray([vectorize(item["features"], feature_names) for item in dev_items], dtype=np.float64)
     x_dev_raw = np.nan_to_num(x_dev_raw, nan=0.0, posinf=10.0, neginf=-10.0)
     x_dev = np.clip((x_dev_raw - mean) / scale, -10.0, 10.0)
     dev_probs = probability(x_dev, w, b)
-    dev_metrics = choose_threshold(dev_items, dev_probs, args.phrase_threshold, args.min_dev_rr)
-
     train_probs = probability(x_train, w, b)
-    train_metrics = evaluate(train_items, train_probs, dev_metrics["threshold"], args.phrase_threshold)
+    full_items = train_items + dev_items
+    full_probs = np.concatenate([train_probs, dev_probs])
+
+    if args.select_on == "full":
+        sel_items, sel_probs = full_items, full_probs
+    else:
+        sel_items, sel_probs = dev_items, dev_probs
+    sel_metrics = choose_threshold(sel_items, sel_probs, args.phrase_threshold,
+                                   args.min_dev_rr, args.max_dev_frr)
+    threshold = sel_metrics["threshold"]
+    dev_metrics = evaluate(dev_items, dev_probs, threshold, args.phrase_threshold)
+    train_metrics = evaluate(train_items, train_probs, threshold, args.phrase_threshold)
 
     model = {
         "type": "logistic_gate",
         "dataset": "datasetA",
+        "feature_set": args.feature_set,
         "feature_names": feature_names,
         "feature_mean": [round(float(x), 8) for x in mean.tolist()],
         "feature_scale": [round(float(x), 8) for x in scale.tolist()],
@@ -308,6 +385,9 @@ def main():
         "fusion_weight_for_features": args.fusion_weight,
         "phrase_threshold": args.phrase_threshold,
         "min_dev_rr": args.min_dev_rr,
+        "max_dev_frr": args.max_dev_frr,
+        "pos_cost": args.pos_cost,
+        "neg_cost": args.neg_cost,
         "split_mode": args.split_mode,
         "train_ratio": args.train_ratio if args.split_mode == "random" else None,
         "max_per_split": args.max_per_split,
@@ -327,6 +407,11 @@ def main():
     print(f"missing ASR treated as empty: {missing_asr}")
     print("train:", train_metrics)
     print("dev:  ", dev_metrics)
+    print(f"top {args.select_on} threshold candidates:")
+    for m in threshold_table(sel_items, sel_probs, args.phrase_threshold, top=8):
+        print(f"  t={m['threshold']:.2f} score={m['score_80']:.2f} "
+              f"acc={m['positive_accept_rate']:.3f} cer={m['positive_corpus_cer']:.4f} "
+              f"rr={m['negative_rejection_rate_rr']:.4f}")
     print(f"model saved: {args.model_out}")
 
 
