@@ -6,7 +6,7 @@
     "blocks": 6
   },
   "epoch": 7,
-  "dev_loss": 0.040359693486243485,
+  "dev_loss": 0.040360402688384055,
   "source": "AISHELL-1 + MUSAN + RIRS_NOISES external data only",
   "train_speakers": [
     "S0002",
@@ -29,10 +29,10 @@
     "S0017"
   ],
   "args": {
-    "wav_root": "data\\public\\aishell1\\extracted\\data_aishell\\wav_expanded\\train",
-    "noise_root": "data\\public\\augmentations\\musan\\extracted",
-    "rir_root": "data\\public\\augmentations\\rirs_noises\\extracted",
-    "out": "models\\target_enhancer_musan_rirs.pt",
+    "wav_root": "c:/Users/13238/Desktop/挑战杯1号语音识别/新/funasr_project/data/public/aishell1/extracted/data_aishell/wav_expanded/train",
+    "noise_root": "c:/Users/13238/Desktop/挑战杯1号语音识别/新/funasr_project/data/public/augmentations/musan/extracted",
+    "rir_root": "c:/Users/13238/Desktop/挑战杯1号语音识别/新/funasr_project/data/public/augmentations/rirs_noises/extracted",
+    "out": "models/target_enhancer_musan_rirs.pt",
     "epochs": 8,
     "batch_size": 6,
     "steps_per_epoch": 250,
@@ -42,6 +42,7 @@
     "channels": 64,
     "blocks": 6,
     "lr": 0.0002,
+    "mix_denoised_ratio": 0.0,
     "seed": 2026,
     "num_workers": 0
   }
