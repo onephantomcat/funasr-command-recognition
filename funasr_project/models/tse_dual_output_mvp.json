@@ -1,0 +1,11 @@
+{
+  "model_config": {
+    "n_fft": 512,
+    "hop_length": 128,
+    "channels": 64,
+    "blocks": 6
+  },
+  "epoch": 1,
+  "dev_loss": 0.06888086721301079,
+  "out": "models\\tse_dual_output_mvp.pt"
+}
