@@ -1,0 +1,41 @@
+{
+  "schema_version": "p4_to_p2_sv.v1",
+  "model_name": "CAM++",
+  "model_id": "iic/speech_campplus_sv_zh-cn_16k-common",
+  "checkpoint_sha256": "3388cf5fd3493c9ac9c69851d8e7a8badcfb4f3dc631020c4961371646d5ada8",
+  "source_commit": "065629c",
+  "source_repo": "https://github.com/modelscope/3D-Speaker.git",
+  "preprocess_version": "sv_preprocess_v1",
+  "sample_rate": 16000,
+  "embedding_dim": 192,
+  "dtype": "float32",
+  "l2_normalized": false,
+  "quality_version": "enroll_quality_v1",
+  "invalid_definition": "Invalid enrollment returns embedding=None, never all-zeros",
+  "score_type": "cosine_similarity",
+  "score_direction": "higher_is_same_speaker",
+  "frontend": {
+    "type": "FBank",
+    "n_mels": 80,
+    "mean_nor": true,
+    "implementation": "torchaudio.compliance.kaldi.fbank"
+  },
+  "validation_rules": {
+    "min_duration_s": 0.3,
+    "max_duration_s": 30.0,
+    "target_sr": 16000,
+    "mono_required": "auto_downmix_with_log",
+    "dtype_required": "float32"
+  },
+  "error_codes": [
+    "SV_EMPTY_INPUT",
+    "SV_INVALID_SAMPLE_RATE",
+    "SV_NONFINITE_AUDIO",
+    "SV_TOO_SHORT",
+    "SV_TOO_LONG",
+    "SV_NO_VALID_SPEECH",
+    "SV_MODEL_LOAD_FAILED",
+    "SV_INFERENCE_FAILED",
+    "SV_MULTICHANNEL_DOWNMIXED"
+  ]
+}

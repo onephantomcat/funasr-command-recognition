@@ -1,0 +1,32 @@
+# P4 Audit Thresholds - Frozen v1
+# All decision thresholds MUST live here, NEVER hardcoded in source.
+# Source code reads this file; no default values in dataclass bodies.
+#
+# version: audit_v1
+# date: 2026-07-31
+# status: DEBUG_ONLY (formal thresholds from A-group OOF)
+
+activity:
+  tau_activity_high: 0.7       # A+: mean activity >= this
+  tau_activity_low: 0.3        # A-: mean activity < this
+
+energy:
+  tau_energy_high: 0.05        # G+: energy ratio >= this
+  tau_energy_low: 0.01         # G-: energy ratio < this
+
+sv_score:
+  tau_tgt_hi: 0.5              # Target SV must be >= this for I+
+  tau_tgt_lo: 0.2              # Target SV <= this -> possible misroute
+  tau_res_hi: 0.4              # Residual SV >= this -> possible misroute
+  tau_res_lo: 0.2              # Residual SV <= this -> residual clean
+
+delta:
+  tau_delta_hi: 0.3            # Delta >= this: target clearly ahead
+  tau_delta_lo: -0.1           # Delta <= this: residual ahead
+
+quality:
+  tau_q_enroll: 0.3            # Minimum enrollment quality for Q+
+
+multi_window:
+  min_valid_windows: 2         # Minimum valid windows for C_win
+  tau_iqr_max: 0.3             # Max IQR for window consistency

@@ -1,0 +1,1 @@
+iic/speech_campplus_sv_zh-cn_16k-common

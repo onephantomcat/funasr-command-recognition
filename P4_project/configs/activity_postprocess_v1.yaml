@@ -1,0 +1,20 @@
+# P4 Activity Post-Processing Config - Frozen v1
+# version: activity_postprocess_v1
+# date: 2026-07-31
+
+hysteresis:
+  tau_on: 0.7                 # p >= tau_on -> ON
+  tau_off: 0.3                # p < tau_off -> OFF
+  # tau_on MUST be > tau_off
+
+merge:
+  min_gap_merge: 0.15         # seconds: merge gaps shorter than this
+
+core:
+  min_core_duration: 0.2      # seconds: minimum core segment after merge
+
+guard:
+  guard_before: 0.1           # seconds: context before core
+  guard_after: 0.1            # seconds: context after core
+
+frame_rate: 100.0             # Hz (10ms frames)

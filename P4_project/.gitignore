@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.env
+.venv
+venv/
+*.tmp
+.DS_Store
+Thumbs.db
+models/campplus_frozen/campplus_cn_common.bin

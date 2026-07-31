@@ -1,0 +1,32 @@
+P4 Environment
+=============
+Date: 2026-07-30
+
+OS: Windows 10 Pro (x86_64)
+Shell: Git Bash (MINGW64)
+
+Python: 3.13.3
+PyTorch: 2.13.0+cpu (reinstalling CUDA version)
+TorchAudio: 2.11.0+cpu
+NumPy: 2.5.1
+ModelScope: 1.39.0
+Git: 2.55.0
+
+GPU: NVIDIA GeForce GTX 1050 Ti (4GB)
+CUDA: 12.6
+Driver: 560.94
+
+3D-Speaker:
+  Repo: https://github.com/modelscope/3D-Speaker.git
+  Commit: 065629c
+  License: Apache 2.0
+
+CAM++ Model:
+  Model ID: iic/speech_campplus_sv_zh-cn_16k-common
+  Revision: v1.0.0
+  Checkpoint: campplus_cn_common.bin
+  SHA256: 3388cf5fd3493c9ac9c69851d8e7a8badcfb4f3dc631020c4961371646d5ada8
+  Feat Dim: 80 (FBank, mean_nor=True)
+  Embedding Dim: 192 (to be verified from actual model)
+  Sample Rate: 16000 Hz
+  Score: Cosine similarity

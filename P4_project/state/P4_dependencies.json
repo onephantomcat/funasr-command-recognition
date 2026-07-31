@@ -1,0 +1,28 @@
+{
+  "P1_v0_sv_debug": {
+    "status": "MISSING",
+    "required_for": ["SV_DEBUG"],
+    "parallel_fallback": ["P4-03", "P4-04", "P4-05", "P4-06"]
+  },
+  "P1_v3_absent_swap_audit": {
+    "status": "MISSING",
+    "required_for": ["B6_FORMAL"]
+  },
+  "P2_v0_debug_audit": {
+    "status": "MISSING",
+    "required_for": ["P4-09"]
+  },
+  "P2_v2_b2_audit": {
+    "status": "MISSING",
+    "required_for": ["B6_FORMAL"]
+  },
+  "P1_v4_A_group_folds": {
+    "status": "MISSING",
+    "required_for": ["A_NESTED_OOF"]
+  },
+  "P3_asr_features_v1": {
+    "status": "MISSING",
+    "required_for": ["GRAY_POLICY"],
+    "parallel_fallback": ["P4-13", "P4-14", "P4-15"]
+  }
+}

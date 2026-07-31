@@ -1,0 +1,2 @@
+download_time: 2026-07-30T23:09:12
+cache_dir: C:\Users\Administrator\.cache\modelscope\models\iic--speech_campplus_sv_zh-cn_16k-common\snapshots\v1.0.0

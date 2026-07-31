@@ -1,0 +1,18 @@
+# P4 GRAY Decision Policy — Frozen v1
+# All decision thresholds MUST live here, NEVER hardcoded in source.
+#
+# version: gray_policy_v1
+# date: 2026-07-31
+# status: DEBUG_ONLY
+
+identity_floor:
+  tau_I_min: 0.5               # Independent identity floor: any ASR quality cannot lower this
+
+character_cost:                # P4-19 optional plugin
+  use_char_cost: false         # Enable only after inner-OOF passes upgrade criteria
+  b_max: 100.0                 # Max character benefit cap
+  kappa_char: 5.0              # rho_lambda * L_bar_plus
+
+# Hard reject never runs ASR; ASR quality cannot rescue hard reject.
+# ASR quality can only raise the identity bar, never lower it.
+# Equality -> EMPTY in all cases.

@@ -1,0 +1,33 @@
+# P4 CAM++ Core Configuration v1
+# Frozen: 2026-07-30
+
+model:
+  id: "iic/speech_campplus_sv_zh-cn_16k-common"
+  revision: "v1.0.0"
+  checkpoint: "campplus_cn_common.bin"
+  sha256: "3388cf5fd3493c9ac9c69851d8e7a8badcfb4f3dc631020c4961371646d5ada8"
+  local_path: "artifacts/models/campplus_frozen/"
+
+frontend:
+  type: "FBank"
+  n_mels: 80
+  sample_rate: 16000
+  mean_nor: true
+  implementation: "torchaudio.compliance.kaldi.fbank"
+
+model_arch:
+  class: "speakerlab.models.campplus.DTDNN.CAMPPlus"
+  feat_dim: 80
+  embedding_size: 192  # to be verified from actual model
+
+embedding:
+  dtype: "float32"
+  l2_normalized: false  # model does NOT L2-normalize output
+  score_type: "cosine_similarity"
+  score_direction: "higher_is_same_speaker"
+
+preprocess:
+  target_sr: 16000
+  mono: true
+  dtype: "float32"
+  resample_method: "torchaudio.sox_effects"

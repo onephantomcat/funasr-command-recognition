@@ -1,0 +1,19 @@
+# P4 Budget
+# Date: 2026-07-30
+
+gpu:
+  model: "NVIDIA GeForce GTX 1050 Ti"
+  count: 1
+  vram_gb: 4
+  price_per_gpu_hour: 0  # local machine, no cloud cost
+  note: "Local GPU. 4GB VRAM limits batch size and model scale."
+
+disk:
+  total_gb: 124
+  available_gb: 63
+  persistent: true
+
+budget:
+  gpu_hours_limit: null  # local machine, track usage for reference
+  cost_limit: 0
+  note: "No cloud budget. Local machine only."

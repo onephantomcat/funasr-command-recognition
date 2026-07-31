@@ -1,0 +1,35 @@
+P4 Machine Inventory
+====================
+Date: 2026-07-30
+Role: P4 - Identity Audit & Rejection Decision
+
+System:
+  OS: Windows 10 Pro (MINGW64_NT-10.0-18363)
+  Kernel: 3.6.9-b4195d69.x86_64 (Msys)
+  Platform: x86_64
+
+GPU:
+  Model: NVIDIA GeForce GTX 1050 Ti
+  VRAM: 4096 MiB
+  CUDA: 12.6
+  Driver: 560.94
+  Count: 1
+
+Disk:
+  D: drive: 124G total, 63G available (49% used)
+
+Software:
+  Python: 3.13.3
+  Git: 2.55.0.windows.3
+  Shell: Git Bash (POSIX sh)
+
+Project:
+  PROJECT_ROOT: D:\P4_project
+  WORK_ROOT: D:\P4_project
+  BACKUP_ROOT: D:\P4_project\backups
+
+Notes:
+  - Windows machine, production target is Linux
+  - 4GB GPU is usable for small-scale testing only
+  - Full training/OOF will need cloud GPU or larger local GPU
+  - No cloud costs (local machine)
