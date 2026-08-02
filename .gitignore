@@ -63,3 +63,25 @@ funasr_project/*cache*.pkl
 _*.txt
 _*.pkl
 _*.flag
+
+# === P2 TSE 模块（2026-08-02 追加）===
+# P2 虚拟环境（5.4 GB，torch 2.7.1+cu126）
+funasr_project/.venv-p2tse/
+
+# 评估/DEBUG 音频（可从脚本重生成）
+funasr_project/artifacts/experiments/*/before_after_audio/
+funasr_project/artifacts/p2/debug_mixtures_v0/*.wav
+funasr_project/artifacts/p2/debug_mixtures_v0/*.npy
+funasr_project/artifacts/p2/eval_*/audio/
+
+# 克隆的上游仓库（用 reports/wesep_commit.txt 记录 commit 号）
+funasr_project/third_party/wesep/
+funasr_project/third_party/wespeaker/
+
+# 安装日志（临时，已完成）
+funasr_project/logs/venv_install*.log
+funasr_project/logs/venv_install*.err
+funasr_project/reports/torch_*install*.log
+funasr_project/reports/cuda_check*.txt
+funasr_project/reports/extract_done.flag
+funasr_project/reports/wesep_tree_status.txt

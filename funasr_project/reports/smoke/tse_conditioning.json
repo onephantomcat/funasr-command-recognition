@@ -1,0 +1,42 @@
+{
+  "test": "P2-08_tse_conditioning",
+  "date": "2026-07-27",
+  "device": "cpu",
+  "torch": "2.13.0+cpu",
+  "seed": 20260725,
+  "rel_diff_threshold": 0.001,
+  "architecture_status": "DEBUG_ONLY_scaffold_not_formal",
+  "checks": [
+    {
+      "name": "c_determinism",
+      "pass": true,
+      "detail": "max_abs_diff=0.000e+00"
+    },
+    {
+      "name": "c_diff_embedding",
+      "pass": true,
+      "detail": "rel_diff min=0.0050 mean=0.0059"
+    },
+    {
+      "name": "c_zero_embedding",
+      "pass": true,
+      "detail": "rel_diff min=0.0040 mean=0.0045"
+    },
+    {
+      "name": "c_shuffle",
+      "pass": true,
+      "detail": "rel_diff min=0.0040 mean=0.0053"
+    },
+    {
+      "name": "c_zero_mixture",
+      "pass": true,
+      "detail": "max|out|=0.000e+00 (threshold 1e-06)"
+    },
+    {
+      "name": "c_embedding_grad",
+      "pass": true,
+      "detail": "emb_grad max|g|=1.1053e-07"
+    }
+  ],
+  "verdict": "PASS"
+}

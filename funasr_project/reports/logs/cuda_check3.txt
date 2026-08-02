@@ -1,0 +1,6 @@
+torch: 2.7.1+cu126
+cuda_available: True
+cuda_version: 12.6
+device: NVIDIA GeForce RTX 4050 Laptop GPU
+total_mem_GB: 6.0
+matmul_ok: -1456.4

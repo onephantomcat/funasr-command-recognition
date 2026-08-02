@@ -1,0 +1,68 @@
+# P2-12 B1 500-step 试车配置（方案 H：batch=16, 8s, AMP on）
+# 依据：手册 STEP P2-12；6GB 显存可行性评估 2026-08-02
+# 标记：B1_TRIAL / BOOTSTRAP_ENCODER_ONLY（embedding 暂用哈希随机）
+# 与 tse_overfit_debug.yaml 的差异：新增 segment_length/amp/warmup/cosine/save_every/shuffle/num_workers/datasets
+
+sample_rate: 16000
+
+# STFT 参数（与 P2-09 / smoke 一致）
+n_fft: 512
+hop_length: 128
+win_length: 512
+
+# 模型结构（与 P2-09 一致）
+emb_dim: 192
+lstm_hidden: 256
+lstm_layers: 2
+dropout: 0.0
+film_scale: 0.1
+
+# PRESENT 损失权重（与 P2-09 一致）
+lambda_sisdr: 1.0
+lambda_wav: 1.0
+lambda_stft: 1.0
+lambda_act: 0.5
+lambda_residual: 0.5
+lambda_mix: 0.5
+lambda_id: 0.0  # 硬约束恒为 0，禁止改为非零（05A §3）
+
+zero_ref_kappa: 1.0e-3
+
+# MR-STFT 分辨率组 [(n_fft, hop, win), ...]
+mrstft_resolutions:
+  - [256, 64, 256]
+  - [512, 128, 512]
+  - [1024, 256, 1024]
+
+# 帧级活动度阈值
+act_frame_ratio: 0.5
+
+# ---- B1 试车参数（与 P2-09 核心差异）----
+segment_length: 8          # 训练段长（秒），py 里 ×sample_rate 转采样点
+batch_size: 16             # 物理批大小（方案 H）
+gradient_accumulation: 1   # 梯度累积步数；effective_batch = batch_size × 此值
+amp: true                  # 混合精度（P2-09 强制 false，B1 试车开启）
+steps: 500
+seed: 20260723
+lr: 1.0e-3
+lr_warmup_steps: 50        # 线性 warmup 步数
+lr_schedule: cosine        # warmup 后 cosine 衰减到 0
+grad_clip: 5.0
+log_every: 25
+save_every: 100            # 每 100 步存 checkpoint
+shuffle: true              # 仅 train_loader；dev/eval loader 必须 shuffle=false
+num_workers: 2
+pin_memory: true
+prefetch_factor: 2         # num_workers=0 时被 DataLoader 忽略，保留无害
+
+# 数据集（P1 v2_b1 交付前的占位路径，--debug_data 时用 P2-07 DEBUG 集覆盖）
+datasets:
+  train_manifest: data/p1_v2_b1/train.jsonl
+  dev_manifest: data/p1_v2_b1/dev.jsonl
+  eval_manifest: data/p1_v2_b1/eval.jsonl
+
+# 元信息
+tag: B1_TRIAL_seed20260723
+lane: INTEGRATION
+asset_class: B1_TRIAL
+notes: "P1 v2_b1 未交付时用 DEBUG 数据空跑（--debug_data）"

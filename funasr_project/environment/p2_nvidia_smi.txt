@@ -1,0 +1,49 @@
+﻿Thu Jul 30 14:20:08 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 595.79                 Driver Version: 595.79         CUDA Version: 13.2     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                  Driver-Model | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA GeForce RTX 4050 ...  WDDM  |   00000000:01:00.0  On |                  N/A |
+| N/A   49C    P8              4W /  115W |    2074MiB /   6141MiB |      3%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|    0   N/A  N/A            3424    C+G   ...xyewy\ShellExperienceHost.exe      N/A      |
+|    0   N/A  N/A            6104    C+G   ...t\Edge\Application\msedge.exe      N/A      |
+|    0   N/A  N/A           10236    C+G   ...2txyewy\CrossDeviceResume.exe      N/A      |
+|    0   N/A  N/A           10272    C+G   D:\AI\Trae CN\Trae CN.exe             N/A      |
+|    0   N/A  N/A           11000    C+G   C:\Windows\explorer.exe               N/A      |
+|    0   N/A  N/A           11140    C+G   ...indows\System32\ShellHost.exe      N/A      |
+|    0   N/A  N/A           12416    C+G   ...ows\System32\NahimicSvc64.exe      N/A      |
+|    0   N/A  N/A           12956    C+G   ...y\StartMenuExperienceHost.exe      N/A      |
+|    0   N/A  N/A           13060    C+G   ..._cw5n1h2txyewy\SearchHost.exe      N/A      |
+|    0   N/A  N/A           13584    C+G   ...acted\runtime\WeChatAppEx.exe      N/A      |
+|    0   N/A  N/A           13708    C+G   ...kyb3d8bbwe\EdgeGameAssist.exe      N/A      |
+|    0   N/A  N/A           15760    C+G   ...IA App\CEF\NVIDIA Overlay.exe      N/A      |
+|    0   N/A  N/A           17672    C+G   ...0.4078.105\msedgewebview2.exe      N/A      |
+|    0   N/A  N/A           21208    C+G   ...IA App\CEF\NVIDIA Overlay.exe      N/A      |
+|    0   N/A  N/A           22268    C+G   D:\����\douyin\douyin.exe             N/A      |
+|    0   N/A  N/A           26964    C+G   D:\΢��\Weixin\Weixin.exe             N/A      |
+|    0   N/A  N/A           27660    C+G   ...Install\doubao\app\Doubao.exe      N/A      |
+|    0   N/A  N/A           28564    C+G   ...5n1h2txyewy\TextInputHost.exe      N/A      |
+|    0   N/A  N/A           29920    C+G   ...\cef.win64\steamwebhelper.exe      N/A      |
+|    0   N/A  N/A           30268    C+G   ...8bbwe\PhoneExperienceHost.exe      N/A      |
+|    0   N/A  N/A           30484    C+G   ...2p2nqsd0c76g0\app\ChatGPT.exe      N/A      |
+|    0   N/A  N/A           32268    C+G   ...ntrolPanel\SystemSettings.exe      N/A      |
+|    0   N/A  N/A           32332    C+G   ...App_cw5n1h2txyewy\LockApp.exe      N/A      |
+|    0   N/A  N/A           32708    C+G   ...em32\ApplicationFrameHost.exe      N/A      |
+|    0   N/A  N/A           32732    C+G   ...4__w2gh52qy24etm\Nahimic3.exe      N/A      |
+|    0   N/A  N/A           34340    C+G   ...0.4078.105\msedgewebview2.exe      N/A      |
+|    0   N/A  N/A           37024    C+G   ...Chrome\Application\chrome.exe      N/A      |
+|    0   N/A  N/A           44208    C+G   ...0.4078.105\msedgewebview2.exe      N/A      |
+|    0   N/A  N/A           45268    C+G   ...Chrome\Application\chrome.exe      N/A      |
+|    0   N/A  N/A           45980    C+G   ...2p2nqsd0c76g0\app\ChatGPT.exe      N/A      |
++-----------------------------------------------------------------------------------------+

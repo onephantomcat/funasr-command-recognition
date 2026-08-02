@@ -1,0 +1,12 @@
+﻿{
+  "python": "3.10.9",
+  "torch": "2.7.1+cu126",
+  "torch_cuda": "12.6",
+  "cuda_available": true,
+  "device_name": "NVIDIA GeForce RTX 4050 Laptop GPU",
+  "device_capability": [
+    8,
+    9
+  ],
+  "cudnn": 90701
+}

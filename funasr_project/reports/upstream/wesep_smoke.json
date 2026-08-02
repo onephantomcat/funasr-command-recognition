@@ -1,0 +1,105 @@
+{
+  "date": "2026-07-30 15:00:09",
+  "attempts": [
+    {
+      "mode": "A_external_emb",
+      "joint_training": false,
+      "device": "cpu",
+      "n_params": 4065971,
+      "out_shapes": [
+        [
+          1,
+          8000
+        ],
+        [
+          1,
+          8000
+        ],
+        [
+          1,
+          8000
+        ]
+      ],
+      "finite": true,
+      "gpu_mem_gb": 0.0,
+      "status": "PASS"
+    },
+    {
+      "mode": "A_external_emb",
+      "joint_training": false,
+      "device": "cuda",
+      "n_params": 4065971,
+      "out_shapes": [
+        [
+          1,
+          8000
+        ],
+        [
+          1,
+          8000
+        ],
+        [
+          1,
+          8000
+        ]
+      ],
+      "finite": true,
+      "gpu_mem_gb": 0.027589797973632812,
+      "status": "PASS"
+    },
+    {
+      "mode": "B_enroll_wav",
+      "joint_training": true,
+      "device": "cpu",
+      "n_params": 5580473,
+      "out_shapes": [
+        [
+          1,
+          8000
+        ],
+        [
+          1,
+          8000
+        ],
+        [
+          1,
+          8000
+        ]
+      ],
+      "finite": true,
+      "gpu_mem_gb": 0.0,
+      "status": "PASS"
+    },
+    {
+      "mode": "B_enroll_wav",
+      "joint_training": true,
+      "device": "cuda",
+      "n_params": 5580473,
+      "out_shapes": [
+        [
+          1,
+          8000
+        ],
+        [
+          1,
+          8000
+        ],
+        [
+          1,
+          8000
+        ]
+      ],
+      "finite": true,
+      "gpu_mem_gb": 0.0370945930480957,
+      "status": "PASS"
+    }
+  ],
+  "import": {
+    "torch": "2.7.1+cu126",
+    "torchaudio": "2.7.1+cpu",
+    "wesep_file": "D:\\Users\\xuanmo0205\\Desktop\\funasr-command-recognition\\funasr_project\\third_party\\wesep\\wesep\\__init__.py",
+    "status": "OK"
+  },
+  "overall": "PASS",
+  "note": "上游冒烟只验证 import/加载/最小前向；A/B 任一约定任一设备 PASS 即 PASS（另一约定失败入 traceback 备查）"
+}

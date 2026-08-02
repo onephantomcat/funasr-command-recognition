@@ -1,0 +1,511 @@
+{
+  "test": "tse_random_forward",
+  "generated_at": "2026-07-27T09:17:59.647686+00:00",
+  "architecture_status": "DEBUG_ONLY_scaffold_not_formal",
+  "markers": [
+    "DEBUG_ONLY",
+    "BOOTSTRAP_ENCODER_ONLY",
+    "NOT_FOR_FORMAL_METRICS"
+  ],
+  "seed": 20260725,
+  "torch_version": "2.7.1+cu126",
+  "cuda_available": true,
+  "device_passes": [
+    {
+      "device": "cpu",
+      "status": "PASS",
+      "tiers": [
+        {
+          "length": 160,
+          "checks": [
+            {
+              "name": "c1_shape",
+              "pass": true,
+              "detail": "s_tgt(1, 160) s_res(1, 160) x(1, 160)"
+            },
+            {
+              "name": "c2_finite",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "c3_loss_computable",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "c4_grad_finite_nonzero",
+              "pass": true,
+              "detail": "all 16 param tensors ok"
+            },
+            {
+              "name": "c5_consistency",
+              "pass": true,
+              "detail": "max_err=9.313e-10"
+            }
+          ],
+          "losses": {
+            "si_sdr_db": 38.7347,
+            "res_l1": 0.004733,
+            "mix": 0.0,
+            "total": -38.7324
+          },
+          "output_shapes": {
+            "x": [
+              1,
+              160
+            ],
+            "s_tgt": [
+              1,
+              160
+            ],
+            "s_res": [
+              1,
+              160
+            ]
+          }
+        },
+        {
+          "length": 16000,
+          "checks": [
+            {
+              "name": "c1_shape",
+              "pass": true,
+              "detail": "s_tgt(1, 16000) s_res(1, 16000) x(1, 16000)"
+            },
+            {
+              "name": "c2_finite",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "c3_loss_computable",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "c4_grad_finite_nonzero",
+              "pass": true,
+              "detail": "all 16 param tensors ok"
+            },
+            {
+              "name": "c5_consistency",
+              "pass": true,
+              "detail": "max_err=2.384e-07"
+            }
+          ],
+          "losses": {
+            "si_sdr_db": 33.7561,
+            "res_l1": 0.008177,
+            "mix": 0.0,
+            "total": -33.752
+          },
+          "output_shapes": {
+            "x": [
+              1,
+              16000
+            ],
+            "s_tgt": [
+              1,
+              16000
+            ],
+            "s_res": [
+              1,
+              16000
+            ]
+          }
+        },
+        {
+          "length": 57600,
+          "checks": [
+            {
+              "name": "c1_shape",
+              "pass": true,
+              "detail": "s_tgt(1, 57600) s_res(1, 57600) x(1, 57600)"
+            },
+            {
+              "name": "c2_finite",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "c3_loss_computable",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "c4_grad_finite_nonzero",
+              "pass": true,
+              "detail": "all 16 param tensors ok"
+            },
+            {
+              "name": "c5_consistency",
+              "pass": true,
+              "detail": "max_err=2.384e-07"
+            }
+          ],
+          "losses": {
+            "si_sdr_db": 34.061,
+            "res_l1": 0.00791,
+            "mix": 0.0,
+            "total": -34.0571
+          },
+          "output_shapes": {
+            "x": [
+              1,
+              57600
+            ],
+            "s_tgt": [
+              1,
+              57600
+            ],
+            "s_res": [
+              1,
+              57600
+            ]
+          }
+        },
+        {
+          "length": 160000,
+          "checks": [
+            {
+              "name": "c1_shape",
+              "pass": true,
+              "detail": "s_tgt(1, 160000) s_res(1, 160000) x(1, 160000)"
+            },
+            {
+              "name": "c2_finite",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "c3_loss_computable",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "c4_grad_finite_nonzero",
+              "pass": true,
+              "detail": "all 16 param tensors ok"
+            },
+            {
+              "name": "c5_consistency",
+              "pass": true,
+              "detail": "max_err=2.384e-07"
+            }
+          ],
+          "losses": {
+            "si_sdr_db": 34.1965,
+            "res_l1": 0.007788,
+            "mix": 0.0,
+            "total": -34.1926
+          },
+          "output_shapes": {
+            "x": [
+              1,
+              160000
+            ],
+            "s_tgt": [
+              1,
+              160000
+            ],
+            "s_res": [
+              1,
+              160000
+            ]
+          }
+        }
+      ],
+      "anomaly": [
+        {
+          "name": "a_stability_zero_input",
+          "pass": true,
+          "detail": "max|s|=0.000e+00"
+        },
+        {
+          "name": "a_stability_tiny_input",
+          "pass": true,
+          "detail": "max|s|=1.986e-08"
+        },
+        {
+          "name": "a_reject_nan_input",
+          "pass": true,
+          "detail": "command_wav 含 NaN/Inf"
+        },
+        {
+          "name": "a_reject_wrong_emb_dim",
+          "pass": true,
+          "detail": "embedding 维度错误: 期望 192，得到 193"
+        },
+        {
+          "name": "a_reject_empty_input",
+          "pass": true,
+          "detail": "command_wav 为空数组"
+        }
+      ],
+      "peak_vram_bytes": null,
+      "vram_budget_bytes": 6442450944,
+      "vram_check": "SKIPPED_cpu",
+      "param_count": 1349634
+    },
+    {
+      "device": "cuda",
+      "status": "PASS",
+      "tiers": [
+        {
+          "length": 160,
+          "checks": [
+            {
+              "name": "c1_shape",
+              "pass": true,
+              "detail": "s_tgt(1, 160) s_res(1, 160) x(1, 160)"
+            },
+            {
+              "name": "c2_finite",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "c3_loss_computable",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "c4_grad_finite_nonzero",
+              "pass": true,
+              "detail": "all 16 param tensors ok"
+            },
+            {
+              "name": "c5_consistency",
+              "pass": true,
+              "detail": "max_err=5.960e-08"
+            }
+          ],
+          "losses": {
+            "si_sdr_db": 38.6489,
+            "res_l1": 0.004547,
+            "mix": 0.0,
+            "total": -38.6466
+          },
+          "output_shapes": {
+            "x": [
+              1,
+              160
+            ],
+            "s_tgt": [
+              1,
+              160
+            ],
+            "s_res": [
+              1,
+              160
+            ]
+          }
+        },
+        {
+          "length": 16000,
+          "checks": [
+            {
+              "name": "c1_shape",
+              "pass": true,
+              "detail": "s_tgt(1, 16000) s_res(1, 16000) x(1, 16000)"
+            },
+            {
+              "name": "c2_finite",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "c3_loss_computable",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "c4_grad_finite_nonzero",
+              "pass": true,
+              "detail": "all 16 param tensors ok"
+            },
+            {
+              "name": "c5_consistency",
+              "pass": true,
+              "detail": "max_err=2.384e-07"
+            }
+          ],
+          "losses": {
+            "si_sdr_db": 34.1976,
+            "res_l1": 0.007813,
+            "mix": 0.0,
+            "total": -34.1936
+          },
+          "output_shapes": {
+            "x": [
+              1,
+              16000
+            ],
+            "s_tgt": [
+              1,
+              16000
+            ],
+            "s_res": [
+              1,
+              16000
+            ]
+          }
+        },
+        {
+          "length": 57600,
+          "checks": [
+            {
+              "name": "c1_shape",
+              "pass": true,
+              "detail": "s_tgt(1, 57600) s_res(1, 57600) x(1, 57600)"
+            },
+            {
+              "name": "c2_finite",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "c3_loss_computable",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "c4_grad_finite_nonzero",
+              "pass": true,
+              "detail": "all 16 param tensors ok"
+            },
+            {
+              "name": "c5_consistency",
+              "pass": true,
+              "detail": "max_err=2.384e-07"
+            }
+          ],
+          "losses": {
+            "si_sdr_db": 34.1882,
+            "res_l1": 0.00781,
+            "mix": 0.0,
+            "total": -34.1843
+          },
+          "output_shapes": {
+            "x": [
+              1,
+              57600
+            ],
+            "s_tgt": [
+              1,
+              57600
+            ],
+            "s_res": [
+              1,
+              57600
+            ]
+          }
+        },
+        {
+          "length": 160000,
+          "checks": [
+            {
+              "name": "c1_shape",
+              "pass": true,
+              "detail": "s_tgt(1, 160000) s_res(1, 160000) x(1, 160000)"
+            },
+            {
+              "name": "c2_finite",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "c3_loss_computable",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "c4_grad_finite_nonzero",
+              "pass": true,
+              "detail": "all 16 param tensors ok"
+            },
+            {
+              "name": "c5_consistency",
+              "pass": true,
+              "detail": "max_err=2.384e-07"
+            }
+          ],
+          "losses": {
+            "si_sdr_db": 33.8402,
+            "res_l1": 0.008095,
+            "mix": 0.0,
+            "total": -33.8361
+          },
+          "output_shapes": {
+            "x": [
+              1,
+              160000
+            ],
+            "s_tgt": [
+              1,
+              160000
+            ],
+            "s_res": [
+              1,
+              160000
+            ]
+          }
+        }
+      ],
+      "anomaly": [
+        {
+          "name": "a_stability_zero_input",
+          "pass": true,
+          "detail": "max|s|=0.000e+00"
+        },
+        {
+          "name": "a_stability_tiny_input",
+          "pass": true,
+          "detail": "max|s|=2.075e-08"
+        },
+        {
+          "name": "a_reject_nan_input",
+          "pass": true,
+          "detail": "command_wav 含 NaN/Inf"
+        },
+        {
+          "name": "a_reject_wrong_emb_dim",
+          "pass": true,
+          "detail": "embedding 维度错误: 期望 192，得到 193"
+        },
+        {
+          "name": "a_reject_empty_input",
+          "pass": true,
+          "detail": "command_wav 为空数组"
+        }
+      ],
+      "peak_vram_bytes": 66082816,
+      "vram_budget_bytes": 6442450944,
+      "vram_check": "PASS",
+      "param_count": 1349634
+    }
+  ],
+  "blocked": [],
+  "overall": "PASS",
+  "absent_zero_loss_unit": {
+    "checks": [
+      {
+        "name": "az_zero_is_zero",
+        "pass": true,
+        "detail": "0.0"
+      },
+      {
+        "name": "az_nonzero_positive",
+        "pass": true,
+        "detail": "1.0043"
+      },
+      {
+        "name": "az_grad_finite",
+        "pass": true,
+        "detail": "max|g|=5.671e-04"
+      }
+    ],
+    "note": "预留损失，未接入总损失（05B/λ 待 B2 阶段对齐 P2-14 归一化口径）"
+  }
+}
