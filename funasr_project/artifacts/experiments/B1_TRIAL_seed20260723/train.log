@@ -1,0 +1,15 @@
+2026-08-02 09:51:32,185 INFO config=D:\Users\xuanmo0205\Desktop\funasr-command-recognition\funasr_project\configs\p2\tse_b1_trial.yaml device=cuda seed=20260723 amp=True
+2026-08-02 09:51:32,185 INFO torch=2.7.1+cu126 cuda=True
+2026-08-02 09:51:32,191 WARNING --debug_data 模式：用 P2-07 DEBUG 集空跑，非正式 B1 训练
+2026-08-02 09:51:32,193 WARNING batch_size=16 > 样本数=12，降为 12
+2026-08-02 09:51:32,193 INFO train=12 条 dev=12 条 batch=12 seg=8s drop_last=True
+2026-08-02 09:51:32,294 INFO 参数量 1349891
+2026-08-02 09:51:35,824 WARNING save_every > total_steps，降为 10（空跑模式）
+2026-08-02 09:51:40,385 INFO 基线 SI-SDR(mixture)=4.58 dB
+2026-08-02 09:51:41,004 INFO step=0/10 total=-3.1864 si_sdr=4.58 si_sdri=-0.01 lr=2.00e-05 |g|=0.000 mem=0.51GB 4919ms/step data=86%
+2026-08-02 09:52:31,863 INFO step=10/10 total=-3.3744 si_sdr=4.76 si_sdri=0.17 lr=2.20e-04 |g|=0.490 mem=0.95GB 5034ms/step data=94%
+2026-08-02 09:52:31,910 INFO 存 checkpoint: checkpoint_step10.pt
+2026-08-02 09:52:32,010 INFO   dev_loss=-3.4187 dev_sisdr=4.80 dB
+2026-08-02 09:52:32,142 INFO 恢复一致性 max|Δ|=0.000e+00 → PASS
+2026-08-02 09:52:32,152 INFO 产物目录: D:\Users\xuanmo0205\Desktop\funasr-command-recognition\funasr_project\artifacts\experiments\B1_TRIAL_seed20260723
+2026-08-02 09:52:32,153 INFO 总体判定: PASS

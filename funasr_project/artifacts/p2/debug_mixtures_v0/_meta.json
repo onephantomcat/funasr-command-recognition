@@ -1,0 +1,13 @@
+{
+  "stage": "P2-07",
+  "debug_only": true,
+  "created": "2026-07-27 16:01:12",
+  "command": "python p2_tools/build_debug_mixtures.py --seed 20260725",
+  "seed": 20260725,
+  "source": "data/trials (read-only)",
+  "counts": {
+    "total": 12,
+    "full100": 4,
+    "enrollment_swap": 4
+  }
+}
