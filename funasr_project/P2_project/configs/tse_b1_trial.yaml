@@ -57,9 +57,9 @@ prefetch_factor: 2
 
 # 数据集
 datasets:
-  train_manifest: data/p1_v2_b1/train.jsonl
-  dev_manifest: data/p1_v2_b1/dev.jsonl
-  eval_manifest: data/p1_v2_b1/eval.jsonl
+  train_manifest: /root/autodl-tmp/P1_to_P2_v2_b1/manifests/tse_train_present.jsonl
+  dev_manifest: /root/autodl-tmp/P1_to_P2_v2_b1/manifests/tse_dev.jsonl
+  eval_manifest: /root/autodl-tmp/P1_to_P2_v2_b1/manifests/D_single.jsonl
 
 # 元信息
 tag: B1_TRIAL_seed20260723

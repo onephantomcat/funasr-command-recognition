@@ -45,6 +45,7 @@ import yaml
 
 P2_ROOT = Path(__file__).resolve().parents[1]
 FUNASR_ROOT = P2_ROOT.parent
+P1_DATA_ROOT = Path("/root/autodl-tmp/P1_to_P2_v2_b1")
 sys.path.insert(0, str(P2_ROOT))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -69,6 +70,18 @@ class B1Dataset(data.Dataset):
     （否则破坏对齐）。不足段长则右侧补零。embedding 由 bootstrap_embedding 派生
     （P4 契约交付前用哈希随机，保留 swap 语义）。
     """
+
+    @staticmethod
+    def _resolve_path(p):
+        """Resolve audio path: try P1 root first, fallback to FUNASR_ROOT."""
+        p = str(p)
+        if not p or p == "None":
+            return None
+        for root in [P1_DATA_ROOT, FUNASR_ROOT]:
+            candidate = root / p
+            if candidate.exists():
+                return str(candidate)
+        return str(FUNASR_ROOT / p)
 
     def __init__(self, manifest_path, cfg, seed=None, adapter=None):
         self.entries = []
@@ -98,10 +111,27 @@ class B1Dataset(data.Dataset):
 
     def __getitem__(self, idx):
         e = self.entries[idx]
-        mix, sr = sf.read(str(FUNASR_ROOT / e["mixture"]), dtype="float32")
-        tgt, _ = sf.read(str(FUNASR_ROOT / e["target"]), dtype="float32")
-        itr, _ = sf.read(str(FUNASR_ROOT / e["interferer"]), dtype="float32")
-        act = np.load(str(FUNASR_ROOT / e["activity"]))
+
+        # P1 field mapping: mixture_wav→mixture, target_wav→target, etc.
+        mix_path = e.get("mixture", e.get("mixture_wav", ""))
+        tgt_path = e.get("target", e.get("target_wav", ""))
+        itr_path = e.get("interferer", e.get("interferer_wav", ""))
+        act_path = e.get("activity", e.get("activity_mask", ""))
+        enroll_path = e.get("enrollment", e.get("enroll_wav", ""))
+        sample_id = e.get("id", e.get("sample_id", str(idx)))
+
+        mix, sr = sf.read(self._resolve_path(mix_path), dtype="float32")
+        tgt, _ = sf.read(self._resolve_path(tgt_path), dtype="float32")
+
+        # Handle null interferer (single speaker case)
+        itr_resolved = self._resolve_path(itr_path)
+        if itr_resolved and Path(itr_resolved).exists():
+            itr, _ = sf.read(itr_resolved, dtype="float32")
+        else:
+            itr = np.zeros_like(mix, dtype="float32")
+
+        act_resolved = self._resolve_path(act_path)
+        act = np.load(act_resolved)
         assert sr == self.cfg["sample_rate"], f"采样率不一致: {sr} vs {self.cfg['sample_rate']}"
 
         T = len(mix)
@@ -119,23 +149,25 @@ class B1Dataset(data.Dataset):
             act = np.pad(act, (0, pad))
 
         return {
-            "id": e["id"],
+            "id": sample_id,
             "mix": torch.from_numpy(mix),
             "target": torch.from_numpy(tgt),
             "interferer": torch.from_numpy(itr),
             "frame_act": frame_activity(act, self.win_length, self.hop_length, self.act_frame_ratio),
-            "emb": self._get_embedding(e),
+            "emb": self._get_embedding(e, enroll_path),
         }
 
-    def _get_embedding(self, e):
-        spk_id = e.get("target_speaker", e.get("enrollment", e["id"]))
+    def _get_embedding(self, e, enroll_path=None):
+        spk_id = e.get("target_speaker", e.get("enrollment", e.get("sample_id", "unknown")))
         if self.adapter.mode == "campplus" and not self._camplus_fallback:
-            enroll_path = str(FUNASR_ROOT / e["enrollment"])
-            try:
-                self.adapter.encode_file(spk_id, enroll_path)
-                return self.adapter.get_embedding(spk_id).squeeze(0)
-            except Exception as ex:
-                LOG.warning(f"CAMPLUS encode 失败 ({spk_id}), fallback BOOTSTRAP: {ex}")
+            enroll = enroll_path or e.get("enrollment", e.get("enroll_wav", ""))
+            enroll_resolved = self._resolve_path(enroll) if enroll else None
+            if enroll_resolved and Path(enroll_resolved).exists():
+                try:
+                    self.adapter.encode_file(spk_id, enroll_resolved)
+                    return self.adapter.get_embedding(spk_id).squeeze(0)
+                except Exception as ex:
+                    LOG.warning(f"CAMPLUS encode 失败 ({spk_id}), fallback BOOTSTRAP: {ex}")
         return self.adapter.get_embedding(spk_id).squeeze(0)
 
 
