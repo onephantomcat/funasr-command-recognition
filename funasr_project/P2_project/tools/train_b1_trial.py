@@ -304,7 +304,10 @@ def main():
     model = DualOutputTSE(cfg).to(device)
     LOG.info("参数量 %d", sum(p.numel() for p in model.parameters()))
     opt = torch.optim.Adam(model.parameters(), lr=float(cfg["lr"]))
-    scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
+    try:
+        scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
+    except AttributeError:
+        scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
 
     total_steps = int(args.max_steps if args.max_steps else cfg["steps"])
     warmup = int(cfg["lr_warmup_steps"])
