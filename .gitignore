@@ -85,3 +85,9 @@ funasr_project/reports/logs/torch_*install*.log
 funasr_project/reports/logs/cuda_check*.txt
 funasr_project/reports/logs/extract_done.flag
 funasr_project/reports/upstream/wesep_tree_status.txt
+
+# === P4 声纹模块（2026-08-07 追加）===
+# 克隆的 speakerlab 源码（云端自行克隆）
+funasr_project/P4_project/artifacts/models/speakerlab_source/
+# CAMPPlus 预训练权重（28MB，云端单独下载）
+funasr_project/P4_project/artifacts/models/campplus_cn_common.bin
