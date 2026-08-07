@@ -1,0 +1,54 @@
+{
+  "module": "P2_TSE",
+  "updated_at": "2026-07-30",
+  "register": {
+    "P1_v0_debug_sources": {
+      "status": "SUBSTITUTED",
+      "required_for": ["P2-07"],
+      "note": "P2-07 已用 data/trials 4 说话人自产 12 条 DEBUG_ONLY 混合完成",
+      "fallback_work": "无（P2-07 已 PASS）"
+    },
+    "P1_v1_smoke": {
+      "status": "MISSING",
+      "required_for": ["P2-10"],
+      "deadline": "2026-07-31",
+      "fallback_work": "P2-11 评测器骨架先行"
+    },
+    "P1_v2_b1": {
+      "status": "MISSING",
+      "required_for": ["P2-12", "P2-13"],
+      "deadline": "2026-08-03",
+      "fallback_work": "P2-09 过拟合诊断细化、评测器联调"
+    },
+    "P1_v3_absent_swap": {
+      "status": "MISSING",
+      "required_for": ["P2-14", "P2-15"],
+      "deadline": "2026-08-07",
+      "fallback_work": "B2 零抑制损失单测"
+    },
+    "P3_asr_eval_v1": {
+      "status": "MISSING",
+      "required_for": ["B1_FORMAL_CER"],
+      "deadline": "2026-08-05",
+      "fallback_work": "预留配对预测格式"
+    },
+    "P4_sv_contract_v1": {
+      "status": "MISSING",
+      "required_for": ["B1_FORMAL", "P2-12"],
+      "deadline": "2026-08-03",
+      "fallback_work": "BOOTSTRAP 确定性随机 embedding"
+    },
+    "P5_pipeline_contract_v1": {
+      "status": "MISSING",
+      "required_for": ["P2-16"],
+      "deadline": "2026-08-09",
+      "fallback_work": "extract_target API 契约文档化"
+    },
+    "P6_deploy_contract_v1": {
+      "status": "MISSING",
+      "required_for": ["P2-19"],
+      "deadline": "2026-08-22",
+      "fallback_work": "本机 FP16/显存/延迟基线自测"
+    }
+  }
+}

@@ -1,0 +1,52 @@
+# P2-09 固定小批量 100 step 过拟合配置
+# 标记：DEBUG_ONLY / BOOTSTRAP_ENCODER_ONLY（每说话人确定性随机 embedding 代替 CAM++）
+# 依据：手册 STEP P2-09（固定 batch、不 shuffle、AMP 关、seed 20260723）
+
+sample_rate: 16000
+
+# STFT 参数（与 smoke 一致）
+n_fft: 512
+hop_length: 128
+win_length: 512
+
+emb_dim: 192
+
+lstm_hidden: 256
+lstm_layers: 2
+dropout: 0.0
+
+film_scale: 0.1
+
+# PRESENT 损失权重（手册 P2-09：-λ_sisdr·SI-SDR + λ_wav·L1 + λ_stft·MR-STFT + λ_act·BCE）
+lambda_sisdr: 1.0
+lambda_wav: 1.0
+lambda_stft: 1.0
+lambda_act: 0.5
+# 残余支路辅助损失（沿用 smoke 配置语义）
+lambda_residual: 0.5
+lambda_mix: 0.5
+# 身份反向损失权重，硬约束恒为 0，禁止改为非零（05A §3）
+lambda_id: 0.0
+
+zero_ref_kappa: 1.0e-3
+
+# MR-STFT 分辨率组 [(n_fft, hop, win), ...]
+mrstft_resolutions:
+  - [256, 64, 256]
+  - [512, 128, 512]
+  - [1024, 256, 1024]
+
+# 帧级活动度阈值：窗内活动采样占比 > act_frame_ratio 视为活动帧
+act_frame_ratio: 0.5
+
+# 过拟合训练参数（手册固定设置）
+seed: 20260723
+steps: 100
+batch_size: 8
+lr: 1.0e-3
+grad_clip: 5.0
+amp: false
+log_every: 10
+
+# 恢复一致性容差
+restore_tol: 1.0e-5

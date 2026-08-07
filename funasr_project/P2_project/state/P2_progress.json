@@ -1,0 +1,98 @@
+{
+  "module": "P2_TSE",
+  "updated_at": "2026-07-30",
+  "branch": "feature/xuanmo-rejection-optimize-v2",
+  "decisions": [
+    {
+      "id": "D-2026-07-25-01",
+      "decision": "P2 目录结构建于 funasr_project/ 内部，不迁移到仓库根目录",
+      "context": "P2 手册目录树默认根级；教练文档建议根级（funasr_project 为老代码目录）",
+      "outcome": "用户决策不迁移，funasr_project/ 同时承载老代码与 P2 新结构",
+      "impact": "后续所有 P2 路径引用以 funasr_project/ 为基准"
+    },
+    {
+      "id": "D-2026-07-30-01",
+      "decision": "WeSep/正式训练环境建在本机（RTX 4050 6GB），不上云端 RTX 4090",
+      "context": "手册 P2-04 默认假设云 RTX 4090；本机 6GB 已验证可跑 debug 规模（P2-09 峰值远低于预算）",
+      "outcome": "用户拍板本机路线；B1 训练规模需按 6GB 显存预算压缩（更长训练时间换小 batch/短样本/AMP）",
+      "impact": "P2-03 WeSep 克隆与 P2-04 环境锁均在本机执行；P2-12 B1 试车前需做 6GB 可行性评估（batch/长度/AMP 预案）"
+    },
+    {
+      "id": "D-2026-08-04-01",
+      "decision": "P2 模块重构：所有 P2 相关文件移入 funasr_project/p2_project/，扁平化 configs/ 结构",
+      "context": "v2 分支重构，将 src/tse、p2_tools、configs/p2、tests/p2 等迁移到 p2_project/ 下",
+      "outcome": "重构完成，代码引用 p2_project/ 为 ROOT，共享数据位于 ROOT.parent/data/",
+      "impact": "所有内部导入改为相对导入，路径常量更新为以 p2_project/ 为基准"
+    }
+  ],
+  "stages": {
+    "P2-00/01": {"status": "PARTIAL", "note": "目录骨架已建（configs, src/tse, tests, tools）"},
+    "P2-02": {
+      "status": "PASS",
+      "date": "2026-07-30",
+      "evidence": "state/P2_dependency_register.json",
+      "note": "8 项外部依赖全部登记"
+    },
+    "P2-03": {
+      "status": "PASS",
+      "date": "2026-07-30",
+      "evidence": "third_party/wesep/",
+      "note": "WeSep 克隆冻结于本机"
+    },
+    "P2-04": {
+      "status": "PASS",
+      "date": "2026-07-30",
+      "evidence": "environment/p2_requirements_lock.txt",
+      "note": ".venv-p2tse 环境锁留档"
+    },
+    "P2-05": {
+      "status": "PASS",
+      "date": "2026-07-30",
+      "evidence": "reports/upstream/wesep_smoke.json",
+      "note": "WeSep 上游冒烟 4/4 PASS"
+    },
+    "P2-06": {
+      "status": "PASS",
+      "date": "2026-07-25",
+      "evidence": "reports/smoke/tse_random_forward.json",
+      "note": "随机张量 forward/loss/backward 全过（CPU）"
+    },
+    "P2-08": {
+      "status": "PASS",
+      "date": "2026-07-25",
+      "evidence": "reports/smoke/tse_conditioning.json",
+      "note": "五条件验证全过"
+    },
+    "P2-07": {
+      "status": "PASS",
+      "date": "2026-07-25",
+      "evidence": "artifacts/debug_mixtures_v0/",
+      "note": "12 条 4s 混合（4 说话人×3 配置）"
+    },
+    "P2-06-cuda": {
+      "status": "PASS",
+      "date": "2026-07-27",
+      "evidence": "reports/smoke/tse_random_forward.json",
+      "note": "CPU+CUDA 双端全项 PASS"
+    },
+    "P2-09": {
+      "status": "PASS",
+      "date": "2026-07-30",
+      "evidence": "artifacts/experiments/DEBUG_OVERFIT_seed20260723/",
+      "note": "100 step 过拟合闭环验证通过"
+    },
+    "P2-11": {
+      "status": "PASS",
+      "date": "2026-07-30",
+      "evidence": "src/tse/metrics.py, schemas/tse_prediction.schema.json",
+      "note": "评测器骨架完成，10 项必测全过"
+    }
+  },
+  "blocked": [],
+  "constraints_frozen": {
+    "lambda_id": 0.0,
+    "absent_loss": "zero-suppression 已实现未启用，死区 kappa=1e-3",
+    "film": "scale = 1 + 0.1*tanh(gamma)",
+    "architecture_baseline": "LSTM-Spex（05A 正式基线）"
+  }
+}
