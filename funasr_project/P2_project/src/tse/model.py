@@ -60,12 +60,18 @@ class DualOutputTSE(nn.Module):
         if T < self.n_fft:
             mix_wav = F.pad(mix_wav, (0, self.n_fft - T))
 
+        # 显式传 center + pad_mode，避免不同 PyTorch 版本 (stft 已弃用) 默认值不一致
+        # 与 Dataset 端 frame_activity 的 (pad win//2 两侧 + avg_pool1d win/hop) 严格对齐
         spec = torch.stft(
             mix_wav,
             n_fft=self.n_fft,
             hop_length=self.hop_length,
             win_length=self.win_length,
             window=self.window,
+            center=True,
+            pad_mode="reflect",
+            normalized=False,
+            onesided=True,
             return_complex=True,
         )
         mag = spec.abs().transpose(1, 2)

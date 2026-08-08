@@ -7,6 +7,24 @@
 """
 
 import torch
+import warnings
+
+
+def _align_frames(src, target_len, mode):
+    """将帧级张量 src [B, Fr] 对齐到 target_len（保持 0/1 语义或概率平滑）。
+
+    mode: 'nearest' 适用于 0/1 标签（不制造中间值），'linear' 适用于连续概率。
+    """
+    cur_len = src.shape[-1]
+    if cur_len == target_len:
+        return src
+    # F.interpolate 需要 [B, 1, Fr]，输出后再 squeeze
+    x = src.unsqueeze(1)
+    if mode == "nearest":
+        aligned = torch.nn.functional.interpolate(x, size=target_len, mode="nearest-exact")
+    else:
+        aligned = torch.nn.functional.interpolate(x, size=target_len, mode="linear", align_corners=False)
+    return aligned.squeeze(1)
 
 
 def si_sdr(est, ref, eps=1e-6):
@@ -80,7 +98,34 @@ def mrstft_loss(est, ref, resolutions, eps=1e-6):
     return total / len(resolutions)
 
 
-def activity_bce_loss(p_tgt, frame_act, eps=1e-7):
-    """帧级活动度 BCE：p_tgt [B,Fr]（sigmoid 后概率），frame_act [B,Fr]∈{0,1}。"""
+def activity_bce_loss(p_tgt, frame_act, eps=1e-7, _warned=[False]):
+    """帧级活动度 BCE：p_tgt [B,Fr]（sigmoid 后概率），frame_act [B,Fr]∈{0,1}。
+
+    健壮性：不同 PyTorch 版本对 torch.stft 默认 center/pad 行为可能变化，
+    导致 model 输出帧数 (p_tgt 端) ≠ Dataset 端 frame_activity 估算的帧数。
+    若尺寸不一致：
+      - 首次触发 ERROR 级告警（附 mismatch 尺寸 + 建议检查项）
+      - 用最近邻将 frame_act (0/1 标签) 对齐到 p_tgt 帧数，保证损失可算
+         (保 0/1 语义，不引入中间 float 值污染 BCE)
+    """
+    p_len = p_tgt.shape[-1]
+    a_len = frame_act.shape[-1]
+    if p_len != a_len:
+        if not _warned[0]:
+            msg = (
+                f"[FRAME ALIGN] p_tgt(model)={p_len}帧 ≠ frame_act(label)={a_len}帧 → "
+                f"自动用 nearest-exact 对齐 label 到 model 端帧数。"
+                f"可能根因：① 云端 PyTorch 版本 torch.stft 弃用后默认值变 (请确认 model.forward 显式传 center=True); "
+                f"② Dataset.seg_samples 算错或 P1 wav 实际 sr 非 16kHz (应=cfg.sample_rate={16000}). "
+                f"对齐比例≈{p_len / max(1, a_len):.3f}"
+            )
+            warnings.warn(msg)
+            try:
+                import logging as _l
+                _l.getLogger("funasr.tse").error(msg)
+            except Exception:
+                print("!! " + msg, flush=True)
+            _warned[0] = True
+        frame_act = _align_frames(frame_act, p_len, mode="nearest")
     p = p_tgt.clamp(eps, 1.0 - eps)
     return -(frame_act * torch.log(p) + (1.0 - frame_act) * torch.log(1.0 - p)).mean()

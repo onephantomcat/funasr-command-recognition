@@ -571,6 +571,29 @@ def main():
 
         with torch.amp.autocast("cuda", enabled=use_amp):
             out = model(batch["mix"], batch["emb"])
+            # step 0 诊断：打印 batch 与 model 输出各张量形状
+            #   (用于定位云端 PyTorch 版本差异导致的 STFT 帧数不一致问题)
+            if step == 0:
+                try:
+                    s_tgt_0, s_res_0, p_tgt_0 = out
+                    LOG.info(
+                        "[SHAPE step0] PyTorch=%s device=%s | "
+                        "mix=%s target=%s frame_act(label)=%s | "
+                        "s_tgt=%s s_res=%s p_tgt(model)=%s | "
+                        "seg_samples(cfg)=%d n_fft=%d hop=%d win=%d sr=%d → "
+                        "理论 STFT 帧数(center=True)=%d  frame_activity 期望帧数=%d",
+                        torch.__version__, str(batch["mix"].device),
+                        tuple(batch["mix"].shape), tuple(batch["target"].shape),
+                        tuple(batch["frame_act"].shape),
+                        tuple(s_tgt_0.shape), tuple(s_res_0.shape), tuple(p_tgt_0.shape),
+                        int(cfg["segment_length"] * cfg["sample_rate"]),
+                        int(cfg["n_fft"]), int(cfg["hop_length"]), int(cfg["win_length"]),
+                        int(cfg["sample_rate"]),
+                        int(cfg["segment_length"] * cfg["sample_rate"]) // int(cfg["hop_length"]) + 1,
+                        int(cfg["segment_length"] * cfg["sample_rate"]) // int(cfg["hop_length"]) + 1,
+                    )
+                except Exception as _ex:
+                    LOG.warning("[SHAPE step0] 打印失败: %s", _ex)
             total, terms = compute_losses(cfg, out, batch)
 
         grad_norm, clipped = 0.0, False
