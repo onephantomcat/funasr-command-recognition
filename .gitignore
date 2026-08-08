@@ -78,7 +78,11 @@ funasr_project/P4_project.zip
 P2_AutoDL*.md
 P2_浜戠*.md
 
-# === B1 实验产物（云端下载，禁止提交）===
+# === B1 瀹為獙浜х墿锛堟湰鍦板浠斤紝闃叉鎻愪氦澶ф枃浠讹級===
 funasr_project/P2_project/artifacts/experiments/B1_CAMPPLUS_LITE/
 funasr_project/P2_project/artifacts/experiments/B1_CAMPPLUS_LITE.tar.gz
 funasr_project/P2_project/artifacts/experiments/B1_CAMPPLUS_20K*.tar.gz
+funasr_project/P2_project/artifacts/experiments/B1_50K_LITE/
+funasr_project/P2_project/artifacts/experiments/B1_50K_LITE.tar.gz
+funasr_project/P2_project/artifacts/experiments/B2_ABSENT_*/
+funasr_project/P2_project/artifacts/experiments/B3_SWAP_*/
