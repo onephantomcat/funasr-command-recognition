@@ -1,4 +1,7 @@
-# -*- coding: utf-8 -*-
+root@autodl-container-5994418ddb-70804460:~/autodl-tmp/P2_work# ls /root/autodl-tmp/P1_to_P2_v2_b1/emb_cache_campplus/ | wc -l~
+wc: invalid option -- '~'
+Try 'wc --help' for more information.
+root@autodl-container-5994418ddb-70804460:~/autodl-tmp/P2_work# # -*- coding: utf-8 -*-
 """P2-12 B1 500-step 试车脚本（通用训练器，支持 AMP/梯度累积/warmup+cosine/checkpoint 恢复）。
 
 相对 train_overfit_debug.py 的核心差异：
@@ -158,14 +161,27 @@ class B1Dataset(data.Dataset):
         }
 
     def _get_embedding(self, e, enroll_path=None):
+        import hashlib
         spk_id = e.get("target_speaker", e.get("enrollment", e.get("sample_id", "unknown")))
         if self.adapter.mode == "campplus" and not self._camplus_fallback:
             enroll = enroll_path or e.get("enrollment", e.get("enroll_wav", ""))
             enroll_resolved = self._resolve_path(enroll) if enroll else None
             if enroll_resolved and Path(enroll_resolved).exists():
+                # 优先从预计算缓存读取（P1 v2_b1 每条样本 enroll 不同，缓存可避免训练时实时编码）
+                cache_key = hashlib.md5(str(enroll_resolved).encode()).hexdigest() + ".pt"
+                cache_dir = P1_DATA_ROOT / "emb_cache_campplus"
+                cache_file = cache_dir / cache_key
+                if cache_file.exists():
+                    # 缓存张量在 GPU 上保存，子进程 fork 后不能直接 .to(cuda)
+                    # 先 load 到 CPU，返回 CPU 张量，由主进程在 forward 时转到 GPU
+                    emb = torch.load(cache_file, weights_only=False, map_location="cpu")
+                    return emb.squeeze(0)
+                # 缓存未命中：实时编码（并写回缓存）
                 try:
-                    self.adapter.encode_file(spk_id, enroll_resolved)
-                    return self.adapter.get_embedding(spk_id).squeeze(0)
+                    emb = self.adapter.encode_file(spk_id, enroll_resolved)
+                    cache_dir.mkdir(parents=True, exist_ok=True)
+                    torch.save(emb, cache_file)
+                    return emb.squeeze(0)
                 except Exception as ex:
                     LOG.warning(f"CAMPLUS encode 失败 ({spk_id}), fallback BOOTSTRAP: {ex}")
         return self.adapter.get_embedding(spk_id).squeeze(0)
