@@ -1,0 +1,89 @@
+# ============================================================
+# P2-14 B2 ABSENT 场景训练配置（骨架）
+# ------------------------------------------------------------
+# 任务：训练模型在「目标 speaker 未出现在 mixture 中」时，输出静音（零抑制）
+# 监督信号：
+#   - present 样本：target 不变（正常说话人分离）
+#   - absent  样本：Dataset 自动设 target=0，emb=零向量（见 train_b1_trial.py B1Dataset）
+#
+# 前置依赖（P1 v3 未交付前此配置仅供冒烟测试）：
+#   - manifest 含 is_absent=true 字段 OR activity_mask 全为 0 的样本
+#
+# 运行示例（冒烟测试）：
+#   python tools/train_b1_trial.py --config configs/tse_b2.yaml \
+#       --debug_data --max_steps 5 --device cpu
+# ============================================================
+
+sample_rate: 16000
+
+# STFT 参数（与 B1 一致）
+n_fft: 512
+hop_length: 128
+win_length: 512
+
+# 模型结构（与 B1 一致，保证可加载 B1 预训练权重）
+emb_dim: 192
+lstm_hidden: 256
+lstm_layers: 2
+dropout: 0.0
+film_scale: 0.1
+
+# 损失权重（与 B1 一致 —— absent 样本 target=0，现有 loss 天然监督零抑制）
+lambda_sisdr: 1.0
+lambda_wav: 1.0
+lambda_stft: 1.0
+lambda_act: 0.5
+lambda_residual: 0.5
+lambda_mix: 0.5
+lambda_id: 0.0
+
+zero_ref_kappa: 1.0e-3
+mrstft_resolutions:
+  - [256, 64, 256]
+  - [512, 128, 512]
+  - [1024, 256, 1024]
+act_frame_ratio: 0.5
+
+# ============================================================
+# ★ B2 核心：场景模式（强制 absent 判定 + 零向量 embedding）
+# ============================================================
+scene_mode: b2
+
+segment_length: 8
+batch_size: 16
+gradient_accumulation: 1
+amp: false            # 保持关闭（稳定第一，B2 初期不要 AMP）
+steps: 20000          # 20K 起步，后续按需拉长
+seed: 20260723
+lr: 3.0e-4
+lr_warmup_steps: 100
+lr_schedule: cosine
+grad_clip: 2.0
+log_every: 25
+save_every: 500       # 40 个 ckpt
+dev_every: 100        # 200 次 dev 评测
+shuffle: true
+num_workers: 2
+pin_memory: true
+prefetch_factor: 2
+
+# ============================================================
+# ★ P1 v3 manifest 占位符 —— 等 P1 交付 v3_absent_swap 后更新路径
+# ============================================================
+datasets:
+  # TODO(P1 v3): 替换为 absent+present 混合训练 manifest
+  train_manifest: /root/autodl-tmp/P1_to_P2_v3_absent_swap/manifests/tse_train_absent_mix.jsonl
+  # TODO(P1 v3): dev 集也需要 absent 样本（建议与训练同分布）
+  dev_manifest:   /root/autodl-tmp/P1_to_P2_v3_absent_swap/manifests/tse_dev_absent_mix.jsonl
+  eval_manifest:  /root/autodl-tmp/P1_to_P2_v3_absent_swap/manifests/D_single.jsonl
+
+# 元信息
+tag: B2_ABSENT_seed20260723
+lane: INTEGRATION
+asset_class: B2_ABSENT
+notes: "B2 零抑制场景: present + absent 混合训练. absent样本: target=0, emb=零向量. P1 v3 manifest占位"
+
+# P4 CAMPPlus 嵌入（与 B1 一致，保证可复用缓存）
+sv_mode: campplus
+sv_bootstrap_seed: 20260804
+sv_model_id: ""

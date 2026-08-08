@@ -1,7 +1,4 @@
-root@autodl-container-5994418ddb-70804460:~/autodl-tmp/P2_work# ls /root/autodl-tmp/P1_to_P2_v2_b1/emb_cache_campplus/ | wc -l~
-wc: invalid option -- '~'
-Try 'wc --help' for more information.
-root@autodl-container-5994418ddb-70804460:~/autodl-tmp/P2_work# # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """P2-12 B1 500-step 试车脚本（通用训练器，支持 AMP/梯度累积/warmup+cosine/checkpoint 恢复）。
 
 相对 train_overfit_debug.py 的核心差异：
@@ -67,12 +64,18 @@ DEBUG_MANIFEST = P2_ROOT / "artifacts" / "debug_mixtures_v0" / "manifest.jsonl"
 
 
 class B1Dataset(data.Dataset):
-    """B1 训练数据集。
+    """B1 / B2 / B3 多场景训练数据集。
+
+    场景模式 scene_mode:
+      - b1 (PRESENT):    目标 speaker 出现在 mixture 中，enroll 与目标一致 (基线场景)
+      - b2 (ABSENT):     目标 speaker 不在 mixture 中，target=0，emb=零向量（P1 v3 数据）
+      - b3 (ENROLL-SWAP):enroll 被替换为干扰 speaker 的音频，target=0（P1 v3 数据）
 
     按 segment_length 随机截取等长片段；mixture/target/interferer/activity 必须同起点
-    （否则破坏对齐）。不足段长则右侧补零。embedding 由 bootstrap_embedding 派生
-    （P4 契约交付前用哈希随机，保留 swap 语义）。
+    （否则破坏对齐）。不足段长则右侧补零。embedding 由 CAMPPlus / BOOTSTRAP 派生。
     """
+
+    SUPPORTED_MODES = ("b1", "b2", "b3")
 
     @staticmethod
     def _resolve_path(p):
@@ -86,12 +89,16 @@ class B1Dataset(data.Dataset):
                 return str(candidate)
         return str(FUNASR_ROOT / p)
 
-    def __init__(self, manifest_path, cfg, seed=None, adapter=None):
+    def __init__(self, manifest_path, cfg, seed=None, adapter=None, scene_mode=None):
         self.entries = []
         with open(manifest_path, encoding="utf-8") as f:
             for line in f:
                 self.entries.append(json.loads(line))
         self.cfg = cfg
+        # scene_mode: CLI 覆盖 > cfg 配置 > 默认 b1
+        self.scene_mode = (scene_mode or cfg.get("scene_mode") or "b1").lower()
+        assert self.scene_mode in self.SUPPORTED_MODES, (
+            f"scene_mode={self.scene_mode} 不受支持，允许: {self.SUPPORTED_MODES}")
         self.seg_samples = int(cfg["segment_length"] * cfg["sample_rate"])
         self.win_length = int(cfg["win_length"])
         self.hop_length = int(cfg["hop_length"])
@@ -103,14 +110,34 @@ class B1Dataset(data.Dataset):
         if self.adapter.mode == "campplus":
             try:
                 self.adapter.load_backend()
-                LOG.info("CAMPLUS 后端加载成功")
+                LOG.info("CAMPLUS 后端加载成功 (scene_mode=%s)", self.scene_mode)
             except Exception as e:
                 LOG.warning(f"CAMPLUS 后端加载失败，fallback BOOTSTRAP: {e}")
                 self._camplus_fallback = True
                 self.adapter = EnrollmentAdapter.from_config(cfg, mode="bootstrap")
+        # 场景统计（每 1000 条 __getitem__ 打一条 summary log）
+        self._stats = {"present": 0, "absent": 0, "swap": 0}
+        LOG.info("Dataset 场景模式: %s (总 %d 条 manifest)", self.scene_mode, len(self.entries))
 
     def __len__(self):
         return len(self.entries)
+
+    @staticmethod
+    def _is_absent_entry(e, act_array):
+        """判定是否 absent：显式字段 > activity 全零。"""
+        if e.get("is_absent") in (True, 1, "true", "True", "1"):
+            return True
+        if act_array is not None and act_array.size > 0 and float(act_array.sum()) == 0.0:
+            return True
+        return False
+
+    @staticmethod
+    def _is_swap_entry(e):
+        """判定是否 enroll-swap：有 swap_enroll_wav 字段或 is_swap=true。"""
+        if e.get("is_swap") in (True, 1, "true", "True", "1"):
+            return True
+        swap_field = e.get("swap_enrollment") or e.get("swap_enroll_wav") or e.get("swap_enroll")
+        return bool(swap_field)
 
     def __getitem__(self, idx):
         e = self.entries[idx]
@@ -121,6 +148,8 @@ class B1Dataset(data.Dataset):
         itr_path = e.get("interferer", e.get("interferer_wav", ""))
         act_path = e.get("activity", e.get("activity_mask", ""))
         enroll_path = e.get("enrollment", e.get("enroll_wav", ""))
+        swap_enroll_path = (e.get("swap_enrollment") or e.get("swap_enroll_wav")
+                            or e.get("swap_enroll") or "")
         sample_id = e.get("id", e.get("sample_id", str(idx)))
 
         mix, sr = sf.read(self._resolve_path(mix_path), dtype="float32")
@@ -137,6 +166,13 @@ class B1Dataset(data.Dataset):
         act = np.load(act_resolved)
         assert sr == self.cfg["sample_rate"], f"采样率不一致: {sr} vs {self.cfg['sample_rate']}"
 
+        # ========== B2 / B3 场景判定 ==========
+        is_absent = self._is_absent_entry(e, act)
+        is_swap = self._is_swap_entry(e)
+        # scene_mode=b2/b3 时，也允许 manifest 内混合 present 样本（混合训练）
+        # 当显式 absent/swap 时，覆盖 ground truth：target=0 + frame_act=0
+        force_zero_target = is_absent or is_swap
+
         T = len(mix)
         if T >= self.seg_samples:
             start = int(self.rng.integers(0, T - self.seg_samples + 1))
@@ -151,44 +187,82 @@ class B1Dataset(data.Dataset):
             itr = np.pad(itr, (0, pad))
             act = np.pad(act, (0, pad))
 
+        # ---- B2 (ABSENT) / B3 (SWAP): 监督信号改为 target=0 ----
+        # 模型应学会：当 embedding 不匹配 mixture 中的 speaker 时，输出静音
+        if force_zero_target:
+            tgt = np.zeros_like(mix, dtype="float32")
+            act = np.zeros_like(act, dtype=act.dtype)
+            if is_absent:
+                self._stats["absent"] += 1
+            else:
+                self._stats["swap"] += 1
+        else:
+            self._stats["present"] += 1
+
+        # ---- Embedding 选择 ----
+        # B1 present       : 正常 enroll_path
+        # B2 absent        : 零向量（无目标 speaker，模型见零向量→输出静音）
+        # B3 enroll-swap   : 用 swap_enroll_path（干扰 speaker 的 enroll）
+        if is_absent:
+            emb = torch.zeros(self.emb_dim, dtype=torch.float32)
+        elif is_swap and swap_enroll_path:
+            # 注意：swap embedding 也走缓存（key 是 swap enroll 的 MD5，避免冲突）
+            emb = self._get_embedding(e, swap_enroll_path, speaker_hint="swap")
+        else:
+            emb = self._get_embedding(e, enroll_path, speaker_hint="target")
+
+        # ---- 场景统计：每 1000 条打一条 ----
+        total = sum(self._stats.values())
+        if total % 1000 == 0 and total > 0:
+            LOG.info("Dataset 样本统计 [total=%d] present=%d absent=%d swap=%d",
+                     total, self._stats["present"], self._stats["absent"], self._stats["swap"])
+
         return {
             "id": sample_id,
             "mix": torch.from_numpy(mix),
             "target": torch.from_numpy(tgt),
             "interferer": torch.from_numpy(itr),
             "frame_act": frame_activity(act, self.win_length, self.hop_length, self.act_frame_ratio),
-            "emb": self._get_embedding(e, enroll_path),
+            "emb": emb,
+            # 给 loss 层 / debugging 用的场景标签
+            "is_absent": torch.tensor(1 if is_absent else 0, dtype=torch.uint8),
+            "is_swap": torch.tensor(1 if is_swap else 0, dtype=torch.uint8),
         }
 
-    def _get_embedding(self, e, enroll_path=None):
-        import hashlib
+    def _get_embedding(self, e, enroll_path=None, speaker_hint="target"):
+        """获取 speaker embedding。
+
+        speaker_hint: 'target' / 'swap'  —— 仅用于 absent 分支的缓存 key 不冲突；
+                       absent 场景下返回零向量，不走此函数。
+        """
         spk_id = e.get("target_speaker", e.get("enrollment", e.get("sample_id", "unknown")))
+        if speaker_hint == "swap":
+            # swap 场景：speaker id 换成 swap 字段（如果有的话），否则用 swap_enroll 派生
+            spk_id = (e.get("swap_speaker") or e.get("swap_target_speaker")
+                      or f"swap__{spk_id}")
         if self.adapter.mode == "campplus" and not self._camplus_fallback:
             enroll = enroll_path or e.get("enrollment", e.get("enroll_wav", ""))
             enroll_resolved = self._resolve_path(enroll) if enroll else None
             if enroll_resolved and Path(enroll_resolved).exists():
-                # 优先从预计算缓存读取（P1 v2_b1 每条样本 enroll 不同，缓存可避免训练时实时编码）
+                # 缓存 key 用 enroll_path 的 MD5，swap enroll 与 target enroll 自动不冲突
                 cache_key = hashlib.md5(str(enroll_resolved).encode()).hexdigest() + ".pt"
                 cache_dir = P1_DATA_ROOT / "emb_cache_campplus"
                 cache_file = cache_dir / cache_key
                 if cache_file.exists():
-                    # 缓存张量在 GPU 上保存，子进程 fork 后不能直接 .to(cuda)
-                    # 先 load 到 CPU，返回 CPU 张量，由主进程在 forward 时转到 GPU
                     emb = torch.load(cache_file, weights_only=False, map_location="cpu")
                     return emb.squeeze(0)
-                # 缓存未命中：实时编码（并写回缓存）
                 try:
                     emb = self.adapter.encode_file(spk_id, enroll_resolved)
                     cache_dir.mkdir(parents=True, exist_ok=True)
                     torch.save(emb, cache_file)
                     return emb.squeeze(0)
                 except Exception as ex:
-                    LOG.warning(f"CAMPLUS encode 失败 ({spk_id}), fallback BOOTSTRAP: {ex}")
+                    LOG.warning(f"CAMPLUS encode 失败 ({speaker_hint}/{spk_id}), fallback BOOTSTRAP: {ex}")
         return self.adapter.get_embedding(spk_id).squeeze(0)
 
 
 def collate_fn(batch):
-    """所有样本等长（由 Dataset 保证），直接 stack。"""
+    """所有样本等长（由 Dataset 保证），直接 stack。is_absent/is_swap 是场景标签。"""
     return {
         "ids": [b["id"] for b in batch],
         "mix": torch.stack([b["mix"] for b in batch]),
@@ -196,6 +270,8 @@ def collate_fn(batch):
         "interferer": torch.stack([b["interferer"] for b in batch]),
         "frame_act": torch.stack([b["frame_act"] for b in batch]),
         "emb": torch.stack([b["emb"] for b in batch]),
+        "is_absent": torch.stack([b["is_absent"] for b in batch]),
+        "is_swap": torch.stack([b["is_swap"] for b in batch]),
     }
 
 
@@ -236,8 +312,10 @@ def main():
     ap.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda"])
     ap.add_argument("--out", default=None)
     ap.add_argument("--max_steps", type=int, default=None, help="覆盖 cfg.steps（空跑测试用）")
-    ap.add_argument("--debug_data", action="store_true", help="用 P2-07 DEBUG 集空跑（非正式 B1）")
+    ap.add_argument("--debug_data", action="store_true", help="用 P2-07 DEBUG 集空跑（非正式 B1/B2/B3）")
     ap.add_argument("--resume", default=None, help="从 checkpoint 恢复续训")
+    ap.add_argument("--scene_mode", default=None, choices=["b1", "b2", "b3"],
+                    help="场景模式覆盖配置：b1=PRESENT, b2=ABSENT, b3=ENROLL-SWAP")
     args = ap.parse_args()
 
     cfg = yaml.safe_load(open(args.config, encoding="utf-8"))
@@ -296,8 +374,8 @@ def main():
         LOG.warning("batch_size=%d > 样本数=%d，降为 %d", batch_size, n_train_samples, n_train_samples)
         batch_size = n_train_samples
 
-    train_ds = B1Dataset(train_manifest, cfg, seed=seed, adapter=adapter)
-    dev_ds = B1Dataset(dev_manifest, cfg, seed=seed + 1, adapter=adapter)
+    train_ds = B1Dataset(train_manifest, cfg, seed=seed, adapter=adapter, scene_mode=args.scene_mode)
+    dev_ds = B1Dataset(dev_manifest, cfg, seed=seed + 1, adapter=adapter, scene_mode=args.scene_mode)
     drop_last = len(train_ds) >= batch_size
     train_loader = data.DataLoader(
         train_ds, batch_size=batch_size,
@@ -310,8 +388,8 @@ def main():
         dev_ds, batch_size=batch_size, shuffle=False, num_workers=0,
         collate_fn=collate_fn)
 
-    LOG.info("train=%d 条 dev=%d 条 batch=%d seg=%ds drop_last=%s",
-             len(train_ds), len(dev_ds), batch_size, int(cfg["segment_length"]), drop_last)
+    LOG.info("scene_mode=%s train=%d 条 dev=%d 条 batch=%d seg=%ds drop_last=%s",
+             train_ds.scene_mode, len(train_ds), len(dev_ds), batch_size, int(cfg["segment_length"]), drop_last)
 
     with open(out_dir / "data.sha256", "w", encoding="utf-8") as f:
         f.write(f"{sha256_file(train_manifest)}  train_manifest.jsonl\n")
