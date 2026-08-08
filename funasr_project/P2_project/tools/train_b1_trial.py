@@ -77,28 +77,91 @@ class B1Dataset(data.Dataset):
 
     SUPPORTED_MODES = ("b1", "b2", "b3")
 
-    @staticmethod
-    def _resolve_path(p):
-        """Resolve audio path: try P1 root first, fallback to FUNASR_ROOT."""
+    def _resolve_path(self, p):
+        """Resolve audio path.
+        搜索顺序（从高到低）：
+          1) manifest_dir：manifest.jsonl 所在目录（P1 v3：assets/ 与 manifest 同目录）
+          2) cfg.datasets.data_root（可选，配置覆盖）
+          3) P1_DATA_ROOT 硬编码默认（P1 v2 兼容）
+          4) FUNASR_ROOT 项目根（P2 debug data 路径 P2_project/artifacts/...）
+        对省略后缀（.npy/.wav）的 activity_mask 路径自动补全后缀（兼容 P1 v3 hash 路径）。"""
         p = str(p)
         if not p or p == "None":
             return None
-        for root in [P1_DATA_ROOT, FUNASR_ROOT]:
-            candidate = root / p
-            if candidate.exists():
-                return str(candidate)
+        roots = []
+        # 1) manifest dir（最高优先级：manifest 同级 assets）
+        if hasattr(self, "_manifest_dir") and self._manifest_dir is not None:
+            roots.append(self._manifest_dir)
+        # 2) cfg 可选 data_root
+        if hasattr(self, "cfg") and self.cfg is not None:
+            cfg_dr = self.cfg.get("datasets", {}).get("data_root") or self.cfg.get("data_root")
+            if cfg_dr:
+                roots.append(Path(cfg_dr))
+        # 3) 硬编码 P1 v2 默认
+        roots.append(P1_DATA_ROOT)
+        # 4) 项目根兜底（debug data）
+        roots.append(FUNASR_ROOT)
+        suffixes = ("", ".npy", ".wav")  # 先试原路径 → .npy → .wav
+        for root in roots:
+            candidate_base = Path(root) / p
+            for suf in suffixes:
+                cand = Path(str(candidate_base) + suf)
+                if cand.exists():
+                    return str(cand)
         return str(FUNASR_ROOT / p)
 
-    def __init__(self, manifest_path, cfg, seed=None, adapter=None, scene_mode=None):
+    @staticmethod
+    def _load_activity_mask(path):
+        """加载 activity_mask：.npy（优先）或 .wav（单通道 mask）。"""
+        p = Path(path)
+        if p.suffix == ".npy" or p.suffix == "":
+            try:
+                arr = np.load(str(p))
+                return arr.astype("float32")
+            except Exception:
+                pass
+        arr, _sr = sf.read(str(p), dtype="float32")
+        if arr.ndim > 1:
+            arr = arr[:, 0]
+        return arr.astype("float32")
+
+    def __init__(self, manifest_path, cfg, seed=None, adapter=None, scene_mode=None, split_name=None):
         self.entries = []
-        with open(manifest_path, encoding="utf-8") as f:
-            for line in f:
-                self.entries.append(json.loads(line))
-        self.cfg = cfg
-        # scene_mode: CLI 覆盖 > cfg 配置 > 默认 b1
+        self.cfg = cfg  # 提前赋值，供 _resolve_path 内取 cfg.datasets.data_root
+        # ---- manifest 所在目录（P1 v3：assets/ 相对 manifest 位置）----
+        self._manifest_dir = Path(manifest_path).resolve().parent
+        # ---- scene_mode / split_name：CLI > cfg > 默认 ----
         self.scene_mode = (scene_mode or cfg.get("scene_mode") or "b1").lower()
         assert self.scene_mode in self.SUPPORTED_MODES, (
             f"scene_mode={self.scene_mode} 不受支持，允许: {self.SUPPORTED_MODES}")
+        self.split_name = split_name or cfg.get("split_name")  # None=不过滤，否则按 e['split'] 匹配（如 train/dev）
+        # ---- scenario 过滤：按 scene_mode 自动限定（P1 v3 支持）----
+        if self.scene_mode == "b2":
+            self._scenario_filter = {"absent", "enroll_swap_absent"}  # target_present=False
+        elif self.scene_mode == "b3":
+            self._scenario_filter = {"enroll_swap_target_1", "enroll_swap_target_2",  # target_present=True（同 speaker swap 注册句）
+                                     "enroll_swap_absent"}                           # target_present=False（注册句 swap + absent）
+        else:  # b1：全 scenario（含 v2 P1 数据）
+            self._scenario_filter = None
+        # ---- 读 manifest + 过滤 ----
+        skipped_split = 0
+        skipped_scenario = 0
+        with open(manifest_path, encoding="utf-8") as f:
+            for line in f:
+                e = json.loads(line)
+                # split 过滤（P1 v3：e['split'] = train/dev/D_absent/D_swap）
+                if self.split_name and e.get("split", "") != self.split_name:
+                    skipped_split += 1
+                    continue
+                # scenario 过滤（P1 v3 有 scenario 字段时严格过滤；v1/v2 P2 debug 无 scenario 字段 → 全通过，靠 is_absent/is_swap/target_present 旧字段判定）
+                sc = e.get("scenario")
+                if self._scenario_filter and sc is not None and sc not in self._scenario_filter:
+                    skipped_scenario += 1
+                    continue
+                self.entries.append(e)
+        LOG.info("加载 manifest=%s scene_mode=%s split_name=%s total=%d (skipped_split=%d scenario=%d)",
+                 Path(manifest_path).name, self.scene_mode, self.split_name or "ALL",
+                 len(self.entries), skipped_split, skipped_scenario)
         self.seg_samples = int(cfg["segment_length"] * cfg["sample_rate"])
         self.win_length = int(cfg["win_length"])
         self.hop_length = int(cfg["hop_length"])
@@ -117,14 +180,21 @@ class B1Dataset(data.Dataset):
                 self.adapter = EnrollmentAdapter.from_config(cfg, mode="bootstrap")
         # 场景统计（每 1000 条 __getitem__ 打一条 summary log）
         self._stats = {"present": 0, "absent": 0, "swap": 0}
-        LOG.info("Dataset 场景模式: %s (总 %d 条 manifest)", self.scene_mode, len(self.entries))
+        LOG.info("Dataset 场景模式: %s split=%s (总 %d 条 manifest)",
+                 self.scene_mode, self.split_name or "ALL", len(self.entries))
 
     def __len__(self):
         return len(self.entries)
 
     @staticmethod
     def _is_absent_entry(e, act_array):
-        """判定是否 absent：显式字段 > activity 全零。"""
+        """判定是否 absent 场景（应输出 0）。
+        优先级：显式 target_present=False（P1 v3）> scenario=*absent*（P1 v3）> 旧字段 is_absent > activity 全零。"""
+        if e.get("target_present") is False:
+            return True
+        scenario = str(e.get("scenario", ""))
+        if scenario in ("absent", "enroll_swap_absent"):
+            return True
         if e.get("is_absent") in (True, 1, "true", "True", "1"):
             return True
         if act_array is not None and act_array.size > 0 and float(act_array.sum()) == 0.0:
@@ -133,7 +203,11 @@ class B1Dataset(data.Dataset):
 
     @staticmethod
     def _is_swap_entry(e):
-        """判定是否 enroll-swap：有 swap_enroll_wav 字段或 is_swap=true。"""
+        """判定是否 enroll-swap 场景（P1 v3 scenario 含 enroll_swap_* 或 P2 旧字段 is_swap）。
+        注意：is_swap 只是场景统计用，不等于应该输出 0。B3 target_1/2（target_present=True）不应输出 0。"""
+        scenario = str(e.get("scenario", ""))
+        if "enroll_swap" in scenario:
+            return True
         if e.get("is_swap") in (True, 1, "true", "True", "1"):
             return True
         swap_field = e.get("swap_enrollment") or e.get("swap_enroll_wav") or e.get("swap_enroll")
@@ -162,16 +236,23 @@ class B1Dataset(data.Dataset):
         else:
             itr = np.zeros_like(mix, dtype="float32")
 
+        # Activity mask：.npy（P1/P2 原生）或 .wav（P1 v3 也可存 mask），自动补全后缀
         act_resolved = self._resolve_path(act_path)
-        act = np.load(act_resolved)
+        act = self._load_activity_mask(act_resolved)
         assert sr == self.cfg["sample_rate"], f"采样率不一致: {sr} vs {self.cfg['sample_rate']}"
 
-        # ========== B2 / B3 场景判定 ==========
+        # ========== 场景判定 ==========
         is_absent = self._is_absent_entry(e, act)
         is_swap = self._is_swap_entry(e)
-        # scene_mode=b2/b3 时，也允许 manifest 内混合 present 样本（混合训练）
-        # 当显式 absent/swap 时，覆盖 ground truth：target=0 + frame_act=0
-        force_zero_target = is_absent or is_swap
+
+        # force_zero_target：只有目标 speaker 不在 mixture 中（target_present=False / absent）才强制输出 0
+        #   B3 enroll_swap_target_1/2（target_present=True，注册句是同 speaker 另一句）→ 不输出 0，正常回归 target_wav
+        #   兼容 P2 debug_data：没有 target_present 字段时，回退旧逻辑（is_absent or is_swap → zero）
+        target_present = e.get("target_present")
+        if target_present is not None:
+            force_zero_target = (target_present is False)
+        else:
+            force_zero_target = is_absent or is_swap
 
         T = len(mix)
         if T >= self.seg_samples:
@@ -187,28 +268,33 @@ class B1Dataset(data.Dataset):
             itr = np.pad(itr, (0, pad))
             act = np.pad(act, (0, pad))
 
-        # ---- B2 (ABSENT) / B3 (SWAP): 监督信号改为 target=0 ----
-        # 模型应学会：当 embedding 不匹配 mixture 中的 speaker 时，输出静音
+        # ---- 监督信号置零（B2 ABSENT + B3 swap_absent）----
         if force_zero_target:
             tgt = np.zeros_like(mix, dtype="float32")
             act = np.zeros_like(act, dtype=act.dtype)
             if is_absent:
                 self._stats["absent"] += 1
-            else:
+            else:  # P2 debug 的旧 is_swap=true（老数据兼容）
                 self._stats["swap"] += 1
         else:
-            self._stats["present"] += 1
+            # 非零 target：B1 present / B3 enroll_swap_target_1/2（同 speaker 注册句 swap，target 仍存在）
+            if is_swap:
+                self._stats["swap"] += 1  # B3：注册句有 swap
+            else:
+                self._stats["present"] += 1  # B1：普通场景
 
         # ---- Embedding 选择 ----
-        # B1 present       : 正常 enroll_path
-        # B2 absent        : 零向量（无目标 speaker，模型见零向量→输出静音）
-        # B3 enroll-swap   : 用 swap_enroll_path（干扰 speaker 的 enroll）
+        # B2 (absent)          : 零向量（P2 设计要求：注册 speaker 不存在则给零 emb）
+        # B1 (present)          : 正常 enroll_path
+        # B3 enroll_swap        : P1 v3 直接把 swap 后的 enroll 填在 enroll_wav 字段 → 正常 enroll_path 计算 emb（无需 swap_enroll_path）
+        # 旧 P2 debug 兼容      : 若显式传 swap_enroll_path（P1 v2 之前设计）→ 走 swap 分支（独立缓存 key）
         if is_absent:
             emb = torch.zeros(self.emb_dim, dtype=torch.float32)
         elif is_swap and swap_enroll_path:
-            # 注意：swap embedding 也走缓存（key 是 swap enroll 的 MD5，避免冲突）
+            # 旧 P2 debug data：swap embedding 走缓存（key 是 swap enroll 的 MD5，避免冲突）
             emb = self._get_embedding(e, swap_enroll_path, speaker_hint="swap")
         else:
+            # B1 普通场景 + B3 v3 swap（enroll_wav 已被 P1 swap 成正确值）→ 统一走 enroll_path
             emb = self._get_embedding(e, enroll_path, speaker_hint="target")
 
         # ---- 场景统计：每 1000 条打一条 ----
@@ -308,14 +394,19 @@ def evaluate_dev(model, loader, cfg, device, use_amp):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default=str(P2_ROOT / "configs" / "tse_b1_trial.yaml"))
-    ap.add_argument("--manifest", default=None, help="覆盖 cfg.datasets.train_manifest")
+    ap.add_argument("--manifest", default=None,
+                    help="覆盖 cfg.datasets：P1 v2 传 train_manifest；P1 v3 传单 manifest.jsonl（配合 train_split/dev_split 过滤）")
     ap.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda"])
     ap.add_argument("--out", default=None)
     ap.add_argument("--max_steps", type=int, default=None, help="覆盖 cfg.steps（空跑测试用）")
-    ap.add_argument("--debug_data", action="store_true", help="用 P2-07 DEBUG 集空跑（非正式 B1/B2/B3）")
+    ap.add_argument("--debug_data", action="store_true", help="用 P2-07 DEBUG 集空跑，非正式 B1/B2/B3")
     ap.add_argument("--resume", default=None, help="从 checkpoint 恢复续训")
     ap.add_argument("--scene_mode", default=None, choices=["b1", "b2", "b3"],
                     help="场景模式覆盖配置：b1=PRESENT, b2=ABSENT, b3=ENROLL-SWAP")
+    ap.add_argument("--train_split", default=None,
+                    help="P1 v3 过滤 e['split']=此值作为 train（例：train / D_absent / D_swap）")
+    ap.add_argument("--dev_split", default=None,
+                    help="P1 v3 过滤 e['split']=此值作为 dev（例：dev）")
     args = ap.parse_args()
 
     cfg = yaml.safe_load(open(args.config, encoding="utf-8"))
@@ -359,23 +450,51 @@ def main():
     if args.debug_data:
         train_manifest = str(DEBUG_MANIFEST)
         dev_manifest = str(DEBUG_MANIFEST)
+        train_split = None
+        dev_split = None
         LOG.warning("--debug_data 模式：用 P2-07 DEBUG 集空跑，非正式 B1 训练")
     else:
-        train_manifest = args.manifest or cfg["datasets"]["train_manifest"]
-        dev_manifest = cfg["datasets"]["dev_manifest"]
-        if not Path(train_manifest).is_absolute():
-            train_manifest = str(P2_ROOT / train_manifest)
-        if not Path(dev_manifest).is_absolute():
-            dev_manifest = str(P2_ROOT / dev_manifest)
+        d = cfg.get("datasets", {})
+        # ---- 单 manifest + split 过滤（P1 v3：manifest.jsonl 内含 59K，split 字段分 train/dev）----
+        single_mf = args.manifest or d.get("manifest")
+        if single_mf:
+            if not Path(single_mf).is_absolute():
+                single_mf = str(P2_ROOT / single_mf)
+            train_manifest = single_mf
+            dev_manifest = single_mf
+            # CLI > cfg > 默认（train/dev）
+            train_split = args.train_split or d.get("train_split") or "train"
+            dev_split = args.dev_split or d.get("dev_split") or "dev"
+            LOG.info("P1 v3 单 manifest 模式：manifest=%s train_split=%s dev_split=%s",
+                     Path(single_mf).name, train_split, dev_split)
+        else:
+            # ---- 双 manifest（P1 v2 / 旧模式：train.jsonl + dev.jsonl 分开）----
+            train_manifest = args.manifest or d["train_manifest"]
+            dev_manifest = d["dev_manifest"]
+            if not Path(train_manifest).is_absolute():
+                train_manifest = str(P2_ROOT / train_manifest)
+            if not Path(dev_manifest).is_absolute():
+                dev_manifest = str(P2_ROOT / dev_manifest)
+            train_split = args.train_split or d.get("train_split")
+            dev_split = args.dev_split or d.get("dev_split")
 
+    # ---- 先构建 dataset（内部会按 split+scenario 过滤，所以 len 才是真实样本数）----
+    train_ds = B1Dataset(train_manifest, cfg, seed=seed, adapter=adapter,
+                         scene_mode=args.scene_mode, split_name=train_split)
+    dev_ds = B1Dataset(dev_manifest, cfg, seed=seed + 1, adapter=adapter,
+                       scene_mode=args.scene_mode, split_name=dev_split)
     batch_size = int(cfg["batch_size"])
-    n_train_samples = sum(1 for _ in open(train_manifest, encoding="utf-8"))
+    n_train_samples = len(train_ds)
+    if n_train_samples == 0:
+        LOG.error("train dataset 为空 0 条！请检查：scene_mode=%s 是否过滤了全部样本，或 manifest=%s 是否包含对应 split/scenario。",
+                  train_ds.scene_mode, train_manifest)
+        raise RuntimeError(f"train dataset 为空 (scene_mode={train_ds.scene_mode})")
+    if len(dev_ds) == 0:
+        LOG.warning("dev dataset 为空 0 条（跳过 dev 评测）。scene_mode=%s split=%s",
+                    dev_ds.scene_mode, dev_split or "-")
     if batch_size > n_train_samples:
         LOG.warning("batch_size=%d > 样本数=%d，降为 %d", batch_size, n_train_samples, n_train_samples)
         batch_size = n_train_samples
-
-    train_ds = B1Dataset(train_manifest, cfg, seed=seed, adapter=adapter, scene_mode=args.scene_mode)
-    dev_ds = B1Dataset(dev_manifest, cfg, seed=seed + 1, adapter=adapter, scene_mode=args.scene_mode)
     drop_last = len(train_ds) >= batch_size
     train_loader = data.DataLoader(
         train_ds, batch_size=batch_size,
@@ -388,12 +507,13 @@ def main():
         dev_ds, batch_size=batch_size, shuffle=False, num_workers=0,
         collate_fn=collate_fn)
 
-    LOG.info("scene_mode=%s train=%d 条 dev=%d 条 batch=%d seg=%ds drop_last=%s",
-             train_ds.scene_mode, len(train_ds), len(dev_ds), batch_size, int(cfg["segment_length"]), drop_last)
+    LOG.info("scene_mode=%s split=[train=%s,dev=%s] train=%d 条 dev=%d 条 batch=%d seg=%ds drop_last=%s",
+             train_ds.scene_mode, train_split or "-", dev_split or "-",
+             len(train_ds), len(dev_ds), batch_size, int(cfg["segment_length"]), drop_last)
 
     with open(out_dir / "data.sha256", "w", encoding="utf-8") as f:
-        f.write(f"{sha256_file(train_manifest)}  train_manifest.jsonl\n")
-        f.write(f"{sha256_file(dev_manifest)}  dev_manifest.jsonl\n")
+        f.write(f"{sha256_file(train_manifest)}  train_manifest.jsonl  split={train_split or '-'}\n")
+        f.write(f"{sha256_file(dev_manifest)}    dev_manifest.jsonl  split={dev_split or '-'}\n")
 
     model = DualOutputTSE(cfg).to(device)
     LOG.info("参数量 %d", sum(p.numel() for p in model.parameters()))

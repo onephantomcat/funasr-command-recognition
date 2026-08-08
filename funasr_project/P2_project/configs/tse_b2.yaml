@@ -1,17 +1,18 @@
 # ============================================================
-# P2-14 B2 ABSENT 场景训练配置（骨架）
+# P2-14 B2 ABSENT 场景训练配置（P1 v3 最终版）
 # ------------------------------------------------------------
 # 任务：训练模型在「目标 speaker 未出现在 mixture 中」时，输出静音（零抑制）
-# 监督信号：
-#   - present 样本：target 不变（正常说话人分离）
-#   - absent  样本：Dataset 自动设 target=0，emb=零向量（见 train_b1_trial.py B1Dataset）
+# 场景过滤：scene_mode=b2 → 自动取 scenario ∈ {absent, enroll_swap_absent}（target_present=False）
+# split 过滤：manifest.jsonl 内含 split 字段（train/dev/D_absent/D_swap）
 #
-# 前置依赖（P1 v3 未交付前此配置仅供冒烟测试）：
-#   - manifest 含 is_absent=true 字段 OR activity_mask 全为 0 的样本
-#
-# 运行示例（冒烟测试）：
-#   python tools/train_b1_trial.py --config configs/tse_b2.yaml \
-#       --debug_data --max_steps 5 --device cpu
+# 运行方式：
+#   云端 GPU 正式训练：
+#     python tools/train_b1_trial.py --config configs/tse_b2.yaml --device cuda
+#   本地 CPU 冒烟 5 步（走 debug data 兼容分支）：
+#     python tools/train_b1_trial.py --config configs/tse_b2.yaml --debug_data --max_steps 5 --device cpu
+#   用 P1 v3 真实数据冒烟 10 步：
+#     python tools/train_b1_trial.py --config configs/tse_b2.yaml --device cpu --max_steps 10 \
+#         --manifest /root/autodl-tmp/P1_to_P2_v3_absent_swap/manifest.jsonl
 # ============================================================
 
 sample_rate: 16000
@@ -68,20 +69,24 @@ pin_memory: true
 prefetch_factor: 2
 
 # ============================================================
-# ★ P1 v3 manifest 占位符 —— 等 P1 交付 v3_absent_swap 后更新路径
+# ★ P1 v3 单 manifest + split 过滤（P1 已交付，split=train/dev/D_absent）
 # ============================================================
 datasets:
-  # TODO(P1 v3): 替换为 absent+present 混合训练 manifest
-  train_manifest: /root/autodl-tmp/P1_to_P2_v3_absent_swap/manifests/tse_train_absent_mix.jsonl
-  # TODO(P1 v3): dev 集也需要 absent 样本（建议与训练同分布）
-  dev_manifest:   /root/autodl-tmp/P1_to_P2_v3_absent_swap/manifests/tse_dev_absent_mix.jsonl
-  eval_manifest:  /root/autodl-tmp/P1_to_P2_v3_absent_swap/manifests/D_single.jsonl
+  # P1 v3 全量 59K 样本的 manifest.jsonl（内含 scenario/target_present/split 字段）
+  manifest: /root/autodl-tmp/P1_to_P2_v3_absent_swap/manifest.jsonl
+  # train/dev 均从单 manifest 过滤：
+  #   train: split=train → 20,000 absent + 10,000 enroll_swap_absent → total 30K
+  #   dev:   split=dev   →  2,000 absent +  1,000 enroll_swap_absent → total  3K
+  train_split: train
+  dev_split:   dev
+  # D_absent 评估集（1,000 条，训练期不用，final eval 用）
+  eval_split: D_absent
 
 # 元信息
 tag: B2_ABSENT_seed20260723
 lane: INTEGRATION
 asset_class: B2_ABSENT
-notes: "B2 零抑制场景: present + absent 混合训练. absent样本: target=0, emb=零向量. P1 v3 manifest占位"
+notes: "B2 零抑制场景: scenario=absent+enroll_swap_absent（target_present=False）共 30K train/3K dev. P1 v3 manifest.jsonl 单文件按 split 过滤"
 
 # P4 CAMPPlus 嵌入（与 B1 一致，保证可复用缓存）
 sv_mode: campplus
