@@ -241,6 +241,34 @@ class B1Dataset(data.Dataset):
         act = self._load_activity_mask(act_resolved)
         assert sr == self.cfg["sample_rate"], f"采样率不一致: {sr} vs {self.cfg['sample_rate']}"
 
+        # ============================================================
+        # P1 v3 兼容修复：activity.npy 采样数 ≠ mix 采样数（常见 ratio≈0.552）
+        #   → 先 nearest-exact 将 act（0/1 标签，保语义无插值污染）对齐到 len(mix)
+        #   → 再走统一 crop/pad，保证后续 frame_activity() 帧数与 model STFT 严格一致
+        # ============================================================
+        _T_mix = len(mix)
+        _orig_act_len = int(act.size)
+        if _orig_act_len != _T_mix:
+            try:
+                if _orig_act_len == 0:
+                    act = np.zeros(_T_mix, dtype="float32")
+                else:
+                    _src = torch.from_numpy(act.astype("float32")).reshape(1, 1, -1)
+                    _aligned = torch.nn.functional.interpolate(
+                        _src, size=_T_mix, mode="nearest-exact"
+                    ).squeeze()
+                    act = _aligned.numpy().astype(act.dtype if hasattr(act, 'dtype') else 'float32')
+                LOG.info(
+                    "[ACT LEN FIX] sample-level activity %d → %d (len(mix)), ratio=%.3f",
+                    _orig_act_len, _T_mix, _T_mix / max(1, _orig_act_len),
+                )
+            except Exception as _e:
+                LOG.warning("[ACT LEN FIX] align fail (%s), fallback pad/trim", _e)
+                if _orig_act_len < _T_mix:
+                    act = np.pad(act, (0, _T_mix - _orig_act_len))
+                else:
+                    act = act[:_T_mix]
+
         # ========== 场景判定 ==========
         is_absent = self._is_absent_entry(e, act)
         is_swap = self._is_swap_entry(e)
@@ -330,7 +358,6 @@ class B1Dataset(data.Dataset):
             enroll = enroll_path or e.get("enrollment", e.get("enroll_wav", ""))
             enroll_resolved = self._resolve_path(enroll) if enroll else None
             if enroll_resolved and Path(enroll_resolved).exists():
-                # 缓存 key 用 enroll_path 的 MD5，swap enroll 与 target enroll 自动不冲突
                 cache_key = hashlib.md5(str(enroll_resolved).encode()).hexdigest() + ".pt"
                 cache_dir = P1_DATA_ROOT / "emb_cache_campplus"
                 cache_file = cache_dir / cache_key
@@ -344,6 +371,17 @@ class B1Dataset(data.Dataset):
                     return emb.squeeze(0)
                 except Exception as ex:
                     LOG.warning(f"CAMPLUS encode 失败 ({speaker_hint}/{spk_id}), fallback BOOTSTRAP: {ex}")
+            # 兜底：enroll 路径无效或 encode 异常 → BOOTSTRAP 确定性 emb（同 enroll→同 emb）
+            #   避免：① adapter.get_embedding(spk_id) → KeyError 未注册；
+            #        ② 调用模块级 bootstrap_embedding(...) → 云端脚本 import 被补丁打乱时 NameError。
+            #   直接内联 bootstrap 实现（与 train_overfit_debug.bootstrap_embedding 等价，0 外部 import 依赖）
+            _bo_text = enroll or enroll_path or str(spk_id)
+            try:
+                _bo_seed = int(sha256_text(_bo_text)[:8], 16)
+            except Exception:
+                _bo_seed = int(hashlib.sha256(str(_bo_text).encode()).hexdigest()[:8], 16)
+            _bo_gen = torch.Generator().manual_seed(_bo_seed)
+            return torch.randn(self.emb_dim, generator=_bo_gen)
         return self.adapter.get_embedding(spk_id).squeeze(0)
 
 
