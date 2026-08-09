@@ -258,10 +258,15 @@ class B1Dataset(data.Dataset):
                         _src, size=_T_mix, mode="nearest-exact"
                     ).squeeze()
                     act = _aligned.numpy().astype(act.dtype if hasattr(act, 'dtype') else 'float32')
-                LOG.info(
-                    "[ACT LEN FIX] sample-level activity %d → %d (len(mix)), ratio=%.3f",
-                    _orig_act_len, _T_mix, _T_mix / max(1, _orig_act_len),
-                )
+                if not getattr(self, "_actlen_fix_count", 0):
+                    LOG.info(
+                        "[ACT LEN FIX] sample-level activity %d → %d (len(mix)), ratio=%.3f  [后续将每 1000 次汇总 1 条]",
+                        _orig_act_len, _T_mix, _T_mix / max(1, _orig_act_len),
+                    )
+                self._actlen_fix_count = getattr(self, "_actlen_fix_count", 0) + 1
+                if self._actlen_fix_count % 1000 == 0:
+                    LOG.info("[ACT LEN FIX] 累计 %d 次 (最近 ratio=%.3f)",
+                             self._actlen_fix_count, _T_mix / max(1, _orig_act_len))
             except Exception as _e:
                 LOG.warning("[ACT LEN FIX] align fail (%s), fallback pad/trim", _e)
                 if _orig_act_len < _T_mix:
@@ -370,7 +375,11 @@ class B1Dataset(data.Dataset):
                     torch.save(emb, cache_file)
                     return emb.squeeze(0)
                 except Exception as ex:
-                    LOG.warning(f"CAMPLUS encode 失败 ({speaker_hint}/{spk_id}), fallback BOOTSTRAP: {ex}")
+                    if not getattr(self, "_camplus_fail_count", 0):
+                        LOG.warning(f"CAMPLUS encode 失败 ({speaker_hint}/{spk_id}), fallback BOOTSTRAP: {ex}  [后续同类错误将每 1000 次汇总 1 条]")
+                    self._camplus_fail_count = getattr(self, "_camplus_fail_count", 0) + 1
+                    if self._camplus_fail_count % 1000 == 0:
+                        LOG.warning(f"CAMPLUS fallback BOOTSTRAP 累计 {self._camplus_fail_count} 次 (最近 spk_id={spk_id})")
             # 兜底：enroll 路径无效或 encode 异常 → BOOTSTRAP 确定性 emb（同 enroll→同 emb）
             #   避免：① adapter.get_embedding(spk_id) → KeyError 未注册；
             #        ② 调用模块级 bootstrap_embedding(...) → 云端脚本 import 被补丁打乱时 NameError。
