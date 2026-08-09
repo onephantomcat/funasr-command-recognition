@@ -1,0 +1,96 @@
+# ============================================================
+# P2-13 B1 PRESENT 场景训练配置（P1 v3 最终版）
+# ------------------------------------------------------------
+# 任务：训练模型在「目标 speaker 出现在 mixture 中」时，正确提取目标语音
+# 场景过滤：scene_mode=b1 → 不过滤 scenario（全场景），但 P1 v3 manifest
+#          中 split=train/dev 的 scenario 包含 present + absent + swap，
+#          B1 只取 target_present=True 的样本（普通 present 场景）
+#
+# 注意：B1 与 B2/B3 共享同一份 P1 v3 manifest.jsonl，靠 scene_mode + scenario 过滤区分
+#
+# 运行方式：
+#   云端 GPU 正式训练：
+#     python tools/train_b1_trial.py --config configs/tse_b1.yaml --device cuda
+#   本地 CPU 冒烟 5 步：
+#     python tools/train_b1_trial.py --config configs/tse_b1.yaml --debug_data --max_steps 5 --device cpu
+#   用 P1 v3 真实数据冒烟 10 步：
+#     python tools/train_b1_trial.py --config configs/tse_b1.yaml --device cpu --max_steps 10
+# ============================================================
+
+sample_rate: 16000
+
+# STFT 参数（与 B2/B3 一致）
+n_fft: 512
+hop_length: 128
+win_length: 512
+
+# 模型结构（与 B2/B3 一致，保证可加载预训练权重）
+emb_dim: 192
+lstm_hidden: 256
+lstm_layers: 2
+dropout: 0.0
+film_scale: 0.1
+
+# PRESENT 损失权重（与 B2/B3 一致）
+lambda_sisdr: 1.0
+lambda_wav: 1.0
+lambda_stft: 1.0
+lambda_act: 0.5
+lambda_residual: 0.5
+lambda_mix: 0.5
+lambda_id: 0.0
+
+zero_ref_kappa: 1.0e-3
+mrstft_resolutions:
+  - [256, 64, 256]
+  - [512, 128, 512]
+  - [1024, 256, 1024]
+act_frame_ratio: 0.5
+
+# ============================================================
+# ★ B1 核心：场景模式 = b1（present 场景，target_present=True）
+# ============================================================
+scene_mode: b1
+
+segment_length: 8
+batch_size: 16
+gradient_accumulation: 1
+amp: false            # 保持关闭（稳定第一）
+steps: 20000
+seed: 20260723
+lr: 3.0e-4
+lr_warmup_steps: 100
+lr_schedule: cosine
+grad_clip: 2.0
+log_every: 25
+save_every: 500       # 40 个 ckpt
+dev_every: 100        # 200 次 dev 评测
+shuffle: true
+num_workers: 2
+pin_memory: true
+prefetch_factor: 2
+
+# ============================================================
+# ★ P1 v3 单 manifest + split 过滤（与 B2/B3 共享同一份 manifest）
+# ============================================================
+datasets:
+  # P1 v3 全量 59K 样本的 manifest.jsonl（内含 scenario/target_present/split 字段）
+  manifest: /root/autodl-tmp/P1_to_P2_v3_absent_swap/manifest.jsonl
+  # train/dev 均从单 manifest 过滤：
+  #   B1 scene_mode=b1 → 不按 scenario 过滤，全 split=train 的 present 样本
+  #   （P1 v3 manifest 中 split=train 的 present 样本约 10K-20K）
+  train_split: train
+  dev_split:   dev
+  # D_single 评估集（present 场景，训练期不用，final eval 用）
+  eval_split: D_single
+
+# 元信息
+tag: B1_PRESENT_seed20260723
+lane: INTEGRATION
+asset_class: B1_PRESENT
+notes: "B1 present 场景训练: target_present=True 的普通场景，P1 v3 manifest.jsonl 单文件按 split 过滤"
+
+# P4 CAMPPlus 嵌入（与 B2/B3 一致）
+sv_mode: campplus
+sv_bootstrap_seed: 20260804
+sv_model_id: ""
