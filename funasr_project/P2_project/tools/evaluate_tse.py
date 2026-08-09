@@ -67,15 +67,53 @@ SCHEMA_PATH = P2_ROOT / "schemas" / "tse_prediction.schema.json"
 
 
 def scenario_of(entry):
-    ov = int(round(float(entry["overlap_ratio"]) * 100))
-    sir = float(entry["sir_db"])
+    # P1 v3 优先使用 scenario 字段（absent / enroll_swap_target_1 / 等）
+    sc = entry.get("scenario", "")
+    if sc:
+        return str(sc)
+    # P1 v2 使用 overlap_ratio + sir_db 构造场景标签
+    ov_raw = entry.get("overlap_ratio",
+                        entry.get("requested_overlap",
+                                  entry.get("measured_overlap", 0.0)))
+    sir_raw = entry.get("sir_db",
+                         entry.get("requested_sir_db",
+                                   entry.get("measured_sir_db", 0.0)))
+    ov = int(round(float(ov_raw) * 100))
+    sir = float(sir_raw)
     sir_s = f"minus{abs(sir):g}" if sir < 0 else f"{sir:g}"
     return f"overlap_{ov}_sir_{sir_s}"
 
 
 def _load_wav(rel_path, base=None):
-    wav, sr = sf.read(str((base or FUNASR_ROOT) / rel_path), dtype="float32")
-    return torch.from_numpy(wav), sr
+    """加载音频：绝对路径直接读；相对路径先试 base 再试 FUNASR_ROOT。"""
+    p = Path(rel_path)
+    if p.is_absolute() and p.exists():
+        wav, sr = sf.read(str(p), dtype="float32")
+        return torch.from_numpy(wav), sr
+    candidates = []
+    if base:
+        candidates.append(Path(base) / rel_path)
+    candidates.append(FUNASR_ROOT / rel_path)
+    for c in candidates:
+        if c.exists():
+            wav, sr = sf.read(str(c), dtype="float32")
+            return torch.from_numpy(wav), sr
+    raise FileNotFoundError(f"找不到音频: {rel_path} (搜索: {[str(c) for c in candidates]})")
+
+
+def _load_npy(rel_path, base=None):
+    """加载 npy：绝对路径直接读；相对路径先试 base 再试 FUNASR_ROOT。"""
+    p = Path(rel_path)
+    if p.is_absolute() and p.exists():
+        return np.load(str(p))
+    candidates = []
+    if base:
+        candidates.append(Path(base) / rel_path)
+    candidates.append(FUNASR_ROOT / rel_path)
+    for c in candidates:
+        if c.exists():
+            return np.load(str(c))
+    raise FileNotFoundError(f"找不到 npy: {rel_path} (搜索: {[str(c) for c in candidates]})")
 
 
 @torch.no_grad()
@@ -164,6 +202,8 @@ def main():
     ap.add_argument("--manifest", default=str(P2_ROOT / "artifacts" / "debug_mixtures_v0" / "manifest.jsonl"))
     ap.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda"])
     ap.add_argument("--out", default=None)
+    ap.add_argument("--data_root", default=None,
+                    help="数据根目录（音频/npy 相对路径的基目录；不指定则用 FUNASR_ROOT）")
     args = ap.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -187,8 +227,19 @@ def main():
     (out_dir / "audio").mkdir(exist_ok=True)
 
     entries = [json.loads(l) for l in open(args.manifest, encoding="utf-8")]
-    entries = sorted(entries, key=lambda e: e["id"])
-    base = FUNASR_ROOT
+    # P1 v2/v3 字段兼容：v2 用 mixture/target/enrollment/activity，v3 用 mixture_wav/target_wav/enroll_wav/activity_mask
+    for e in entries:
+        e.setdefault("id", e.get("sample_id", e.get("triplet_id", "")))
+        e.setdefault("mixture", e.get("mixture_wav", ""))
+        e.setdefault("target", e.get("target_wav", ""))
+        e.setdefault("interferer", e.get("interferer_wav", ""))
+        e.setdefault("enrollment", e.get("enroll_wav", ""))
+        e.setdefault("activity", e.get("activity_mask", ""))
+        e.setdefault("config", e.get("generator_version", "unknown"))
+    entries = sorted(entries, key=lambda e: str(e.get("id", "")))
+    data_root = Path(args.data_root) if args.data_root else FUNASR_ROOT
+    base = data_root
+    LOG.info("data_root=%s (FUNASR_ROOT=%s)", data_root, FUNASR_ROOT)
 
     adapter = EnrollmentAdapter.from_config(cfg)
     LOG.info("EnrollmentAdapter mode=%s", adapter.mode)
@@ -199,14 +250,14 @@ def main():
     peak_gpu_gb = 0.0
 
     for i, e in enumerate(entries):
-        sid = e["id"]
+        sid = str(e.get("id", e.get("sample_id", str(i))))
         target_present = bool(e.get("target_present", True))
-        mix, sr = _load_wav(e["mixture"], base)
+        mix, sr = _load_wav(e.get("mixture", e.get("mixture_wav", "")), base)
         assert sr == cfg["sample_rate"]
-        spk_id = e.get("target_speaker", e.get("enrollment", e["id"]))
+        spk_id = e.get("target_speaker", e.get("enrollment", sid))
         try:
             if adapter.mode == "campplus":
-                enroll_path = str(FUNASR_ROOT / e["enrollment"])
+                enroll_path = str(base / e.get("enrollment", e.get("enroll_wav", "")))
                 adapter.encode_file(spk_id, enroll_path)
             emb = adapter.get_embedding(spk_id).squeeze(0)
         except Exception as ex:
@@ -239,18 +290,22 @@ def main():
             det = {"sample_id": sid, "scenario": scenario, "target_present": target_present,
                    **scored, "metrics_skipped": True}
         elif target_present:
-            ref, _ = _load_wav(e["target"], base)
-            act = np.load(str(base / e["activity"]))
+            ref, _ = _load_wav(e.get("target", e.get("target_wav", "")), base)
+            # P1 v3 activity_mask 采样数可能 ≠ mix（10ms 帧级），需先 nearest 对齐到 mix 长度
+            act = _load_npy(e.get("activity", e.get("activity_mask", "")), base)
+            if act.size != mix.numel():
+                _src = torch.from_numpy(act.astype("float32")).reshape(1, 1, -1)
+                act = torch.nn.functional.interpolate(_src, size=mix.numel(), mode="nearest-exact").squeeze().numpy().astype("float32")
             fa = frame_activity(act, cfg["win_length"], cfg["hop_length"], float(cfg["act_frame_ratio"]))
             scored = score_present(s_tgt, ref, mix, p_tgt, fa)
             comps.append(si_sdr_components(s_tgt, ref))
 
-            itr, _ = _load_wav(e["interferer"], base)
-            wrong_spk = e["interferer_speaker"]
-            wrong_enroll = f"data/trials/enroll_{wrong_spk}.wav"
+            itr, _ = _load_wav(e.get("interferer", e.get("interferer_wav", "")), base)
+            wrong_spk = e.get("interferer_speaker", "")
+            wrong_enroll = e.get("swap_enrollment", e.get("swap_enroll_wav", f"data/trials/enroll_{wrong_spk}.wav"))
             try:
                 if adapter.mode == "campplus":
-                    wrong_path = str(FUNASR_ROOT / wrong_enroll)
+                    wrong_path = str(base / wrong_enroll)
                     adapter.encode_file(wrong_spk, wrong_path)
                 emb_w = adapter.get_embedding(wrong_spk).squeeze(0)
             except Exception:
@@ -267,14 +322,14 @@ def main():
                               "q_e2_y2": q_e2_y2, "q_e2_y1": q_e2_y1,
                               "selectivity_db": q_e1_y1 - q_e1_y2, "choice_score": choice})
             det = {"sample_id": sid, "scenario": scenario, "target_present": True,
-                   "config": e["config"], **scored,
+                   "config": e.get("config", "unknown"), **scored,
                    "activity_ratio": activity_ratio(p_tgt),
                    "rtf": latency_ms / 1000.0 / duration,
                    "swap": swap_rows[-1]}
         else:
             scored = score_absent(s_tgt, mix, p_tgt)
             det = {"sample_id": sid, "scenario": scenario, "target_present": False,
-                   "config": e["config"], **scored,
+                   "config": e.get("config", "unknown"), **scored,
                    "rtf": latency_ms / 1000.0 / duration}
 
         records.append(schema_record(sid, scenario, target_present, ckpt_sha, data_sha,
@@ -300,21 +355,25 @@ def main():
 
     verify = []
     for e, rec in zip(entries, records):
-        est, _ = sf.read(str(out_dir / "audio" / f"{e['id']}__est_target.wav"), dtype="float32")
+        sid_v = str(e.get("id", ""))
+        est, _ = sf.read(str(out_dir / "audio" / f"{sid_v}__est_target.wav"), dtype="float32")
         est = torch.from_numpy(est)
-        p_tgt = torch.from_numpy(np.load(str(out_dir / "audio" / f"{e['id']}__p_tgt.npy")))
-        mix, _ = _load_wav(e["mixture"])
+        p_tgt = torch.from_numpy(np.load(str(out_dir / "audio" / f"{sid_v}__p_tgt.npy")))
+        mix, _ = _load_wav(e.get("mixture", ""), base)
         target_present = bool(e.get("target_present", True))
         if rec["nan"]:
             scored = nan_record_present()
         elif target_present:
-            ref, _ = _load_wav(e["target"], base)
-            act = np.load(str(base / e["activity"]))
+            ref, _ = _load_wav(e.get("target", ""), base)
+            act = _load_npy(e.get("activity", ""), base)
+            if act.size != mix.numel():
+                _src = torch.from_numpy(act.astype("float32")).reshape(1, 1, -1)
+                act = torch.nn.functional.interpolate(_src, size=mix.numel(), mode="nearest-exact").squeeze().numpy().astype("float32")
             fa = frame_activity(act, cfg["win_length"], cfg["hop_length"], float(cfg["act_frame_ratio"]))
             scored = score_present(est, ref, mix, p_tgt, fa)
         else:
             scored = score_absent(est, mix, p_tgt)
-        verify.append(schema_record(e["id"], rec["scenario"], target_present,
+        verify.append(schema_record(sid_v, rec["scenario"], target_present,
                                     ckpt_sha, data_sha, scored, rec["latency_ms"]))
     det_pass = all(json.dumps(a, ensure_ascii=False) == json.dumps(b, ensure_ascii=False)
                    for a, b in zip(records, verify))
