@@ -1,0 +1,8 @@
+{
+  "frozen_at": "2026-08-05T12:32:38+00:00",
+  "generator_version": "p1_v2_b1_builder.v1.0.4",
+  "manifest_sha256": "b0ab96c1043eb3221f946f1421ff5bf0ba8c1f2ae99befd5458ce539515990a7",
+  "read_only": true,
+  "schema_version": "p1_to_p2.v1",
+  "version": "v2_b1"
+}

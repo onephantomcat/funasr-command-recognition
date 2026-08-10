@@ -1,0 +1,145 @@
+{
+  "$id": "p1_to_p2.v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "activity_mask": {
+      "type": "string"
+    },
+    "common_scale": {
+      "exclusiveMinimum": 0,
+      "maximum": 1,
+      "type": "number"
+    },
+    "enroll_wav": {
+      "type": "string"
+    },
+    "generator_version": {
+      "const": "p1_v2_b1_builder.v1.0.4"
+    },
+    "interferer_speaker": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "interferer_wav": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "measured_overlap": {
+      "maximum": 1,
+      "minimum": 0,
+      "type": "number"
+    },
+    "measured_sir_db": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "measured_snr_db": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "mixture_wav": {
+      "type": "string"
+    },
+    "num_samples": {
+      "const": 57600
+    },
+    "output_hashes": {
+      "type": "object"
+    },
+    "requested_overlap": {
+      "maximum": 1,
+      "minimum": 0,
+      "type": "number"
+    },
+    "requested_sir_db": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "requested_snr_db": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "sample_id": {
+      "type": "string"
+    },
+    "sample_rate": {
+      "const": 16000
+    },
+    "scenario": {
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "p1_to_p2.v1"
+    },
+    "seed": {
+      "type": "integer"
+    },
+    "source_hashes": {
+      "type": "object"
+    },
+    "split": {
+      "enum": [
+        "train",
+        "dev",
+        "D_single",
+        "D_overlap"
+      ]
+    },
+    "target_present": {
+      "const": true
+    },
+    "target_speaker": {
+      "type": "string"
+    },
+    "target_wav": {
+      "type": "string"
+    },
+    "valid_samples": {
+      "maximum": 57600,
+      "minimum": 1,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "schema_version",
+    "sample_id",
+    "split",
+    "scenario",
+    "target_present",
+    "sample_rate",
+    "num_samples",
+    "valid_samples",
+    "mixture_wav",
+    "enroll_wav",
+    "target_wav",
+    "interferer_wav",
+    "activity_mask",
+    "target_speaker",
+    "interferer_speaker",
+    "requested_sir_db",
+    "measured_sir_db",
+    "requested_snr_db",
+    "measured_snr_db",
+    "requested_overlap",
+    "measured_overlap",
+    "common_scale",
+    "generator_version",
+    "seed",
+    "source_hashes",
+    "output_hashes"
+  ],
+  "type": "object"
+}
