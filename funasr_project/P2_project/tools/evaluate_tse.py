@@ -300,32 +300,40 @@ def main():
             scored = score_present(s_tgt, ref, mix, p_tgt, fa)
             comps.append(si_sdr_components(s_tgt, ref))
 
-            itr, _ = _load_wav(e.get("interferer", e.get("interferer_wav", "")), base)
-            wrong_spk = e.get("interferer_speaker", "")
-            wrong_enroll = e.get("swap_enrollment", e.get("swap_enroll_wav", f"data/trials/enroll_{wrong_spk}.wav"))
-            try:
-                if adapter.mode == "campplus":
-                    wrong_path = str(base / wrong_enroll)
-                    adapter.encode_file(wrong_spk, wrong_path)
-                emb_w = adapter.get_embedding(wrong_spk).squeeze(0)
-            except Exception:
-                adapter_bs = EnrollmentAdapter.from_config(cfg, mode="bootstrap")
-                emb_w = adapter_bs.get_embedding(wrong_spk).squeeze(0)
-            s_w, _, _, _ = _forward_timed(model, mix, emb_w, device)
-            q_e1_y1 = si_sdr_eval(s_tgt, ref)
-            q_e1_y2 = si_sdr_eval(s_tgt, itr)
-            q_e2_y2 = si_sdr_eval(s_w, itr)
-            q_e2_y1 = si_sdr_eval(s_w, ref)
-            delta = q_e1_y1 - q_e2_y1
-            choice = 0.5 if abs(delta) <= TIE_EPS else (1.0 if delta > 0 else 0.0)
-            swap_rows.append({"sample_id": sid, "q_e1_y1": q_e1_y1, "q_e1_y2": q_e1_y2,
-                              "q_e2_y2": q_e2_y2, "q_e2_y1": q_e2_y1,
-                              "selectivity_db": q_e1_y1 - q_e1_y2, "choice_score": choice})
-            det = {"sample_id": sid, "scenario": scenario, "target_present": True,
-                   "config": e.get("config", "unknown"), **scored,
-                   "activity_ratio": activity_ratio(p_tgt),
-                   "rtf": latency_ms / 1000.0 / duration,
-                   "swap": swap_rows[-1]}
+            # 修复：interferer 可能为 None（D_single 单说话人场景），跳过 swap 评测
+            itr_rel = e.get("interferer") or e.get("interferer_wav") or ""
+            if itr_rel:
+                itr, _ = _load_wav(itr_rel, base)
+                wrong_spk = e.get("interferer_speaker", "")
+                wrong_enroll = e.get("swap_enrollment", e.get("swap_enroll_wav", f"data/trials/enroll_{wrong_spk}.wav"))
+                try:
+                    if adapter.mode == "campplus":
+                        wrong_path = str(base / wrong_enroll)
+                        adapter.encode_file(wrong_spk, wrong_path)
+                    emb_w = adapter.get_embedding(wrong_spk).squeeze(0)
+                except Exception:
+                    adapter_bs = EnrollmentAdapter.from_config(cfg, mode="bootstrap")
+                    emb_w = adapter_bs.get_embedding(wrong_spk).squeeze(0)
+                s_w, _, _, _ = _forward_timed(model, mix, emb_w, device)
+                q_e1_y1 = si_sdr_eval(s_tgt, ref)
+                q_e1_y2 = si_sdr_eval(s_tgt, itr)
+                q_e2_y2 = si_sdr_eval(s_w, itr)
+                q_e2_y1 = si_sdr_eval(s_w, ref)
+                delta = q_e1_y1 - q_e2_y1
+                choice = 0.5 if abs(delta) <= TIE_EPS else (1.0 if delta > 0 else 0.0)
+                swap_rows.append({"sample_id": sid, "q_e1_y1": q_e1_y1, "q_e1_y2": q_e1_y2,
+                                  "q_e2_y2": q_e2_y2, "q_e2_y1": q_e2_y1,
+                                  "selectivity_db": q_e1_y1 - q_e1_y2, "choice_score": choice})
+                det = {"sample_id": sid, "scenario": scenario, "target_present": True,
+                       "config": e.get("config", "unknown"), **scored,
+                       "activity_ratio": activity_ratio(p_tgt),
+                       "rtf": latency_ms / 1000.0 / duration,
+                       "swap": swap_rows[-1]}
+            else:
+                det = {"sample_id": sid, "scenario": scenario, "target_present": True,
+                       "config": e.get("config", "unknown"), **scored,
+                       "activity_ratio": activity_ratio(p_tgt),
+                       "rtf": latency_ms / 1000.0 / duration}
         else:
             scored = score_absent(s_tgt, mix, p_tgt)
             det = {"sample_id": sid, "scenario": scenario, "target_present": False,

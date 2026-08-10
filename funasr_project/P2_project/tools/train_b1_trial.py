@@ -448,6 +448,8 @@ def main():
     ap.add_argument("--max_steps", type=int, default=None, help="覆盖 cfg.steps（空跑测试用）")
     ap.add_argument("--debug_data", action="store_true", help="用 P2-07 DEBUG 集空跑，非正式 B1/B2/B3")
     ap.add_argument("--resume", default=None, help="从 checkpoint 恢复续训")
+    ap.add_argument("--init_checkpoint", default=None,
+                    help="从已有 checkpoint 热启动（仅加载 model 权重，不加载 optimizer/scaler/step，用于 B3 从 B1 预训练权重起步）")
     ap.add_argument("--scene_mode", default=None, choices=["b1", "b2", "b3"],
                     help="场景模式覆盖配置：b1=PRESENT, b2=ABSENT, b3=ENROLL-SWAP")
     ap.add_argument("--train_split", default=None,
@@ -564,6 +566,18 @@ def main():
 
     model = DualOutputTSE(cfg).to(device)
     LOG.info("参数量 %d", sum(p.numel() for p in model.parameters()))
+
+    # ---- Warm-start: 从已有 checkpoint 加载 model 权重（仅权重，不含 optimizer/scaler/step）----
+    if args.init_checkpoint:
+        init_ckpt = torch.load(args.init_checkpoint, map_location=device, weights_only=False)
+        init_state = init_ckpt["model"] if "model" in init_ckpt else init_ckpt
+        missing, unexpected = model.load_state_dict(init_state, strict=False)
+        if missing:
+            LOG.warning("init_checkpoint 缺失参数: %s", missing[:5])
+        if unexpected:
+            LOG.warning("init_checkpoint 多余参数: %s", unexpected[:5])
+        LOG.info("Warm-start 从 %s 加载权重（step=%s）", args.init_checkpoint, init_ckpt.get("step", "?"))
+
     opt = torch.optim.Adam(model.parameters(), lr=float(cfg["lr"]))
     try:
         scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
