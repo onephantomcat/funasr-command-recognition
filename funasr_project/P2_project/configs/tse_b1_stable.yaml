@@ -1,0 +1,72 @@
+# P2-12 B1 稳定训练配置（修复梯度爆炸：降 lr + 关 AMP + 强裁剪）
+# 依据：B1_TRIAL 在 step 1500 出现 |g|=inf，dev_sisdr 从 3.63 dB 骤降
+# 调整：lr=3e-4, amp=false, grad_clip=2.0, warmup=100
+
+sample_rate: 16000
+
+# STFT 参数（与 P2-09 / smoke 一致）
+n_fft: 512
+hop_length: 128
+win_length: 512
+
+# 模型结构（与 P2-09 一致）
+emb_dim: 192
+lstm_hidden: 256
+lstm_layers: 2
+dropout: 0.0
+film_scale: 0.1
+
+# PRESENT 损失权重
+lambda_sisdr: 1.0
+lambda_wav: 1.0
+lambda_stft: 1.0
+lambda_act: 0.5
+lambda_residual: 0.5
+lambda_mix: 0.5
+lambda_id: 0.0
+
+zero_ref_kappa: 1.0e-3
+
+# MR-STFT 分辨率组 [(n_fft, hop, win), ...]
+mrstft_resolutions:
+  - [256, 64, 256]
+  - [512, 128, 512]
+  - [1024, 256, 1024]
+
+# 帧级活动度阈值
+act_frame_ratio: 0.5
+
+# ---- B1 稳定训练参数 ----
+segment_length: 8
+batch_size: 16
+gradient_accumulation: 1
+amp: false
+steps: 500
+seed: 20260723
+lr: 3.0e-4
+lr_warmup_steps: 100
+lr_schedule: cosine
+grad_clip: 2.0
+log_every: 25
+save_every: 100
+shuffle: true
+num_workers: 2
+pin_memory: true
+prefetch_factor: 2
+
+# 数据集
+datasets:
+  train_manifest: /root/autodl-tmp/P1_to_P2_v2_b1/manifests/tse_train_present.jsonl
+  dev_manifest: /root/autodl-tmp/P1_to_P2_v2_b1/manifests/tse_dev.jsonl
+  eval_manifest: /root/autodl-tmp/P1_to_P2_v2_b1/manifests/D_single.jsonl
+
+# 元信息
+tag: B1_STABLE_seed20260723
+lane: INTEGRATION
+asset_class: B1_TRIAL
+notes: "B1 稳定训练：amp=false, lr=3e-4, grad_clip=2.0, 防梯度爆炸"
+
+# ---- P2-17 / P4-04：说话人注册嵌入模式 ----
+sv_mode: campplus
+sv_bootstrap_seed: 20260804
+sv_model_id: ""

@@ -1,0 +1,37 @@
+{
+  "checkpoint": "artifacts/experiments/B3_SWAP_seed20260723/checkpoint_step20000.pt",
+  "checkpoint_sha256": "5c351097d710aa6bc5914fc942f7c5f7fcc6206a2cac9f9042dd3b7cf4afd68d",
+  "manifest": "/root/autodl-tmp/eval_manifests/eval_D_swap.jsonl",
+  "data_sha256": "ef694b6fbb3a813d7b0b3746ad280c05b3442497196653e89ba9f622176d3cf2",
+  "device": "cuda",
+  "n_samples": 3000,
+  "n_present": 2000,
+  "n_absent": 1000,
+  "n_nan": 0,
+  "present": {
+    "corpus_sisdr_db": -0.22998671549238733,
+    "utterance_sisdr_db": -1.3239870273617562,
+    "mean_sisdri_db": 2.248617745574098,
+    "mean_wav_l1": 0.014050481651676818,
+    "mean_mrstft": 2.8536756171286104,
+    "mean_act_f1": 0.8782714700940895,
+    "mean_energy_ratio": 0.17396869538776816,
+    "utterance_sisdr_by_scenario": {
+      "enroll_swap_target_1": -0.20982576346071438,
+      "enroll_swap_target_2": -2.438148291262798
+    }
+  },
+  "enrollment_swap": {
+    "tie_eps": 1e-06,
+    "choice_accuracy": 0.989,
+    "mean_selectivity_db": 6.11808089872566
+  },
+  "efficiency": {
+    "latency_ms_mean": 7.9434435193737345,
+    "rtf_mean": 0.0022065120887149263,
+    "peak_gpu_mem_gb": 0.020243167877197266
+  },
+  "schema_validation": "PASS(3000 validated, 0 nan-skipped)",
+  "determinism_rescore": "PASS",
+  "debug_only": true
+}

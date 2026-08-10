@@ -1,0 +1,34 @@
+{
+  "checkpoint": "artifacts/experiments/B2_ABSENT_seed20260723/checkpoint_step20000.pt",
+  "checkpoint_sha256": "da44f8268293ad33f918b189ea1e2cc135ace8119a15eb9324b56ded09f459f3",
+  "manifest": "/root/autodl-tmp/eval_manifests/eval_D_absent.jsonl",
+  "data_sha256": "8654a54fbf42ce8d77d5c7663b0bcc0af6ec8b13603e16aadcbd007b4fbf6938",
+  "device": "cuda",
+  "n_samples": 1000,
+  "n_present": 0,
+  "n_absent": 1000,
+  "n_nan": 0,
+  "present": {
+    "corpus_sisdr_db": null,
+    "utterance_sisdr_db": null,
+    "mean_sisdri_db": null,
+    "mean_wav_l1": null,
+    "mean_mrstft": null,
+    "mean_act_f1": null,
+    "mean_energy_ratio": null,
+    "utterance_sisdr_by_scenario": {}
+  },
+  "enrollment_swap": {
+    "tie_eps": 1e-06,
+    "choice_accuracy": null,
+    "mean_selectivity_db": null
+  },
+  "efficiency": {
+    "latency_ms_mean": 7.629563022404909,
+    "rtf_mean": 0.0021193230617791415,
+    "peak_gpu_mem_gb": 0.020243167877197266
+  },
+  "schema_validation": "PASS(1000 validated, 0 nan-skipped)",
+  "determinism_rescore": "PASS",
+  "debug_only": true
+}

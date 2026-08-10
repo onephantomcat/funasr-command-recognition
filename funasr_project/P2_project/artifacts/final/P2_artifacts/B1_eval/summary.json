@@ -1,0 +1,36 @@
+{
+  "checkpoint": "artifacts/experiments/B1_PRESENT_seed20260723/checkpoint_step20000.pt",
+  "checkpoint_sha256": "df95a0c25e02428d64c147bdbd94b1219a28c1f7338bd13745e3ccda26c6cfa3",
+  "manifest": "/root/autodl-tmp/P1_to_P2_v2_b1/manifests/D_single.jsonl",
+  "data_sha256": "9d90d13a2b910159d92c7cf88e8b5f593374384f0851314bd157ca750a7d3114",
+  "device": "cuda",
+  "n_samples": 2000,
+  "n_present": 2000,
+  "n_absent": 0,
+  "n_nan": 0,
+  "present": {
+    "corpus_sisdr_db": 5.246535460624717,
+    "utterance_sisdr_db": 9.986773039348714,
+    "mean_sisdri_db": -2.627798169645859,
+    "mean_wav_l1": 0.00949466185925121,
+    "mean_mrstft": 1.374672580346465,
+    "mean_act_f1": 0.9750358879617677,
+    "mean_energy_ratio": 0.30355495962221174,
+    "utterance_sisdr_by_scenario": {
+      "single": 9.986773039348714
+    }
+  },
+  "enrollment_swap": {
+    "tie_eps": 1e-06,
+    "choice_accuracy": null,
+    "mean_selectivity_db": null
+  },
+  "efficiency": {
+    "latency_ms_mean": 7.843214938417077,
+    "rtf_mean": 0.0021786708162269664,
+    "peak_gpu_mem_gb": 0.020243167877197266
+  },
+  "schema_validation": "PASS(2000 validated, 0 nan-skipped)",
+  "determinism_rescore": "PASS",
+  "debug_only": true
+}

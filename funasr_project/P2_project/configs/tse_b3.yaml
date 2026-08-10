@@ -1,0 +1,101 @@
+# ============================================================
+# P2-15 B3 ENROLL-SWAP 场景训练配置（P1 v3 最终版）
+# ------------------------------------------------------------
+# 语义（已由 P1 v3 数据实锤）：
+#   enroll_swap = 注册音与目标 speaker 一致，但 utterance 不同（同 speaker 的另一句注册）
+#   B3 任务 = 训练模型在 enroll 注册句变化时，仍能正确提取目标 speaker 的语音（enroll 鲁棒性）
+#
+# 场景构成（P1 v3 manifest.jsonl scenario 字段）：
+#   - enroll_swap_target_1: target_present=True  → 输出非零，正常回归 target_wav（同 speaker swap 句1）
+#   - enroll_swap_target_2: target_present=True  → 输出非零，正常回归 target_wav（同 speaker swap 句2）
+#   - enroll_swap_absent:    target_present=False → 输出 0（同时注册句也已 swap）
+#
+# scene_mode=b3 时自动过滤以上 3 种子 scenario，按 split=train/dev 分开。
+#
+# 运行方式：
+#   云端 GPU 正式训练：
+#     python tools/train_b1_trial.py --config configs/tse_b3.yaml --device cuda
+#   本地 CPU 冒烟 5 步（debug data 兼容分支）：
+#     python tools/train_b1_trial.py --config configs/tse_b3.yaml --debug_data --max_steps 5 --device cpu
+#   用 P1 v3 真实数据冒烟 10 步：
+#     python tools/train_b1_trial.py --config configs/tse_b3.yaml --device cpu --max_steps 10 \
+#         --manifest /root/autodl-tmp/P1_to_P2_v3_absent_swap/manifest.jsonl
+# ============================================================
+
+sample_rate: 16000
+
+# STFT 参数（与 B1 一致）
+n_fft: 512
+hop_length: 128
+win_length: 512
+
+# 模型结构（与 B1 一致，保证可加载 B1 预训练权重）
+emb_dim: 192
+lstm_hidden: 256
+lstm_layers: 2
+dropout: 0.0
+film_scale: 0.1
+
+# 损失权重（与 B1 一致）
+lambda_sisdr: 1.0
+lambda_wav: 1.0
+lambda_stft: 1.0
+lambda_act: 0.5
+lambda_residual: 0.5
+lambda_mix: 0.5
+lambda_id: 0.0
+
+zero_ref_kappa: 1.0e-3
+mrstft_resolutions:
+  - [256, 64, 256]
+  - [512, 128, 512]
+  - [1024, 256, 1024]
+act_frame_ratio: 0.5
+
+# ============================================================
+# ★ B3 核心：场景模式（enroll_swap 三种子场景混合，force_zero 仅 absent 子集）
+# ============================================================
+scene_mode: b3
+
+segment_length: 8
+batch_size: 16
+gradient_accumulation: 1
+amp: false            # 保持关闭（稳定第一）
+steps: 20000
+seed: 20260723
+lr: 3.0e-4
+lr_warmup_steps: 100
+lr_schedule: cosine
+grad_clip: 2.0
+log_every: 25
+save_every: 500
+dev_every: 100
+shuffle: true
+num_workers: 2
+pin_memory: true
+prefetch_factor: 2
+
+# ============================================================
+# ★ P1 v3 单 manifest + split 过滤（P1 已交付）
+# ============================================================
+datasets:
+  # P1 v3 全量 59K 样本 manifest.jsonl（含 scenario/target_present/split 字段）
+  manifest: /root/autodl-tmp/P1_to_P2_v3_absent_swap/manifest.jsonl
+  # train/dev 从单 manifest 过滤：
+  #   train: split=train → t1=10K + t2=10K + swap_absent=10K → total 30K（present 20K + absent 10K）
+  #   dev:   split=dev   → t1=1K  + t2=1K  + swap_absent=1K  → total  3K（present 2K + absent 1K）
+  train_split: train
+  dev_split:   dev
+  # D_swap 评估集（3,000 条，训练期不用，final eval 用）
+  eval_split: D_swap
+
+# 元信息
+tag: B3_SWAP_seed20260723
+lane: INTEGRATION
+asset_class: B3_ENROLL_SWAP
+notes: "B3 enroll-swap 鲁棒性训练: target_1/2=present 20K（同 speaker swap 注册句，回归 target_wav）+ swap_absent=10K（target=0），共 30K train / 3K dev"
+
+# P4 CAMPPlus 嵌入（与 B1 一致；swap 后的 enroll 走同一份 CAMPPlus，缓存 key=enroll_path MD5）
+sv_mode: campplus
+sv_bootstrap_seed: 20260804
+sv_model_id: ""

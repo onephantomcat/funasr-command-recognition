@@ -1,0 +1,67 @@
+# P2-12 B1 从 step 17100 续训到 50K（云端执行版）
+# 结构与 tse_b1_stable.yaml 完全一致，保证 resume 权重 100% 对齐
+
+sample_rate: 16000
+
+# STFT 参数（与 B1 20K 一致）
+n_fft: 512
+hop_length: 128
+win_length: 512
+
+# 模型结构（必须与 20K 训练时完全一致 → resume 加载不报错）
+emb_dim: 192
+lstm_hidden: 256
+lstm_layers: 2
+dropout: 0.0
+film_scale: 0.1
+
+# 损失权重（与 B1 20K 一致）
+lambda_sisdr: 1.0
+lambda_wav: 1.0
+lambda_stft: 1.0
+lambda_act: 0.5
+lambda_residual: 0.5
+lambda_mix: 0.5
+lambda_id: 0.0
+
+zero_ref_kappa: 1.0e-3
+mrstft_resolutions:
+  - [256, 64, 256]
+  - [512, 128, 512]
+  - [1024, 256, 1024]
+act_frame_ratio: 0.5
+
+# ---- 续训超参（只有这几项与 stable 不同）----
+scene_mode: b1
+segment_length: 8
+batch_size: 16
+gradient_accumulation: 1
+amp: false
+steps: 50000
+seed: 20260723
+lr: 3.0e-4
+lr_warmup_steps: 100
+lr_schedule: cosine
+grad_clip: 2.0
+log_every: 1
+save_every: 500
+dev_every: 100
+shuffle: true
+num_workers: 4
+pin_memory: true
+prefetch_factor: 2
+
+# P1 v2_b1 数据集（不要改，与 20K 同分布）
+datasets:
+  train_manifest: /root/autodl-tmp/P1_to_P2_v2_b1/manifests/tse_train_present.jsonl
+  dev_manifest: /root/autodl-tmp/P1_to_P2_v2_b1/manifests/tse_dev.jsonl
+  eval_manifest: /root/autodl-tmp/P1_to_P2_v2_b1/manifests/D_single.jsonl
+
+tag: B1_50K_RESUME_seed20260723
+lane: INTEGRATION
+asset_class: B1_STABLE_50K
+notes: "B1续训50K: 从step17100(最佳6.19dB)恢复. amp=false, lr=3e-4, grad_clip=2.0"
+
+sv_mode: campplus
+sv_bootstrap_seed: 20260804
+sv_model_id: ""
