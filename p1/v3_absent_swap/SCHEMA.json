@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "P1 to P2 v3 absent and enrollment-swap manifest",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "sample_id",
+    "split",
+    "scenario",
+    "target_present",
+    "mixture_wav",
+    "enroll_wav",
+    "target_wav",
+    "activity_mask",
+    "generator_version",
+    "seed",
+    "source_hashes",
+    "output_hashes"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "p1_to_p2.v1"
+    },
+    "target_present": {
+      "type": "boolean"
+    },
+    "triplet_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "registration_role": {
+      "enum": [
+        "target_1",
+        "target_2",
+        "absent"
+      ]
+    }
+  }
+}
