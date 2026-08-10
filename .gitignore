@@ -133,3 +133,15 @@ funasr_project/P2_project/artifacts/experiments/B1_CAMPPLUS_LITE/
 funasr_project/P2_project/artifacts/experiments/B1_50K_LITE/
 funasr_project/P2_project/artifacts/experiments/B2_ABSENT_*/
 funasr_project/P2_project/artifacts/experiments/B3_SWAP_*/
+
+# === P2 正式交付包（2026-08-11 追加）===
+# 交付产物目录（含 checkpoint .pt、manifest.jsonl 等大文件）— 不进 Git
+funasr_project/P2_DELIVERY_FOR_P3_*/
+P2_DELIVERY_FOR_P3_*/
+# P2 最终产物目录（云端下载的 checkpoint + manifest 备份）
+funasr_project/P2_project/artifacts/final/P2_CLOUD_FIXED/
+funasr_project/P2_project/artifacts/final/P2_artifacts/
+# 根目录 outputs（评测输出、CER 报告等）
+outputs/
+# P1/P2/P3 交付接续报告（本地工作文档，不进 Git）
+P1_P2_P3_FULL_DELIVERY_REPORT_*.md

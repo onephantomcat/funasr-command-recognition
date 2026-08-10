@@ -1,0 +1,97 @@
+# ============================================================
+# P2-15 B3 ENROLL-SWAP 场景训练配置 v3（强力修正版）
+# ------------------------------------------------------------
+# ★ v3 关键改动（基于 v2 的进一步修正）：
+#   1. absent_loss_scale: 0.1 → 0.05  （进一步降低 absent 梯度）
+#   2. lambda_sisdr: 1.0 → 2.0          （优先优化提取质量）
+#   3. lambda_act: 0.5 → 1.0            （强化活动检测头）
+#   4. lambda_wav: 1.0 → 0.5            （降低时域 L1 平滑副作用）
+#   5. lambda_stft: 1.0 → 0.5           （降低频域 STFT 平滑副作用）
+#   6. seed: 20260813                   （新种子，独立复现）
+#
+# v2 失败原因分析：
+#   - present energy_ratio=0.0547 < 0.30 → 输出过弱
+#   - choice_accuracy=0.4919 ≈ 0.5 → 模型对 embedding 不敏感（swap 选择失效）
+#   - mean_act_f1=0.6333 < 0.7 → 活动检测精度不足
+#   - corpus_sisdr=-2.82 dB < +5 dB → 提取质量差
+# ============================================================
+
+sample_rate: 16000
+
+# STFT 参数（与 B1 一致）
+n_fft: 512
+hop_length: 128
+win_length: 512
+
+# 模型结构（与 B1 一致，保证可加载 B1 预训练权重）
+emb_dim: 192
+lstm_hidden: 256
+lstm_layers: 2
+dropout: 0.0
+film_scale: 0.1
+
+# ============================================================
+# ★ v3 损失权重调整
+# ============================================================
+lambda_sisdr: 2.0       # 提取质量优先，从 1.0 → 2.0
+lambda_wav: 0.5         # 降低时域 L1 平滑，从 1.0 → 0.5
+lambda_stft: 0.5        # 降低频域 STFT 平滑，从 1.0 → 0.5
+lambda_act: 1.0         # 强化活动检测，从 0.5 → 1.0
+lambda_residual: 0.5
+lambda_mix: 0.5
+lambda_id: 0.0
+
+zero_ref_kappa: 1.0e-3
+mrstft_resolutions:
+  - [256, 64, 256]
+  - [512, 128, 512]
+  - [1024, 256, 1024]
+act_frame_ratio: 0.5
+
+# ============================================================
+# ★ absent 样本损失进一步缩放（v2=0.1 → v3=0.05）
+# ============================================================
+absent_loss_scale: 0.05
+
+# ============================================================
+# ★ B3 场景模式（enroll_swap 三种子场景混合）
+# ============================================================
+scene_mode: b3
+
+segment_length: 8
+batch_size: 16
+gradient_accumulation: 1
+amp: false
+steps: 20000
+seed: 20260813
+lr: 3.0e-4
+lr_warmup_steps: 100
+lr_schedule: cosine
+grad_clip: 2.0
+log_every: 25
+save_every: 500
+dev_every: 100
+shuffle: true
+num_workers: 2
+pin_memory: true
+prefetch_factor: 2
+
+# ============================================================
+# ★ P1 v3 单 manifest + split 过滤
+# ============================================================
+datasets:
+  manifest: /root/autodl-tmp/P1_to_P2_v3_absent_swap/manifest.jsonl
+  train_split: train
+  dev_split:   dev
+  eval_split: D_swap
+
+# 元信息
+tag: B3_SWAP_v3_strong_fix
+lane: INTEGRATION
+asset_class: B3_ENROLL_SWAP_V3
+notes: "B3 v3: absent_loss_scale=0.05, lambda_sisdr=2.0, lambda_act=1.0, (wav+stft)=0.5 each. 强力修复 present 能量不足和 swap 选择失效问题。从 B1_50K_RESUME warm-start。"
+
+# P4 CAMPPlus 嵌入
+sv_mode: campplus
+sv_bootstrap_seed: 20260804
+sv_model_id: ""

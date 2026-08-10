@@ -1,0 +1,84 @@
+# ============================================================
+# P2-14 B2 ABSENT 场景训练配置 v2（真实 CAM++ + B1 50K warm-start）
+# ------------------------------------------------------------
+# v2 相对旧 B2 config 的改动：
+#   1. seed: 20260723 → 20260814（新种子，独立复现）
+#   2. tag: B2_ABSENT_seed20260723 → B2_ABSENT_v2_campplus
+#   3. sv_model_id 修正为 P1 v3 训练时实际使用路径
+#   4. 训练时配合 --init_checkpoint 从 B1_50K_RESUME step20000 热启动
+#   5. 场景过滤不变：scene_mode=b2 → scenario ∈ {absent, enroll_swap_absent}（target_present=False）
+# ============================================================
+
+sample_rate: 16000
+
+# STFT 参数（与 B1/B3 完全一致，保证 warm-start 兼容）
+n_fft: 512
+hop_length: 128
+win_length: 512
+
+# 模型结构（与 B1/B3 完全一致，保证 warm-start 兼容）
+emb_dim: 192
+lstm_hidden: 256
+lstm_layers: 2
+dropout: 0.0
+film_scale: 0.1
+
+# 损失权重（与旧 B2 一致；B2 全 absent，核心监督：target=0 时输出=0）
+lambda_sisdr: 1.0
+lambda_wav: 1.0
+lambda_stft: 1.0
+lambda_act: 0.5
+lambda_residual: 0.5
+lambda_mix: 0.5
+lambda_id: 0.0
+
+zero_ref_kappa: 1.0e-3
+mrstft_resolutions:
+  - [256, 64, 256]
+  - [512, 128, 512]
+  - [1024, 256, 1024]
+act_frame_ratio: 0.5
+
+# ============================================================
+# ★ B2 核心：scene_mode=b2（全 absent 过滤）
+#   train_b1_trial.py L139 自动过滤 scenario ∈ {absent, enroll_swap_absent}
+# ============================================================
+scene_mode: b2
+
+segment_length: 8
+batch_size: 16
+gradient_accumulation: 1
+amp: false
+steps: 20000
+seed: 20260814
+lr: 3.0e-4
+lr_warmup_steps: 100
+lr_schedule: cosine
+grad_clip: 2.0
+log_every: 25
+save_every: 500
+dev_every: 100
+shuffle: true
+num_workers: 2
+pin_memory: true
+prefetch_factor: 2
+
+# ============================================================
+# ★ P1 v3 单 manifest + split 过滤（与 B3 v3 同一份）
+# ============================================================
+datasets:
+  manifest: /root/autodl-tmp/P1_to_P2_v3_absent_swap/manifest.jsonl
+  train_split: train
+  dev_split:   dev
+  eval_split: D_absent
+
+# 元信息
+tag: B2_ABSENT_v2_campplus
+lane: INTEGRATION
+asset_class: B2_ABSENT_V2_CAMPPLUS
+notes: "B2 v2: scene_mode=b2（全 absent，target_present=False）30K train/3K dev，真实 CAM++ 嵌入，从 B1_50K_RESUME step20000 warm-start。目标 speaker 缺席时输出静音。"
+
+# P4 CAMPPlus 嵌入（真实声纹，与 B3 v3 保持一致）
+sv_mode: campplus
+sv_bootstrap_seed: 20260804
+sv_model_id: ""
