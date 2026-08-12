@@ -1,5 +1,7 @@
 # P2 → P3 交付 Change Note
 
+> **2026-08-13 复核提示：本文件是队友 v2.0 交付时的历史说明，不是当前验收结论。** 文中“v2.0 修复了近静音退化”和 `choice_accuracy=0.989` 等表述未通过 P3 独立复验；v2.0/v2.2 包内 B2/B3 仍为同一 `13bce1b9…db8b` checkpoint，继续保持 `QUALITY_REJECTED`。本轮已修复源码和训练链，但必须重训出新 checkpoint，并先通过 P3 20 正 + 20 负复验，才能替换该结论。当前完整状态见 `../docs/P1_P2_P3_FIX_DELIVERY_20260813.md`。
+
 **版本**：v2.0（2026-08-11，接替旧 P2_artifacts v1.0）
 **替换说明**：旧 v1.0 的 B3 checkpoint（SHA256=`5c351097d710aa6bc5914fc942f7c5f7fcc6206a2cac9f9042dd3b7cf4afd68d`）已被 P3 审计判定为 REJECT（40/40 近静音）。v2.0 修复了旧 B3 近静音退化问题。
 

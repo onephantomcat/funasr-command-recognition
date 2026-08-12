@@ -93,4 +93,4 @@ notes: "B1 present 场景训练: target_present=True 的普通场景，P1 v3 man
 # P4 CAMPPlus 嵌入（与 B2/B3 一致）
 sv_mode: campplus
 sv_bootstrap_seed: 20260804
-sv_model_id: ""
+sv_model_id: "iic/speech_campplus_sv_zh-cn_16k-common"

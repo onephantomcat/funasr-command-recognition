@@ -69,4 +69,4 @@ notes: "B1 20K 步延伸训练：amp=false, lr=3e-4, grad_clip=2.0, 更长 cosin
 # ---- P2-17 / P4-04：说话人注册嵌入模式 ----
 sv_mode: campplus
 sv_bootstrap_seed: 20260804
-sv_model_id: ""
+sv_model_id: "iic/speech_campplus_sv_zh-cn_16k-common"

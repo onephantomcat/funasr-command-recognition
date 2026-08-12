@@ -28,12 +28,12 @@ P2 支持三种训练/评测场景，由配置字段 `scene_mode` 决定数据�
 |---|---|---|---|---|
 | **B1 PRESENT** | `b1` | 目标 speaker 确实出现在混合中，enroll 与目标 speaker 一致（基线） | 全部 True | 否 |
 | **B2 ABSENT** | `b2` | 目标 speaker **缺席**（mixture 中无目标） | 全部 False | 是（target = 0）|
-| **B3 ENROLL-SWAP** | `b3` | enroll 句被替换为「干扰 speaker 的注册句」，但目标 speaker 可能仍在混合中 | True/False 混合 | 仅 absent 子集 force_zero |
+| **B3 ENROLL-SWAP** | `b3` | 同一 mixture 配成 target_1、target_2 和 absent 三种 enrollment 角色 | True/False 混合 | 仅 absent 子集 force_zero |
 
 B3 下的三条子场景（P1 v3 manifest `scenario` 字段）：
 
-- `enroll_swap_target_1` / `enroll_swap_target_2` → target_present=True → 正常回归 `target_wav`（验证 enroll 鲁棒性）
-- `enroll_swap_absent` → target_present=False → force_zero（验证拒绝能力）
+- `enroll_swap_target_1` / `enroll_swap_target_2` → enrollment 属于 mixture 中对应目标 speaker，`target_present=True`，正常回归 `target_wav`
+- `enroll_swap_absent` → enrollment speaker 不在 mixture 中，`target_present=False`，目标为零但 enrollment embedding 仍是真实非零向量
 
 ### 声纹嵌入双模式（P2↔P4 适配器）
 
@@ -41,10 +41,10 @@ B3 下的三条子场景（P1 v3 manifest `scenario` 字段）：
 
 | 模式 | `sv_mode` | 依赖 | 嵌入来源 | 适用场景 |
 |---|---|---|---|---|
-| **BOOTSTRAP** | `bootstrap` | 无（纯 PyTorch） | 基于 `speaker_id` SHA256 哈希的确定性随机向量，L2 归一化 | 本地调试 / CI 冒烟 / P4 不可用时自动降级 |
-| **CAMPLUS** | `campplus` | P4 `speakerlab_source` + `campplus_cn_common.bin` 权重 | `CampplusBackend.embed()` → 192D 真实声纹嵌入，失败自动降级为 BOOTSTRAP 并告警 | 正式训练 / 最终评测 |
+| **BOOTSTRAP** | `bootstrap` | 无（纯 PyTorch） | 基于 `speaker_id` SHA256 哈希的确定性随机向量，L2 归一化 | 仅本地调试 / CI 冒烟 |
+| **CAMPLUS** | `campplus` | P4 `speakerlab_source` + `campplus_cn_common.bin` 权重 | `CampplusBackend.embed()` → 192D 真实声纹嵌入 | 正式训练 / 最终评测；失败立即报错 |
 
-CAMPLUS 失败时的降级逻辑（已内联）不依赖任何外部库，SHA256 派生，可完全复现。
+正式训练和评测禁止把 CAMPLUS 失败悄悄替换成随机声纹。只有显式 `--debug-data` 的调试训练允许 BOOTSTRAP。
 
 ---
 
@@ -65,6 +65,7 @@ funasr_project/P2_project/
 │   ├── train_b1_trial.py           # 通用训练器（B1/B2/B3 单脚本，scene_mode 分流）
 │   ├── train_overfit_debug.py      # 单样本过拟合调试脚本（纯函数供训练器复用）
 │   ├── evaluate_tse.py             # 统一评测器（predictions.jsonl / summary.json / report.md）
+│   ├── diagnose_b3.py              # 真实 enrollment / 数据能量 / 可选 checkpoint 输出诊断
 │   ├── build_debug_mixtures.py     # 构造 debug_mixtures_v0（P2-07）
 │   └── build_v2_b1_local.py        # 本地 P1 v2_b1 路径兼容工具
 ├── configs/
@@ -126,8 +127,11 @@ pip install soundfile numpy pyyaml tqdm scipy
 
 ### CAMPPlus 模式准备（可选，仅正式训练需要）
 
-1. 克隆 P4 项目与 speakerlab_source（commit `065629c`）：
+1. 克隆官方 3D-Speaker 到 speakerlab_source，并固定 commit `065629c313eaf1a01c65c640c46d77e61e9607b4`：
    ```
+   git clone https://github.com/modelscope/3D-Speaker.git funasr_project/P4_project/artifacts/models/speakerlab_source
+   git -C funasr_project/P4_project/artifacts/models/speakerlab_source checkout 065629c313eaf1a01c65c640c46d77e61e9607b4
+
    funasr_project/P4_project/artifacts/models/speakerlab_source/   ← 3D-Speaker 仓库
    funasr_project/P4_project/artifacts/models/campplus_cn_common.bin ← 28 MB 权重
    ```
@@ -137,32 +141,34 @@ pip install soundfile numpy pyyaml tqdm scipy
 
 ## 4. 快速开始
 
-### 4.1 本地冒烟（零数据、CPU、BOOTSTRAP）
+### 4.1 本地冒烟（可重建调试数据、CPU、BOOTSTRAP）
 
 ```bash
 cd funasr_project/P2_project
+python tools/build_debug_mixtures.py --seed 20260725
 python tools/train_b1_trial.py \
-    --config configs/tse_smoke.yaml \
-    --debug_data --max_steps 10 --device cpu
+    --config configs/tse_b1_trial.yaml \
+    --debug-data --scene_mode b1 --max_steps 10 --device cpu
 ```
 
-预期：`metrics.jsonl` loss 单调下降、`trial_verdict.json.verdicts.no_nan = true`。
+预期：训练实际完成反向传播，无 NaN，且 checkpoint restore 一致；极短 smoke 不要求 loss 单调。
 
 ### 4.2 三场景正式训练（云端 GPU、CAMPLUS）
 
 ```bash
 # B1（present，50K → 20K 步收敛）
 python tools/train_b1_trial.py --config configs/tse_b1.yaml --device cuda \
-    --manifest /root/autodl-tmp/P1_to_P2_v2_b1/dev.jsonl
+    --manifest /root/autodl-tmp/P1_to_P2_v3_absent_swap/manifest.jsonl
 
 # B2（absent，30K train + 3K dev，单 manifest split 过滤）
 python tools/train_b1_trial.py --config configs/tse_b2.yaml --device cuda \
-    --data_root /root/autodl-tmp/P1_to_P2_v3_absent_swap
+    --manifest /root/autodl-tmp/P1_to_P2_v3_absent_swap/manifest.jsonl \
+    --init-checkpoint artifacts/experiments/B1_PRESENT_seed20260723/checkpoint_step20000.pt
 
 # B3（enroll-swap，推荐 warm-start from B1 以抑制数据比例失衡导致的静默退化）
-python tools/train_b1_trial.py --config configs/tse_b3.yaml --device cuda \
-    --data_root /root/autodl-tmp/P1_to_P2_v3_absent_swap \
-    --init_checkpoint artifacts/experiments/B1_PRESENT_seed20260723/checkpoint_step20000.pt
+python tools/train_b1_trial.py --config configs/tse_b3_v3.yaml --device cuda \
+    --manifest /root/autodl-tmp/P1_to_P2_v3_absent_swap/manifest.jsonl \
+    --init-checkpoint artifacts/experiments/B1_PRESENT_seed20260723/checkpoint_step20000.pt
 ```
 
 **B3 必选建议**：直接从 0 训练 B3 容易因「20K present + 10K absent」数据比例失衡塌缩为全零输出；务必使用 `--init_checkpoint` 从 B1 20K 步权重 warm-start。
@@ -173,8 +179,7 @@ python tools/train_b1_trial.py --config configs/tse_b3.yaml --device cuda \
 python tools/evaluate_tse.py \
     --checkpoint artifacts/experiments/B3_SWAP_seed20260723/checkpoint_step20000.pt \
     --manifest   /root/autodl-tmp/eval_manifests/eval_D_swap.jsonl \
-    --data_root  /root/autodl-tmp/P1_to_P2_v3_absent_swap \
-    --embedding_mode campplus \
+    --data-root  /root/autodl-tmp/P1_to_P2_v3_absent_swap \
     --device cuda \
     --out artifacts/eval_B3_campplus
 ```
@@ -203,7 +208,7 @@ from src.tse.enrollment_adapter import EnrollmentAdapter
 ckpt = torch.load("artifacts/final/P2_artifacts/B3/checkpoint_step20000.pt", map_location="cpu")
 cfg  = ckpt["cfg"]
 model = DualOutputTSE(cfg).eval()
-model.load_state_dict(ckpt["model_state_dict"])
+model.load_state_dict(ckpt["model"], strict=True)
 
 adapter = EnrollmentAdapter.from_config(cfg, mode="campplus")   # mode="bootstrap" 亦可
 emb = adapter.encode_file("target", "enroll.wav")               # [1, 192]
@@ -213,9 +218,9 @@ s_tgt = extract_target(torch.from_numpy(mix).unsqueeze(0), emb, model, cfg)  # [
 
 ---
 
-## 5. 三场景最终基准（B1/B2/B3，20K 步、CAMPLUS）
+## 5. 历史 20K 资产状态（不可作为当前基准）
 
-> 数据来源：`artifacts/final/P2_artifacts/meta.json` 与 `{B1,B2,B3}_eval/summary.json`。GPU：云端 RTX 4090（CUDA 11.8，torch 2.1.2+cu118）。
+> 下表是旧资产记录。P3 已实测旧 B3 在 20 正 + 20 负预检中近静音、正样本接收率 0%，因此 B3 与复用它的 B2 均保持 **REJECT**。旧 `choice_accuracy=0.989` 由无效评测路径产生，已废弃。修复后的代码必须重新训练并由 P3 重评，不能沿用下表数字宣称交付通过。
 
 | 指标 | B1 PRESENT（D_present 10K） | B2 ABSENT（D_absent 3K） | B3 ENROLL-SWAP（D_swap 3K） |
 |---|---|---|---|
@@ -228,11 +233,11 @@ s_tgt = extract_target(torch.from_numpy(mix).unsqueeze(0), emb, model, cfg)  # [
 | mean_wav_l1 | 0.011 | — | 0.0141 |
 | **mean_act_f1**（帧活动 F1） | 0.91 | — | **0.878** |
 | mean_energy_ratio（absent 子集）| — | 4.6e-14 ✅ | 0.174（present）；absent 同 B2 量级 |
-| **enrollment_swap.choice_accuracy** | — | — | **0.989** |
+| **enrollment_swap.choice_accuracy** | — | — | **已废弃，不得引用** |
 | enrollment_swap.mean_selectivity_db | — | — | 6.12 dB |
 | RTF 均值（推理） | 0.0022 | 0.0022 | 0.0022（≈ 450× 实时） |
-| schema_validation | PASS | PASS | PASS |
-| determinism_rescore | PASS | PASS | PASS |
+| schema_validation | 历史 PASS | 历史 PASS | 历史 PASS（不代表质量通过） |
+| determinism_rescore | 历史 PASS | 历史 PASS | 历史 PASS（不代表质量通过） |
 
 ---
 
@@ -242,7 +247,7 @@ s_tgt = extract_target(torch.from_numpy(mix).unsqueeze(0), emb, model, cfg)  # [
 2. **活动长度对齐**：P1 v3 `activity.npy` 与 mix 音频存在 ≈0.552 的采样级长度比差，`B1Dataset._load_activity_mask` 已内建 nearest-exact 插值并打 `[ACT LEN FIX]` 首条 + 每 1000 条日志。
 3. **B3 force_zero 精度**：`_is_absent_entry` 优先判断 `target_present=True` 返回 False，避免将 `enroll_swap_target_1/2` 误判为 absent 导致 target 被置零。
 4. **训练稳定性**：AMP + lr=1e-3 易梯度爆炸；推荐 `amp=false`、`lr=3e-4`、`grad_clip=2.0`（三场景配置已内置）。
-5. **MR-STFT 数值稳定性**：内部 log 计算强制 float32，`eps=1e-6`，避免 float16 + 1e-8 的数值下溢造成 loss 爆炸。
+5. **MR-STFT 数值稳定性**：内部 log 计算强制 float32；全零参考不做除以零参考范数的谱收敛，而使用有界输出谱抑制项，避免 ABSENT loss 爆炸。
 6. **路径解析兜底**：音频/npy 路径按「manifest 同级 → data_root → P1 默认 → FUNASR_ROOT」四级搜索，天然兼容 P1 v2/v3 与本地 debug 数据，无需修改代码。
 
 ---

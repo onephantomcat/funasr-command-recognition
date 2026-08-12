@@ -27,6 +27,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -189,7 +190,10 @@ class EnrollmentAdapter:
 
     def _bootstrap_embedding(self, speaker_id: str) -> torch.Tensor:
         """BOOTSTRAP：基于 speaker_id 哈希的确定性随机嵌入。"""
-        seed = abs(hash(speaker_id + str(self._seed))) % (2**31)
+        # Python 内置 hash 会受每个进程的随机盐影响，同一个 speaker 在两次
+        # 进程启动间可能得到不同向量。调试替代向量必须跨进程可复现。
+        seed_material = f"{self._seed}\0{speaker_id}".encode("utf-8")
+        seed = int.from_bytes(hashlib.sha256(seed_material).digest()[:8], "big") % (2**31)
         g = torch.Generator(device=self._device)
         g.manual_seed(seed)
         emb = torch.randn(self._emb_dim, generator=g, device=self._device)

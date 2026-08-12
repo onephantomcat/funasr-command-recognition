@@ -96,4 +96,4 @@ notes: "B3 v4: absent_loss_scale=0.02, lambda_sisdr=3.0, lambda_act=2.0, zero_re
 # P4 CAMPPlus 嵌入
 sv_mode: campplus
 sv_bootstrap_seed: 20260804
-sv_model_id: ""
+sv_model_id: "iic/speech_campplus_sv_zh-cn_16k-common"

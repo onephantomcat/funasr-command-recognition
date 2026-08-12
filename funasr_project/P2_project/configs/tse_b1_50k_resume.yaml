@@ -64,4 +64,4 @@ notes: "B1续训50K: 从step17100(最佳6.19dB)恢复. amp=false, lr=3e-4, grad_
 
 sv_mode: campplus
 sv_bootstrap_seed: 20260804
-sv_model_id: ""
+sv_model_id: "iic/speech_campplus_sv_zh-cn_16k-common"

@@ -54,7 +54,7 @@ class CampplusBackend:
         权重加载优先级：
         1. cfg.model_id 指向本地 .bin/.pt/.pth 文件 → 直接加载
         2. cfg.model_id 是 ModelScope ID + 本地缓存目录有权重 → 加载缓存
-        3. 都没有 → 随机初始化（标注 MODEL_WEIGHTS_REQUIRED）
+        3. 都没有 → 明确失败（正式声纹不能用随机初始化冒充）
         """
         if self._loaded:
             return
@@ -66,16 +66,16 @@ class CampplusBackend:
             )
             self._model = self._model.to(self.device)
             self._model.eval()
-            self._loaded = True
 
             weight_path = self._resolve_weight_path()
-            if weight_path is not None:
-                self._load_weights(weight_path)
-            else:
-                import logging as _logging
-                _logging.getLogger("campplus").warning(
-                    "未找到预训练权重，使用随机初始化（仅调试用）"
+            if weight_path is None:
+                raise FileNotFoundError(
+                    "未找到 CAMPPlus 预训练权重；拒绝使用随机初始化声纹模型。"
+                    "请提供本地 model_id，或把 campplus_cn_common.bin 放入 "
+                    "P4_project/artifacts/models/ / ModelScope 缓存。"
                 )
+            self._load_weights(weight_path)
+            self._loaded = True
         except ImportError as exc:
             raise RuntimeError(
                 f"speakerlab 不可用: {exc}\n"
@@ -109,16 +109,26 @@ class CampplusBackend:
             if p.is_file():
                 return p
 
-        # 3) model_id 是 ModelScope ID，尝试查找 modelscope 缓存
+        # 3) model_id 是 ModelScope ID，尝试标准与旧版 ModelScope 缓存布局
         try:
             cache_root = Path.home() / ".cache" / "modelscope"
+            model_parts = [part for part in model_id.split("/") if part]
+            direct_dirs = []
+            if len(model_parts) >= 2:
+                direct_dirs.extend([
+                    cache_root / "hub" / "models" / model_parts[-2] / model_parts[-1],
+                    cache_root / "hub" / model_parts[-2] / model_parts[-1],
+                ])
+            for candidate_dir in direct_dirs:
+                for name in ("campplus_cn_common.bin", "campplus_cn_common.pt",
+                             "campplus_cn_common.pth"):
+                    path = candidate_dir / name
+                    if path.is_file():
+                        return path
             if cache_root.is_dir():
-                safe_id = model_id.replace("/", "___")
-                for candidate_dir in cache_root.rglob(safe_id):
-                    for ext in [".bin", ".pt", ".pth"]:
-                        p = candidate_dir / f"campplus_cn_common{ext}"
-                        if p.is_file():
-                            return p
+                for path in cache_root.rglob("campplus_cn_common.bin"):
+                    if not model_parts or model_parts[-1] in path.parts:
+                        return path
         except Exception:
             pass
 
@@ -160,12 +170,14 @@ class CampplusBackend:
                         adapted[stripped] = v
                         break
 
-        missing, unexpected = self._model.load_state_dict(adapted, strict=False)
+        missing = sorted(set(model_state) - set(adapted))
         if missing:
-            _log.warning(f"缺失键 ({len(missing)}): {missing[:5]}...")
-        if unexpected:
-            _log.warning(f"多余键 ({len(unexpected)}): {unexpected[:5]}...")
-        _log.info(f"权重加载完成: 适配 {len(adapted)}/{len(model_state)} 个参数")
+            raise RuntimeError(
+                f"CAMPPlus 权重不完整：仅匹配 {len(adapted)}/{len(model_state)} 个参数，"
+                f"缺失 {missing[:5]}"
+            )
+        self._model.load_state_dict(adapted, strict=True)
+        _log.info(f"权重完整加载: {len(adapted)}/{len(model_state)} 个参数")
 
     def _extract_fbank(
         self, wav: torch.Tensor, sample_rate: int = 16000

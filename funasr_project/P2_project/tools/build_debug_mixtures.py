@@ -28,8 +28,8 @@ import soundfile as sf
 
 P2_ROOT = Path(__file__).resolve().parents[1]
 FUNASR_ROOT = P2_ROOT.parent
-SRC = FUNASR_ROOT / "data" / "trials"
-OUT = P2_ROOT / "artifacts" / "debug_mixtures_v0"
+DEFAULT_SRC = FUNASR_ROOT / "data" / "trials"
+DEFAULT_OUT = P2_ROOT / "artifacts" / "debug_mixtures_v0"
 
 SR = 16000
 DUR = 4.0
@@ -76,28 +76,41 @@ def sha256(path):
     return h.hexdigest()
 
 
-def build_one(rng, spk_idx, config):
+def _manifest_path(path):
+    try:
+        return str(path.resolve().relative_to(FUNASR_ROOT.resolve()))
+    except ValueError:
+        return str(path.resolve())
+
+
+def build_one(rng, spk_idx, config, source, out):
     spk = SPEAKERS[spk_idx]
     inter = SPEAKERS[(spk_idx + 1) % 4]
     swap_spk = SPEAKERS[(spk_idx + 2) % 4]
 
     if config == "partial25":
         t_idx, i_idx, sir, overlap = 0, 0, 5.0, 0.25
-        target = read_wav(SRC / f"clean_{spk}_{t_idx}.wav", rng=rng)
-        seg = read_wav(SRC / f"clean_{inter}_{i_idx}.wav", n=SR, rng=rng)
+        target = read_wav(source / f"clean_{spk}_{t_idx}.wav", rng=rng)
+        seg = read_wav(source / f"clean_{inter}_{i_idx}.wav", n=SR, rng=rng)
         interferer = place(N, seg, int(1.5 * SR))
         enroll_spk = spk
+        scenario = "enroll_swap_target_1"
+        target_present = True
     elif config == "full100":
         t_idx, i_idx, sir, overlap = 1, 1, 0.0, 1.0
-        target = read_wav(SRC / f"clean_{spk}_{t_idx}.wav", rng=rng)
-        interferer = read_wav(SRC / f"clean_{inter}_{i_idx}.wav", rng=rng)
+        target = read_wav(source / f"clean_{spk}_{t_idx}.wav", rng=rng)
+        interferer = read_wav(source / f"clean_{inter}_{i_idx}.wav", rng=rng)
         enroll_spk = spk
+        scenario = "enroll_swap_target_2"
+        target_present = True
     elif config == "swap50":
         t_idx, i_idx, sir, overlap = 2, 2, 0.0, 0.50
-        target = read_wav(SRC / f"clean_{spk}_{t_idx}.wav", rng=rng)
-        seg = read_wav(SRC / f"clean_{inter}_{i_idx}.wav", n=2 * SR, rng=rng)
+        target = read_wav(source / f"clean_{spk}_{t_idx}.wav", rng=rng)
+        seg = read_wav(source / f"clean_{inter}_{i_idx}.wav", n=2 * SR, rng=rng)
         interferer = place(N, seg, int(1.0 * SR))
         enroll_spk = swap_spk
+        scenario = "enroll_swap_absent"
+        target_present = False
     else:
         raise ValueError(config)
 
@@ -105,33 +118,42 @@ def build_one(rng, spk_idx, config):
 
     peak = np.max(np.abs(target + interferer))
     g = 0.98 / peak if peak > 0.98 else 1.0
-    target, interferer = target * g, interferer * g
-    mixture = target + interferer
+    mixture_target, interferer = target * g, interferer * g
+    mixture = mixture_target + interferer
 
-    activity = (np.abs(target) > ACT_THRESH).astype(np.float32)
+    supervised_target = (mixture_target if target_present
+                         else np.zeros_like(mixture, dtype=np.float32))
+    supervised_residual = mixture - supervised_target
+    activity = ((np.abs(supervised_target) > ACT_THRESH).astype(np.float32)
+                if target_present else np.zeros(N, dtype=np.float32))
 
     uid = f"dbg_{spk}_{config}"
     paths = {
-        "mixture": OUT / f"{uid}_mixture.wav",
-        "target": OUT / f"{uid}_target.wav",
-        "interferer": OUT / f"{uid}_interferer.wav",
-        "activity": OUT / f"{uid}_activity.npy",
+        "mixture": out / f"{uid}_mixture.wav",
+        "target": out / f"{uid}_target.wav",
+        "interferer": out / f"{uid}_interferer.wav",
+        "activity": out / f"{uid}_activity.npy",
     }
     sf.write(str(paths["mixture"]), mixture, SR, subtype="FLOAT")
-    sf.write(str(paths["target"]), target, SR, subtype="FLOAT")
-    sf.write(str(paths["interferer"]), interferer, SR, subtype="FLOAT")
+    sf.write(str(paths["target"]), supervised_target, SR, subtype="FLOAT")
+    sf.write(str(paths["interferer"]), supervised_residual, SR, subtype="FLOAT")
     np.save(str(paths["activity"]), activity)
 
     return {
         "id": uid,
-        "mixture": str(paths["mixture"].relative_to(FUNASR_ROOT)),
-        "target": str(paths["target"].relative_to(FUNASR_ROOT)),
-        "interferer": str(paths["interferer"].relative_to(FUNASR_ROOT)),
-        "activity": str(paths["activity"].relative_to(FUNASR_ROOT)),
-        "enrollment": f"data/trials/enroll_{enroll_spk}.wav",
-        "target_speaker": spk,
+        "mixture": _manifest_path(paths["mixture"]),
+        "target": _manifest_path(paths["target"]),
+        "interferer": _manifest_path(paths["interferer"]),
+        "activity": _manifest_path(paths["activity"]),
+        "enrollment": _manifest_path(source / f"enroll_{enroll_spk}.wav"),
+        "target_speaker": enroll_spk,
         "interferer_speaker": inter,
         "enrollment_speaker": enroll_spk,
+        "mixture_speakers": [spk, inter],
+        "scenario": scenario,
+        "target_present": target_present,
+        "is_absent": not target_present,
+        "is_swap": True,
         "config": config,
         "overlap_ratio": overlap,
         "sir_db": sir,
@@ -142,25 +164,29 @@ def build_one(rng, spk_idx, config):
     }
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--seed", type=int, default=20260725)
-    args = parser.parse_args()
+    parser.add_argument("--source", type=Path, default=DEFAULT_SRC)
+    parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
+    args = parser.parse_args(argv)
 
-    OUT.mkdir(parents=True, exist_ok=True)
+    source = args.source.resolve()
+    out = args.out.resolve()
+    out.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(args.seed)
 
     entries = []
     for i in range(4):
         for config in ("partial25", "full100", "swap50"):
-            entries.append(build_one(rng, i, config))
+            entries.append(build_one(rng, i, config, source, out))
 
-    with open(OUT / "manifest.jsonl", "w", encoding="utf-8") as f:
+    with open(out / "manifest.jsonl", "w", encoding="utf-8") as f:
         for e in entries:
             f.write(json.dumps(e, ensure_ascii=False) + "\n")
 
-    with open(OUT / "SHA256SUMS.txt", "w", encoding="utf-8") as f:
-        for p in sorted(OUT.glob("*")):
+    with open(out / "SHA256SUMS.txt", "w", encoding="utf-8") as f:
+        for p in sorted(out.glob("*")):
             if p.name in ("SHA256SUMS.txt", "_meta.json"):
                 continue
             f.write(f"{sha256(p)}  {p.name}\n")
@@ -171,17 +197,17 @@ def main():
         "created": time.strftime("%Y-%m-%d %H:%M:%S"),
         "command": f"python tools/build_debug_mixtures.py --seed {args.seed}",
         "seed": args.seed,
-        "source": "data/trials (read-only)",
+        "source": str(source),
         "counts": {
             "total": len(entries),
             "full100": sum(1 for e in entries if e["config"] == "full100"),
-            "enrollment_swap": sum(1 for e in entries if e["enrollment_speaker"] != e["target_speaker"]),
+            "enrollment_swap": sum(1 for e in entries if e["scenario"] == "enroll_swap_absent"),
         },
     }
-    with open(OUT / "_meta.json", "w", encoding="utf-8") as f:
+    with open(out / "_meta.json", "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False, indent=2)
 
-    print(f"built {len(entries)} mixtures -> {OUT}")
+    print(f"built {len(entries)} mixtures -> {out}")
     print(f"full100={meta['counts']['full100']} enrollment_swap={meta['counts']['enrollment_swap']}")
 
 

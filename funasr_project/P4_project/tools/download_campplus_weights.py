@@ -21,7 +21,7 @@ from pathlib import Path
 # ── 配置 ──────────────────────────────────────────────────────
 DEFAULT_MODEL_ID = "iic/speech_campplus_sv_zh-cn_16k-common"
 MODELS_DIR = Path(__file__).resolve().parents[1] / "artifacts" / "models"
-TARGET_PT = "campplus_sv_zh-cn_16k-common.pt"
+TARGET_FILE = "campplus_cn_common.bin"
 MODELSCOPE_BASE = "https://www.modelscope.cn/api/v1/models"
 
 
@@ -38,11 +38,11 @@ def download_with_modelscope(model_id: str, dest: Path) -> bool:
             model_id=model_id,
             cache_dir=str(dest.parent / ".modelscope_cache"),
         )
-        # 在缓存中查找 .pt 文件
+        # 官方快照交付 campplus_cn_common.bin。
         cache_path = Path(cache_dir)
-        pt_files = list(cache_path.rglob("*.pt"))
-        if pt_files:
-            src = pt_files[0]
+        weight_files = list(cache_path.rglob(TARGET_FILE))
+        if weight_files:
+            src = weight_files[0]
             shutil.copy2(src, dest)
             print(f"[modelscope] 已保存: {dest}")
             return True
@@ -65,7 +65,7 @@ def download_with_modelscope(model_id: str, dest: Path) -> bool:
 def download_with_http(model_id: str, dest: Path) -> bool:
     """备选：直接 HTTP 下载（从 ModelScope 开放接口）。"""
     # ModelScope 模型文件下载 URL 格式
-    file_url = f"{MODELSCOPE_BASE}/{model_id}/resolve/master/{TARGET_PT}"
+    file_url = f"{MODELSCOPE_BASE}/{model_id}/resolve/master/{TARGET_FILE}"
     print(f"[http] 尝试下载: {file_url}")
 
     try:
@@ -115,16 +115,16 @@ def download_with_msdl(model_id: str, dest: Path) -> bool:
 
 
 def extract_tar(tar_path: Path, dest_dir: Path) -> None:
-    """从 tar.gz 中提取 .pt 文件。"""
+    """从 tar.gz 中提取官方 CAMPPlus 权重。"""
     print(f"[extract] 解压 {tar_path} ...")
     with tempfile.TemporaryDirectory() as tmpdir:
         with tarfile.open(tar_path, "r:gz") as tar:
             tar.extractall(tmpdir)
-        for f in Path(tmpdir).rglob("*.pt"):
-            shutil.copy2(f, dest_dir / TARGET_PT)
-            print(f"[extract] 已保存: {dest_dir / TARGET_PT}")
+        for f in Path(tmpdir).rglob(TARGET_FILE):
+            shutil.copy2(f, dest_dir / TARGET_FILE)
+            print(f"[extract] 已保存: {dest_dir / TARGET_FILE}")
             return
-    print("[extract] 未在压缩包中找到 .pt 文件")
+    print(f"[extract] 未在压缩包中找到 {TARGET_FILE}")
 
 
 def try_all_methods(model_id: str, dest: Path, force: bool = False) -> bool:
@@ -177,7 +177,7 @@ def main():
     parser.add_argument("--verify-only", action="store_true", help="仅验证已有权重，不下载")
     args = parser.parse_args()
 
-    dest = MODELS_DIR / TARGET_PT
+    dest = MODELS_DIR / TARGET_FILE
 
     if args.verify_only:
         ok = verify_weights(dest)

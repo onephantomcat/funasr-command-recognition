@@ -99,4 +99,4 @@ notes: "B3 v2: absent_loss_scale=0.1 修正 absent 样本主导问题，推荐�
 # P4 CAMPPlus 嵌入
 sv_mode: campplus
 sv_bootstrap_seed: 20260804
-sv_model_id: ""
+sv_model_id: "iic/speech_campplus_sv_zh-cn_16k-common"

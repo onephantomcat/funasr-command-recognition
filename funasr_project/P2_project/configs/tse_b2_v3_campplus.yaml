@@ -82,4 +82,4 @@ notes: "B2 v3: scene_mode=b2（全 absent，target_present=False）30K train/3K 
 # P4 CAMPPlus 嵌入（真实声纹，与 B3 v3 保持一致）
 sv_mode: campplus
 sv_bootstrap_seed: 20260804
-sv_model_id: ""
+sv_model_id: "iic/speech_campplus_sv_zh-cn_16k-common"

@@ -68,8 +68,8 @@ asset_class: B1_TRIAL
 notes: "P1 v2_b1 未交付时用 DEBUG 数据空跑（--debug_data）"
 
 # ---- P2-17 / P4-04：说话人注册嵌入模式 ----
-# bootstrap: 哈希派生确定性随机向量（零依赖，默认）
-# campplus:  P4 CAM++ 真实声纹嵌入（需 speakerlab + 权重）
+# bootstrap: 仅限显式 debug 的确定性伪嵌入
+# campplus:  P4 CAM++ 真实声纹嵌入（正式训练必须使用）
 sv_mode: campplus
 sv_bootstrap_seed: 20260804
-sv_model_id: ""
+sv_model_id: "iic/speech_campplus_sv_zh-cn_16k-common"

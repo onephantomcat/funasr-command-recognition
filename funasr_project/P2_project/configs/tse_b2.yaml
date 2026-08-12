@@ -46,7 +46,7 @@ mrstft_resolutions:
 act_frame_ratio: 0.5
 
 # ============================================================
-# ★ B2 核心：场景模式（强制 absent 判定 + 零向量 embedding）
+# ★ B2 核心：场景模式（强制 absent 目标；仍使用真实 enrollment embedding）
 # ============================================================
 scene_mode: b2
 
@@ -91,4 +91,4 @@ notes: "B2 零抑制场景: scenario=absent+enroll_swap_absent（target_present=
 # P4 CAMPPlus 嵌入（与 B1 一致，保证可复用缓存）
 sv_mode: campplus
 sv_bootstrap_seed: 20260804
-sv_model_id: ""
+sv_model_id: "iic/speech_campplus_sv_zh-cn_16k-common"

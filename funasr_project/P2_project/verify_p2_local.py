@@ -17,11 +17,7 @@ print("  cfg 主键:", list(ckpt["cfg"].keys())[:8])
 # === 验证 2: 构建模型并加载权重 ===
 from src.tse.model import DualOutputTSE
 model = DualOutputTSE(ckpt["cfg"])
-missing, unexpected = model.load_state_dict(ckpt["model"], strict=False)
-if missing:
-    print(f"  [WARN] 缺失参数: {missing[:3]}")
-if unexpected:
-    print(f"  [WARN] 多余参数: {unexpected[:3]}")
+model.load_state_dict(ckpt["model"], strict=True)
 model.eval()
 total_params = sum(p.numel() for p in model.parameters())
 print("[OK] 模型构建成功: {} 参数".format(total_params))

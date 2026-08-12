@@ -1,7 +1,7 @@
 """P4 sv 模块 smoke 测试。
 
 验证：
-1. CampplusBackend 可加载（无需预训练权重，随机初始化即可）
+1. CampplusBackend 仅在预训练权重完整可用时加载成功
 2. encode_enrollment 接口可调用，输出正确维度
 3. cosine_similarity 同说话人 > 不同说话人
 4. sv_contract_v1 接口契约完整
@@ -40,8 +40,8 @@ _DEBUG_MIX = _FUNASR_ROOT / "P2_project" / "artifacts" / "debug_mixtures_v0" / "
 class TestCampplusBackend:
     """CampplusBackend 基础功能测试。"""
 
-    def test_load_random_init(self):
-        """模型可加载（随机初始化，无预训练权重）。"""
+    def test_load_pretrained(self):
+        """模型仅使用完整预训练权重加载。"""
         cfg = CampplusBackendConfig(
             embedding_size=192,
             device="cpu",
@@ -63,7 +63,7 @@ class TestCampplusBackend:
         assert torch.isfinite(emb).all()
 
     def test_embed_different_seeds(self):
-        """不同输入产生嵌入（随机初始化模型，仅验证形状正确）。"""
+        """不同输入产生有效嵌入。"""
         cfg = CampplusBackendConfig(embedding_size=192, device="cpu")
         backend = CampplusBackend(cfg)
         backend.load()
@@ -72,7 +72,6 @@ class TestCampplusBackend:
         wav2 = torch.randn(1, 16000)
         emb1 = backend.embed(wav1)
         emb2 = backend.embed(wav2)
-        # 随机初始化模型，嵌入不保证区分度；验证形状正确即可
         assert emb1.shape == (1, 192)
         assert emb2.shape == (1, 192)
         assert torch.isfinite(emb1).all()

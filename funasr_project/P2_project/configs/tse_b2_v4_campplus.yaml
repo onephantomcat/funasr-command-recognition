@@ -71,4 +71,4 @@ notes: "B2 v4: 从零训练（NO warm-start），scene_mode=b2（全 absent）�
 
 sv_mode: campplus
 sv_bootstrap_seed: 20260804
-sv_model_id: ""
+sv_model_id: "iic/speech_campplus_sv_zh-cn_16k-common"

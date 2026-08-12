@@ -49,11 +49,16 @@ def entries():
 def test_manifest_count_and_flags(entries):
     assert len(entries) == 12
     assert all(e["debug_only"] for e in entries)
+    assert sum(e["target_present"] for e in entries) == 8
+    assert sum(not e["target_present"] for e in entries) == 4
+    assert {e["scenario"] for e in entries} == {
+        "enroll_swap_target_1", "enroll_swap_target_2", "enroll_swap_absent"
+    }
 
 
 def test_required_groups(entries):
     full100 = [e for e in entries if e["overlap_ratio"] == 1.0]
-    swap = [e for e in entries if e["enrollment_speaker"] != e["target_speaker"]]
+    swap = [e for e in entries if e["scenario"] == "enroll_swap_absent"]
     assert len(full100) >= 4, f"100% 重叠不足 4 条: {len(full100)}"
     assert len(swap) >= 4, f"enrollment-swap 不足 4 组: {len(swap)}"
     for e in entries:
@@ -80,7 +85,10 @@ def test_audio_shapes_and_closure(entries):
         err = np.max(np.abs(mix - (tgt + itf)))
         assert err < 1e-6, f"{e['id']} 闭合误差 {err}"
         assert np.max(np.abs(mix)) <= 0.99
-        assert np.sqrt(np.mean(tgt ** 2)) > 1e-3
+        if e["target_present"]:
+            assert np.sqrt(np.mean(tgt ** 2)) > 1e-3
+        else:
+            assert np.max(np.abs(tgt)) == 0.0
 
 
 def test_activity_mask(entries):
@@ -88,7 +96,10 @@ def test_activity_mask(entries):
         act = np.load(str(BASE / e["activity"]))
         assert act.shape == (N,)
         assert set(np.unique(act)).issubset({0.0, 1.0})
-        assert act.sum() > N * 0.3
+        if e["target_present"]:
+            assert act.sum() > N * 0.3
+        else:
+            assert act.sum() == 0.0
         tgt, _ = sf.read(str(BASE / e["target"]), dtype="float32")
         outside = np.abs(tgt[act < 0.5])
         assert outside.max() < 1e-3 if len(outside) else True

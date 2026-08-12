@@ -19,7 +19,7 @@ ABSENT：manifest 条目带 "target_present": false 时禁止 SI-SDR（置 null�
 记录 rho_abs(=energy_ratio) 与 A_abs(=activity_ratio)。DEBUG 集暂无 ABSENT 样本。
 NaN/Inf 输出：记录 nan=true，派生指标置 null 并跳过该条 schema 校验（不伪造假数）。
 
-标记：DEBUG_ONLY / BOOTSTRAP_ENCODER_ONLY（embedding 来源与训练一致的哈希派生随机向量）
+正式 checkpoint 使用真实 CAMPPlus；BOOTSTRAP 只适用于其配置明确声明的调试 checkpoint。
 
 运行：
   python tools/evaluate_tse.py \
@@ -82,6 +82,33 @@ def scenario_of(entry):
     sir = float(sir_raw)
     sir_s = f"minus{abs(sir):g}" if sir < 0 else f"{sir:g}"
     return f"overlap_{ov}_sir_{sir_s}"
+
+
+def resolve_wrong_enrollment(entry, triplet_rows):
+    """返回同一 mixture 中另一说话人的 (speaker_id, enrollment)。
+
+    优先使用显式 swap 字段；P1 v3 没有这些字段时，从同一 triplet 的
+    target_1/target_2 兄弟行配对。无法证明配对关系时返回 ``(None, None)``，
+    调用方必须跳过 choice 指标，不能猜默认路径。
+    """
+    explicit_path = (entry.get("swap_enrollment") or entry.get("swap_enroll_wav")
+                     or entry.get("wrong_enrollment") or entry.get("wrong_enroll_wav"))
+    explicit_speaker = (entry.get("swap_speaker") or entry.get("swap_target_speaker")
+                        or entry.get("wrong_speaker"))
+    if explicit_path and explicit_speaker:
+        return str(explicit_speaker), str(explicit_path)
+
+    triplet_id = entry.get("triplet_id")
+    if not triplet_id:
+        return None, None
+    current_speaker = str(entry.get("target_speaker", ""))
+    for sibling in triplet_rows.get(str(triplet_id), []):
+        sibling_speaker = str(sibling.get("target_speaker", ""))
+        sibling_enroll = sibling.get("enrollment", sibling.get("enroll_wav", ""))
+        if (sibling.get("target_present") is True and sibling_speaker
+                and sibling_speaker != current_speaker and sibling_enroll):
+            return sibling_speaker, str(sibling_enroll)
+    return None, None
 
 
 def _load_wav(rel_path, base=None):
@@ -202,7 +229,7 @@ def main():
     ap.add_argument("--manifest", default=str(P2_ROOT / "artifacts" / "debug_mixtures_v0" / "manifest.jsonl"))
     ap.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda"])
     ap.add_argument("--out", default=None)
-    ap.add_argument("--data_root", default=None,
+    ap.add_argument("--data_root", "--data-root", dest="data_root", default=None,
                     help="数据根目录（音频/npy 相对路径的基目录；不指定则用 FUNASR_ROOT）")
     args = ap.parse_args()
 
@@ -237,6 +264,10 @@ def main():
         e.setdefault("activity", e.get("activity_mask", ""))
         e.setdefault("config", e.get("generator_version", "unknown"))
     entries = sorted(entries, key=lambda e: str(e.get("id", "")))
+    triplet_rows = {}
+    for entry in entries:
+        if entry.get("triplet_id"):
+            triplet_rows.setdefault(str(entry["triplet_id"]), []).append(entry)
     data_root = Path(args.data_root) if args.data_root else FUNASR_ROOT
     base = data_root
     LOG.info("data_root=%s (FUNASR_ROOT=%s)", data_root, FUNASR_ROOT)
@@ -247,12 +278,14 @@ def main():
         try:
             adapter.load_backend()
             LOG.info("CAMPLUS 后端加载成功")
-        except Exception as e:
-            LOG.warning(f"CAMPLUS 后端加载失败，fallback BOOTSTRAP: {e}")
-            adapter = EnrollmentAdapter.from_config(cfg, mode="bootstrap")
+        except Exception as ex:
+            raise RuntimeError(
+                "正式评估需要真实 CAMPLUS embedding，禁止退化为 BOOTSTRAP"
+            ) from ex
 
     records, detailed, comps = [], [], []
     swap_rows = []
+    swap_skips = []
     latencies, rtf_list = [], []
     peak_gpu_gb = 0.0
 
@@ -262,15 +295,16 @@ def main():
         mix, sr = _load_wav(e.get("mixture", e.get("mixture_wav", "")), base)
         assert sr == cfg["sample_rate"]
         spk_id = e.get("target_speaker", e.get("enrollment", sid))
-        try:
-            if adapter.mode == "campplus":
-                enroll_path = str(base / e.get("enrollment", e.get("enroll_wav", "")))
-                adapter.encode_file(spk_id, enroll_path)
+        if adapter.mode == "campplus":
+            enroll_path = str(base / e.get("enrollment", e.get("enroll_wav", "")))
+            try:
+                emb = adapter.encode_file(spk_id, enroll_path).squeeze(0)
+            except Exception as ex:
+                raise RuntimeError(
+                    f"样本 {sid} 的 CAMPLUS enrollment 编码失败: {enroll_path}"
+                ) from ex
+        else:
             emb = adapter.get_embedding(spk_id).squeeze(0)
-        except Exception as ex:
-            LOG.warning(f"embedding 失败 ({spk_id}), fallback BOOTSTRAP: {ex}")
-            adapter_bs = EnrollmentAdapter.from_config(cfg, mode="bootstrap")
-            emb = adapter_bs.get_embedding(spk_id).squeeze(0)
 
         if device.type == "cuda":
             torch.cuda.reset_peak_memory_stats()
@@ -311,31 +345,38 @@ def main():
             itr_rel = e.get("interferer") or e.get("interferer_wav") or ""
             if itr_rel:
                 itr, _ = _load_wav(itr_rel, base)
-                wrong_spk = e.get("interferer_speaker", "")
-                wrong_enroll = e.get("swap_enrollment", e.get("swap_enroll_wav", f"data/trials/enroll_{wrong_spk}.wav"))
-                try:
+                wrong_spk, wrong_enroll = resolve_wrong_enrollment(e, triplet_rows)
+                if wrong_spk and wrong_enroll:
                     if adapter.mode == "campplus":
                         wrong_path = str(base / wrong_enroll)
-                        adapter.encode_file(wrong_spk, wrong_path)
-                    emb_w = adapter.get_embedding(wrong_spk).squeeze(0)
-                except Exception:
-                    adapter_bs = EnrollmentAdapter.from_config(cfg, mode="bootstrap")
-                    emb_w = adapter_bs.get_embedding(wrong_spk).squeeze(0)
-                s_w, _, _, _ = _forward_timed(model, mix, emb_w, device)
-                q_e1_y1 = si_sdr_eval(s_tgt, ref)
-                q_e1_y2 = si_sdr_eval(s_tgt, itr)
-                q_e2_y2 = si_sdr_eval(s_w, itr)
-                q_e2_y1 = si_sdr_eval(s_w, ref)
-                delta = q_e1_y1 - q_e2_y1
-                choice = 0.5 if abs(delta) <= TIE_EPS else (1.0 if delta > 0 else 0.0)
-                swap_rows.append({"sample_id": sid, "q_e1_y1": q_e1_y1, "q_e1_y2": q_e1_y2,
-                                  "q_e2_y2": q_e2_y2, "q_e2_y1": q_e2_y1,
-                                  "selectivity_db": q_e1_y1 - q_e1_y2, "choice_score": choice})
+                        try:
+                            emb_w = adapter.encode_file(wrong_spk, wrong_path).squeeze(0)
+                        except Exception as ex:
+                            raise RuntimeError(
+                                f"样本 {sid} 的 wrong-enrollment 编码失败: {wrong_path}"
+                            ) from ex
+                    else:
+                        emb_w = adapter.get_embedding(wrong_spk).squeeze(0)
+                    s_w, _, _, _ = _forward_timed(model, mix, emb_w, device)
+                    q_e1_y1 = si_sdr_eval(s_tgt, ref)
+                    q_e1_y2 = si_sdr_eval(s_tgt, itr)
+                    q_e2_y2 = si_sdr_eval(s_w, itr)
+                    q_e2_y1 = si_sdr_eval(s_w, ref)
+                    delta = q_e1_y1 - q_e2_y1
+                    choice = 0.5 if abs(delta) <= TIE_EPS else (1.0 if delta > 0 else 0.0)
+                    swap_rows.append({"sample_id": sid, "q_e1_y1": q_e1_y1, "q_e1_y2": q_e1_y2,
+                                      "q_e2_y2": q_e2_y2, "q_e2_y1": q_e2_y1,
+                                      "selectivity_db": q_e1_y1 - q_e1_y2, "choice_score": choice})
+                else:
+                    swap_skips.append({"sample_id": sid, "reason": "no_paired_wrong_enrollment"})
                 det = {"sample_id": sid, "scenario": scenario, "target_present": True,
                        "config": e.get("config", "unknown"), **scored,
                        "activity_ratio": activity_ratio(p_tgt),
-                       "rtf": latency_ms / 1000.0 / duration,
-                       "swap": swap_rows[-1]}
+                       "rtf": latency_ms / 1000.0 / duration}
+                if wrong_spk and wrong_enroll:
+                    det["swap"] = swap_rows[-1]
+                else:
+                    det["swap_skipped_reason"] = "no_paired_wrong_enrollment"
             else:
                 det = {"sample_id": sid, "scenario": scenario, "target_present": True,
                        "config": e.get("config", "unknown"), **scored,
@@ -420,6 +461,9 @@ def main():
             "tie_eps": TIE_EPS,
             "choice_accuracy": float(np.mean([r["choice_score"] for r in swap_rows])) if swap_rows else None,
             "mean_selectivity_db": float(np.mean([r["selectivity_db"] for r in swap_rows])) if swap_rows else None,
+            "n_scored": len(swap_rows),
+            "n_skipped": len(swap_skips),
+            "skip_reasons": sorted({r["reason"] for r in swap_skips}),
         },
         "efficiency": {
             "latency_ms_mean": float(np.mean(latencies)),
@@ -428,7 +472,7 @@ def main():
         },
         "schema_validation": schema_status,
         "determinism_rescore": "PASS" if det_pass else "FAIL",
-        "debug_only": True,
+        "debug_only": all(bool(e.get("debug_only", False)) for e in entries),
     }
     by_scen = {}
     for d in present_dets:
@@ -440,7 +484,8 @@ def main():
         json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     with open(out_dir / "report.md", "w", encoding="utf-8") as f:
-        f.write("# P2-11 TSE 评测报告（DEBUG_ONLY / BOOTSTRAP_ENCODER_ONLY）\n\n")
+        scope = ("DEBUG_ONLY" if summary["debug_only"] else "FORMAL_INPUT")
+        f.write(f"# P2-11 TSE 评测报告（{scope} / {adapter.mode.upper()}）\n\n")
         f.write(f"- checkpoint: `{ckpt_path.name}`（sha256 `{ckpt_sha[:16]}…`）\n")
         f.write(f"- manifest: `{Path(args.manifest).name}`（sha256 `{data_sha[:16]}…`）\n")
         f.write(f"- 设备: {device}；样本: {len(records)} 条"
@@ -461,6 +506,8 @@ def main():
             f.write("## 注册交换\n\n")
             f.write(f"- 选择正确率 {sw['choice_accuracy']:.3f}（tie_eps={TIE_EPS}，平局计 0.5）\n")
             f.write(f"- 平均选择性（q_e1_y1−q_e1_y2）{sw['mean_selectivity_db']:.2f} dB\n\n")
+        if swap_skips:
+            f.write(f"- 注册交换未计分 {len(swap_skips)} 条：缺少可证明配对的 wrong-enrollment\n\n")
         eff = summary["efficiency"]
         f.write("## 效率\n\n")
         f.write(f"- latency 均值 {eff['latency_ms_mean']:.1f} ms；RTF 均值 {eff['rtf_mean']:.4f}；"

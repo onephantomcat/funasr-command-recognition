@@ -22,6 +22,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.tse import (
     DualOutputTSE,
+    activity_bce_loss,
     absent_zero_loss,
     extract_target,
     mix_consistency_loss,
@@ -71,13 +72,19 @@ def run_length_tier(model, cfg, T, device):
     l_sisdr = si_sdr(s_tgt, x)
     l_res = scale_sensitive_l1(s_res, x, cfg["zero_ref_kappa"])
     l_mix = mix_consistency_loss(s_tgt, s_res, x)
+    # Random non-silent mixtures are treated as active in this structural
+    # smoke.  Including the activity term ensures act_head participates in
+    # the backward pass instead of being reported as a false dead branch.
+    l_act = activity_bce_loss(p_tgt, torch.ones_like(p_tgt))
     loss = (-cfg["lambda_target"] * l_sisdr
             + cfg["lambda_residual"] * l_res
-            + cfg["lambda_mix"] * l_mix)
+            + cfg["lambda_mix"] * l_mix
+            + cfg.get("lambda_act", 0.5) * l_act)
     tier["losses"] = {
         "si_sdr_db": round(l_sisdr.item(), 4),
         "res_l1": round(l_res.item(), 6),
         "mix": round(l_mix.item(), 8),
+        "act_bce": round(l_act.item(), 6),
         "total": round(loss.item(), 4),
     }
     tier["checks"].append(check("c3_loss_computable", torch.isfinite(loss)))

@@ -27,7 +27,18 @@ def _align_frames(src, target_len, mode):
     return aligned.squeeze(1)
 
 
-def si_sdr(est, ref, eps=1e-6):
+def _reduce(values, reduction):
+    """Apply a small, explicit reduction contract to per-sample values."""
+    if reduction == "none":
+        return values
+    if reduction == "mean":
+        return values.mean()
+    if reduction == "sum":
+        return values.sum()
+    raise ValueError(f"unsupported reduction={reduction!r}")
+
+
+def si_sdr(est, ref, eps=1e-6, reduction="mean"):
     """SI-SDR（dB，越大越好）。含除零保护：零能量参考时退化为有限值。
 
     注意：eps=1e-6 适配 AMP(float16)，避免 float16 下下溢。
@@ -37,21 +48,23 @@ def si_sdr(est, ref, eps=1e-6):
     target = scale * ref
     noise = est - target
     ratio = (target ** 2).sum(-1) / (noise ** 2).sum(-1) + eps
-    return 10.0 * torch.log10(ratio + eps).mean()
+    return _reduce(10.0 * torch.log10(ratio + eps), reduction)
 
 
-def scale_sensitive_l1(est, ref, kappa):
-    """尺度敏感 L1：|est - alpha*ref| 均值，alpha 为逐样本最小二乘增益。
+def scale_sensitive_l1(est, ref, kappa, reduction="mean"):
+    """幅度敏感 L1：|est - ref| 的逐样本均值。
 
     全零参考保护：ref 平均幅度 < kappa 时退化为 |est| 均值
     （05B 的 L_zero 前身，此时损失等价于抑制目标支路输出能量）。
+
+    旧实现先拟合 ``alpha * ref``，会把整体增益误差消掉；模型即使把
+    PRESENT 输出压到接近零也几乎不受这项惩罚。训练需要保留幅度监督，
+    因此非零参考直接使用 waveform L1。
     """
-    ref_energy = (ref ** 2).sum(-1, keepdim=True)
-    alpha = (est * ref).sum(-1, keepdim=True) / (ref_energy + 1e-6)
-    l1 = (est - alpha * ref).abs().mean(-1)
+    l1 = (est - ref).abs().mean(-1)
     zero_ref_l1 = est.abs().mean(-1)
     is_zero_ref = ref.abs().mean(-1) < kappa
-    return torch.where(is_zero_ref, zero_ref_l1, l1).mean()
+    return _reduce(torch.where(is_zero_ref, zero_ref_l1, l1), reduction)
 
 
 def mix_consistency_loss(s_tgt, s_res, x, eps=1e-8):
@@ -77,7 +90,7 @@ def _stft_mag(wav, n_fft, hop, win):
     ).abs()
 
 
-def mrstft_loss(est, ref, resolutions, eps=1e-6):
+def mrstft_loss(est, ref, resolutions, eps=1e-6, reduction="mean"):
     """多分辨率 STFT 损失：各分辨率下 谱收敛项 + log 幅度 L1 的均值。
 
     resolutions: [(n_fft, hop, win), ...]，从配置读，不硬编码。
@@ -86,7 +99,10 @@ def mrstft_loss(est, ref, resolutions, eps=1e-6):
     注意：log 幅度项使用 float32 精度 + eps=1e-6，
     避免 AMP(float16) 下 eps 下溢导致 log(0)=-inf 爆炸。
     """
-    total = est.new_zeros(())
+    if not resolutions:
+        raise ValueError("mrstft resolutions must not be empty")
+    total = est.new_zeros(est.shape[0])
+    zero_ref = ref.abs().mean(-1) < eps
     for n_fft, hop, win in resolutions:
         m_est = _stft_mag(est, n_fft, hop, win)
         m_ref = _stft_mag(ref, n_fft, hop, win)
@@ -94,11 +110,18 @@ def mrstft_loss(est, ref, resolutions, eps=1e-6):
         mag_est = torch.log(m_est.float() + eps)
         mag_ref = torch.log(m_ref.float() + eps)
         mag = (mag_est - mag_ref).abs().mean(dim=(1, 2))
-        total = total + (sc + mag).mean()
-    return total / len(resolutions)
+        # 谱收敛对全零参考没有定义：ref norm≈0 会把任意微小输出放大到
+        # 1e5~1e6。ABSENT 已由 waveform/activity 监督，这里改用有界、
+        # 幅度敏感的输出谱抑制项，仍给非零输出连续梯度。
+        zero_spectrum = (
+            m_est.float().mean(dim=(1, 2))
+            + torch.log1p(m_est.float()).mean(dim=(1, 2))
+        )
+        total = total + torch.where(zero_ref, zero_spectrum, sc + mag)
+    return _reduce(total / len(resolutions), reduction)
 
 
-def activity_bce_loss(p_tgt, frame_act, eps=1e-7, _warned=[False]):
+def activity_bce_loss(p_tgt, frame_act, eps=1e-7, reduction="mean", _warned=[False]):
     """帧级活动度 BCE：p_tgt [B,Fr]（sigmoid 后概率），frame_act [B,Fr]∈{0,1}。
 
     健壮性：不同 PyTorch 版本对 torch.stft 默认 center/pad 行为可能变化，
@@ -128,4 +151,5 @@ def activity_bce_loss(p_tgt, frame_act, eps=1e-7, _warned=[False]):
             _warned[0] = True
         frame_act = _align_frames(frame_act, p_len, mode="nearest")
     p = p_tgt.clamp(eps, 1.0 - eps)
-    return -(frame_act * torch.log(p) + (1.0 - frame_act) * torch.log(1.0 - p)).mean()
+    per_sample = -(frame_act * torch.log(p) + (1.0 - frame_act) * torch.log(1.0 - p)).mean(-1)
+    return _reduce(per_sample, reduction)

@@ -5,7 +5,7 @@
 
 固定设置：8 条 DEBUG_ONLY 混合（不 shuffle）、seed 20260723、AMP 关、增强关。
 PRESENT 损失：-λ_sisdr·SI-SDR + λ_wav·L1(尺度敏感) + λ_stft·MR-STFT + λ_act·BCE(p_tgt, m)
-              + λ_residual·L1(residual, interferer)   （λ_id=0 硬约束）
+              + λ_residual·L1(residual, mixture-target)   （λ_id=0 硬约束）
 
 产物：artifacts/experiments/DEBUG_OVERFIT_seed<seed>/
   config.yaml / config.sha256 / data.sha256 / train.log / metrics.jsonl /
@@ -40,7 +40,6 @@ from src.tse.losses import (
     mix_consistency_loss,
     mrstft_loss,
     activity_bce_loss,
-    _stft_mag,
 )
 
 
@@ -90,7 +89,7 @@ def load_fixed_batch(cfg, manifest_path, batch_size, device):
     assert len(entries) == batch_size, f"样本不足：{len(entries)} < {batch_size}"
 
     base = FUNASR_ROOT
-    mixes, targets, inters, acts, embs, ids = [], [], [], [], [], []
+    mixes, targets, inters, acts, embs, ids, absent_flags = [], [], [], [], [], [], []
     for e in entries:
         mix, sr = sf.read(str(base / e["mixture"]), dtype="float32")
         tgt, _ = sf.read(str(base / e["target"]), dtype="float32")
@@ -104,6 +103,11 @@ def load_fixed_batch(cfg, manifest_path, batch_size, device):
                                    float(cfg["act_frame_ratio"])))
         embs.append(bootstrap_embedding(e["enrollment"], int(cfg["emb_dim"])))
         ids.append(e["id"])
+        target_present = e.get("target_present")
+        absent_flags.append(
+            not bool(target_present) if target_present is not None
+            else bool(np.mean(np.abs(tgt)) < 1e-6)
+        )
 
     batch = {
         "ids": ids,
@@ -113,6 +117,7 @@ def load_fixed_batch(cfg, manifest_path, batch_size, device):
         "interferer": torch.stack(inters).to(device),
         "frame_act": torch.stack(acts).to(device),
         "emb": torch.stack(embs).to(device),
+        "is_absent": torch.tensor(absent_flags, dtype=torch.bool, device=device),
     }
     return batch
 
@@ -121,44 +126,51 @@ def compute_losses(cfg, model_out, batch):
     """损失组装（支持 absent_loss_scale）。
 
     当配置中存在 absent_loss_scale 时，对 absent 样本（target 全零）的
-    SI-SDR、MR-STFT 和 L1 损失乘以该系数，防止 absent 样本主导训练。
+    waveform L1、MR-STFT 和 activity BCE 按同一权重汇总；SI-SDR 仅对
+    PRESENT 定义。这样可防止零目标谱损失压倒 PRESENT，同时保留真实的
+    ABSENT 抑制监督。
     """
     s_tgt, s_res, p_tgt = model_out
     y, itr, x = batch["target"], batch["interferer"], batch["mix"]
     kappa = float(cfg["zero_ref_kappa"])
 
-    # 检测 absent 样本：target 全零
-    is_absent = (y.abs().mean(dim=-1) < 1e-6)  # [B]
-    n_absent = is_absent.sum().item()
-    n_present = y.shape[0] - n_absent
+    # 优先消费 Dataset 的显式标签；固定 debug batch 没有标签时才从 target 推断。
+    if "is_absent" in batch:
+        is_absent = batch["is_absent"].to(device=y.device, dtype=torch.bool).reshape(-1)
+    else:
+        is_absent = y.abs().mean(dim=-1) < 1e-6
+    absent_scale = float(cfg.get("absent_loss_scale", 1.0))
+    if not 0.0 <= absent_scale <= 1.0:
+        raise ValueError(f"absent_loss_scale must be within [0, 1], got {absent_scale}")
+    sample_weights = torch.ones(y.shape[0], device=y.device, dtype=s_tgt.dtype)
+    sample_weights[is_absent] = absent_scale
 
+    def weighted_mean(values, weights=sample_weights):
+        denom = weights.sum()
+        if float(denom.detach().cpu()) == 0.0:
+            return values.sum() * 0.0
+        return (values * weights).sum() / denom
+
+    si_sdr_ps = si_sdr(s_tgt, y, reduction="none")
+    wav_l1_ps = scale_sensitive_l1(s_tgt, y, kappa, reduction="none")
+    mrstft_ps = mrstft_loss(
+        s_tgt, y, cfg["mrstft_resolutions"], reduction="none"
+    )
+    act_bce_ps = activity_bce_loss(
+        p_tgt, batch["frame_act"], reduction="none"
+    )
+
+    # residual 是 mixture-target 的完整余量（干扰人声 + 噪声），与模型硬投影一致。
+    residual_ref = x - y
+    present_weights = (~is_absent).to(dtype=s_tgt.dtype)
     terms = {
-        "si_sdr_db": si_sdr(s_tgt, y),
-        "wav_l1": scale_sensitive_l1(s_tgt, y, kappa),
-        "mrstft": mrstft_loss(s_tgt, y, cfg["mrstft_resolutions"]),
-        "act_bce": activity_bce_loss(p_tgt, batch["frame_act"]),
-        "res_l1": scale_sensitive_l1(s_res, itr, kappa),
+        "si_sdr_db": weighted_mean(si_sdr_ps, present_weights),
+        "wav_l1": weighted_mean(wav_l1_ps),
+        "mrstft": weighted_mean(mrstft_ps),
+        "act_bce": weighted_mean(act_bce_ps),
+        "res_l1": scale_sensitive_l1(s_res, residual_ref, kappa),
         "mix": mix_consistency_loss(s_tgt, s_res, x),
     }
-
-    # absent 样本损失缩放
-    absent_scale = float(cfg.get("absent_loss_scale", 1.0))
-    if absent_scale != 1.0 and n_absent > 0:
-        # 重新计算 per-sample 损失
-        si_sdr_per_sample = _si_sdr_per_sample(s_tgt, y)
-        mrstft_per_sample = _mrstft_per_sample(s_tgt, y, cfg["mrstft_resolutions"])
-        wav_l1_per_sample = _scale_sensitive_l1_per_sample(s_tgt, y, kappa)
-
-        # absent 样本缩放
-        si_sdr_per_sample[is_absent] *= absent_scale
-        mrstft_per_sample[is_absent] *= absent_scale
-        wav_l1_per_sample[is_absent] *= absent_scale
-
-        terms["si_sdr_db"] = si_sdr_per_sample.mean()
-        terms["mrstft"] = mrstft_per_sample.mean()
-        terms["wav_l1"] = wav_l1_per_sample.mean()
-        terms["_absent_count"] = n_absent
-        terms["_present_count"] = n_present
 
     total = (-float(cfg["lambda_sisdr"]) * terms["si_sdr_db"]
              + float(cfg["lambda_wav"]) * terms["wav_l1"]
@@ -167,40 +179,6 @@ def compute_losses(cfg, model_out, batch):
              + float(cfg["lambda_residual"]) * terms["res_l1"]
              + float(cfg["lambda_mix"]) * terms["mix"])
     return total, terms
-
-
-def _si_sdr_per_sample(est, ref, eps=1e-6):
-    """计算 per-sample SI-SDR [B]"""
-    ref_energy = (ref ** 2).sum(-1)
-    scale = (est * ref).sum(-1) / (ref_energy + eps)
-    target = scale.unsqueeze(-1) * ref
-    noise = est - target
-    ratio = (target ** 2).sum(-1) / (noise ** 2).sum(-1) + eps
-    return 10.0 * torch.log10(ratio + eps)
-
-
-def _mrstft_per_sample(est, ref, resolutions, eps=1e-6):
-    """计算 per-sample MR-STFT 损失 [B]"""
-    total = est.new_zeros(est.shape[0])
-    for n_fft, hop, win in resolutions:
-        m_est = _stft_mag(est, n_fft, hop, win)
-        m_ref = _stft_mag(ref, n_fft, hop, win)
-        sc = (m_est - m_ref).flatten(1).norm(dim=1) / (m_ref.flatten(1).norm(dim=1) + eps)
-        mag_est = torch.log(m_est.float() + eps)
-        mag_ref = torch.log(m_ref.float() + eps)
-        mag = (mag_est - mag_ref).abs().mean(dim=(1, 2))
-        total = total + (sc + mag)
-    return total / len(resolutions)
-
-
-def _scale_sensitive_l1_per_sample(est, ref, kappa, eps=1e-6):
-    """计算 per-sample scale_sensitive_l1 [B]"""
-    ref_energy = (ref ** 2).sum(-1)
-    alpha = (est * ref).sum(-1) / (ref_energy + eps)
-    l1 = (est - alpha.unsqueeze(-1) * ref).abs().mean(-1)
-    zero_ref_l1 = est.abs().mean(-1)
-    is_zero_ref = ref.abs().mean(-1) < kappa
-    return torch.where(is_zero_ref, zero_ref_l1, l1)
 
 
 def save_audio_triplet(out_dir, tag, idx, batch, s_tgt, sr):
@@ -217,6 +195,13 @@ def main():
     ap.add_argument("--manifest", default=str(P2_ROOT / "artifacts" / "debug_mixtures_v0" / "manifest.jsonl"))
     ap.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda"])
     ap.add_argument("--out", default=None)
+    ap.add_argument("--max-steps", "--max_steps", dest="max_steps", type=int, default=None,
+                    help="覆盖 cfg.steps（快速 DEBUG 执行用）")
+    ap.add_argument(
+        "--overwrite-output",
+        action="store_true",
+        help="允许删除并重建已存在的 DEBUG 输出目录",
+    )
     args = ap.parse_args()
 
     cfg = yaml.safe_load(open(args.config, encoding="utf-8"))
@@ -231,6 +216,11 @@ def main():
 
     out_dir = Path(args.out) if args.out else P2_ROOT / "artifacts" / "experiments" / f"DEBUG_OVERFIT_seed{seed}"
     if out_dir.exists():
+        if not args.overwrite_output:
+            raise FileExistsError(
+                f"OUTPUT_EXISTS_REFUSING_DELETE: {out_dir}；"
+                "如确认覆盖，请显式传 --overwrite-output"
+            )
         shutil.rmtree(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "before_after_audio").mkdir()
@@ -267,10 +257,15 @@ def main():
     opt = torch.optim.Adam(model.parameters(), lr=float(cfg["lr"]))
     assert not cfg["amp"], "手册 P2-09：AMP 必须关闭"
 
-    steps = int(cfg["steps"])
+    steps = int(args.max_steps if args.max_steps is not None else cfg["steps"])
+    if steps < 1:
+        raise ValueError(f"max_steps must be >= 1, got {steps}")
     grad_clip = float(cfg["grad_clip"])
     log_every = int(cfg["log_every"])
-    si_sdr_mix = si_sdr(batch["mix"], batch["target"]).item()
+    present = ~batch["is_absent"]
+    if not bool(present.any()):
+        raise ValueError("DEBUG batch 没有 PRESENT 样本，无法计算 SI-SDR 基线")
+    si_sdr_mix = si_sdr(batch["mix"][present], batch["target"][present]).item()
     LOG.info("基线 SI-SDR(mixture)=%.2f dB", si_sdr_mix)
 
     metrics_f = open(out_dir / "metrics.jsonl", "w", encoding="utf-8")
@@ -322,7 +317,10 @@ def main():
     with torch.no_grad():
         final_out = model(batch["mix"], batch["emb"])
     for idx in (0, 1):
-        save_audio_triplet(out_dir / "before_after_audio", "step100", idx, batch, final_out[0], cfg["sample_rate"])
+        save_audio_triplet(
+            out_dir / "before_after_audio", f"step{steps}", idx,
+            batch, final_out[0], cfg["sample_rate"],
+        )
 
     ckpt_path = out_dir / f"checkpoint_step{steps}.pt"
     torch.save({"model": model.state_dict(), "optimizer": opt.state_dict(),
@@ -344,7 +342,8 @@ def main():
         wrong_emb = batch["emb"][list(range(1, len(batch["ids"]))) + [0]]
         out_wrong = model(batch["mix"], wrong_emb)
     enroll_diff = (final_out[0] - out_wrong[0]).abs().mean().item()
-    si_sdr_wrong = si_sdr(out_wrong[0], batch["target"]).item()
+    present = ~batch["is_absent"]
+    si_sdr_wrong = si_sdr(out_wrong[0][present], batch["target"][present]).item()
     LOG.info("注册对比：正确 SI-SDR=%.2f dB，错误 SI-SDR=%.2f dB，输出差异 mean|Δ|=%.3e",
              float(terms["si_sdr_db"].detach().cpu()), si_sdr_wrong, enroll_diff)
 
@@ -366,18 +365,28 @@ def main():
         "si_sdri_positive": bool(last["si_sdri_db"] > 0),
         "restore_consistent": restore_ok,
     }
+    quick_smoke = args.max_steps is not None and steps < int(cfg["steps"])
     core_pass = (verdicts["no_nan"] and verdicts["grad_finite"] and verdicts["output_not_zero"]
                  and verdicts["output_not_copy_mix"] and verdicts["restore_consistent"]
-                 and verdicts["si_sdri_positive"] and verdicts["enroll_condition_effective"])
+                 and verdicts["enroll_condition_effective"])
+    if not quick_smoke:
+        core_pass = core_pass and verdicts["si_sdri_positive"]
     suggest_pass = verdicts["loss_drop_ge_70pct"] or verdicts["si_sdr_gain_ge_10db"]
-    overall = "PASS" if (core_pass and suggest_pass) else ("CORE_PASS_BUT_TARGET_MISS" if core_pass else "FAIL")
+    if quick_smoke:
+        overall = "PASS" if core_pass else "FAIL"
+    else:
+        overall = ("PASS" if (core_pass and suggest_pass)
+                   else ("CORE_PASS_BUT_TARGET_MISS" if core_pass else "FAIL"))
 
     train_time = time.time() - t_train0
     LOG.info("训练耗时 %.1fs；建议目标: loss 降 %.1f%% / SI-SDR 升 %.2f dB；总体判定: %s",
              train_time, loss_drop * 100, last["si_sdr_db"] - first["si_sdr_db"], overall)
 
     with open(out_dir / "report.md", "w", encoding="utf-8") as f:
-        f.write(f"# P2-09 固定小批量 {steps} step 过拟合报告（DEBUG_ONLY）\n\n")
+        report_kind = "链路 smoke" if quick_smoke else "过拟合"
+        f.write(f"# P2-09 固定小批量 {steps} step {report_kind}报告（DEBUG_ONLY）\n\n")
+        if quick_smoke:
+            f.write("- 说明: 本次仅验证前向、反向、注册条件和 checkpoint 恢复；不判定收敛指标。\n")
         f.write(f"- 日期: {time.strftime('%Y-%m-%d %H:%M:%S')}\n- 设备: {device}（torch {torch.__version__}）\n")
         f.write(f"- 固定 batch: {len(batch['ids'])} 条 {batch['ids']}\n")
         f.write(f"- 基线 SI-SDR(mixture): {si_sdr_mix:.2f} dB\n\n")
