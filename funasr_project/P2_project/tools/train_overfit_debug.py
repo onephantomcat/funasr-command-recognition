@@ -127,15 +127,48 @@ def load_fixed_batch(cfg, manifest_path, batch_size, device):
 
 
 def compute_losses(cfg, model_out, batch):
-    """PRESENT 损失组装（λ_id=0，无身份反向项）。"""
+    """损失组装（λ_id=0，无身份反向项）。
+
+    ABSENT 逐样本缩放：当 batch 中含 is_absent 标志且 cfg 定义了 absent_loss_scale 时，
+    对 ABSENT 样本的 si_sdr/wav_l1/act_bce 损失按 absent_loss_scale 降权，
+    防止 ABSENT 样本以全权重推 s_tgt 趋零（B3 输出坍塌根因）。
+    """
     s_tgt, s_res, p_tgt = model_out
     y, itr, x = batch["target"], batch["interferer"], batch["mix"]
     kappa = float(cfg["zero_ref_kappa"])
+    absent_scale = float(cfg.get("absent_loss_scale", 1.0))
+
+    # 逐样本权重：ABSENT 样本 ×absent_scale，PRESENT 样本 ×1.0
+    is_absent = batch.get("is_absent")
+    if is_absent is not None and absent_scale < 1.0:
+        w = torch.where(
+            is_absent.bool().squeeze(-1) if is_absent.dim() > 1 else is_absent.bool(),
+            torch.full((s_tgt.shape[0],), absent_scale, device=s_tgt.device, dtype=s_tgt.dtype),
+            torch.ones(s_tgt.shape[0], device=s_tgt.device, dtype=s_tgt.dtype),
+        )
+        use_weighted = True
+    else:
+        w = None
+        use_weighted = False
+
+    if use_weighted:
+        # 逐样本损失 → 加权平均
+        si_sdr_ps = si_sdr(s_tgt, y, reduction="none")
+        wav_l1_ps = scale_sensitive_l1(s_tgt, y, kappa, reduction="none")
+        act_bce_ps = activity_bce_loss(p_tgt, batch["frame_act"], reduction="none")
+        si_sdr_val = (si_sdr_ps * w).sum() / w.sum()
+        wav_l1_val = (wav_l1_ps * w).sum() / w.sum()
+        act_bce_val = (act_bce_ps * w).sum() / w.sum()
+    else:
+        si_sdr_val = si_sdr(s_tgt, y)
+        wav_l1_val = scale_sensitive_l1(s_tgt, y, kappa)
+        act_bce_val = activity_bce_loss(p_tgt, batch["frame_act"])
+
     terms = {
-        "si_sdr_db": si_sdr(s_tgt, y),
-        "wav_l1": scale_sensitive_l1(s_tgt, y, kappa),
+        "si_sdr_db": si_sdr_val,
+        "wav_l1": wav_l1_val,
         "mrstft": mrstft_loss(s_tgt, y, cfg["mrstft_resolutions"]),
-        "act_bce": activity_bce_loss(p_tgt, batch["frame_act"]),
+        "act_bce": act_bce_val,
         "res_l1": scale_sensitive_l1(s_res, itr, kappa),
         "mix": mix_consistency_loss(s_tgt, s_res, x),
     }

@@ -9,31 +9,39 @@
 import torch
 
 
-def si_sdr(est, ref, eps=1e-6):
+def si_sdr(est, ref, eps=1e-6, reduction="mean"):
     """SI-SDR（dB，越大越好）。含除零保护：零能量参考时退化为有限值。
 
     注意：eps=1e-6 适配 AMP(float16)，避免 float16 下下溢。
+    reduction='mean' 返回标量；'none' 返回 [B] 逐样本值。
     """
     ref_energy = (ref ** 2).sum(-1, keepdim=True)
     scale = (est * ref).sum(-1, keepdim=True) / (ref_energy + eps)
     target = scale * ref
     noise = est - target
     ratio = (target ** 2).sum(-1) / (noise ** 2).sum(-1) + eps
-    return 10.0 * torch.log10(ratio + eps).mean()
+    per_sample = 10.0 * torch.log10(ratio + eps)
+    if reduction == "none":
+        return per_sample.squeeze(-1)
+    return per_sample.mean()
 
 
-def scale_sensitive_l1(est, ref, kappa):
+def scale_sensitive_l1(est, ref, kappa, reduction="mean"):
     """尺度敏感 L1：|est - alpha*ref| 均值，alpha 为逐样本最小二乘增益。
 
     全零参考保护：ref 平均幅度 < kappa 时退化为 |est| 均值
     （05B 的 L_zero 前身，此时损失等价于抑制目标支路输出能量）。
+    reduction='mean' 返回标量；'none' 返回 [B] 逐样本值。
     """
     ref_energy = (ref ** 2).sum(-1, keepdim=True)
     alpha = (est * ref).sum(-1, keepdim=True) / (ref_energy + 1e-6)
     l1 = (est - alpha * ref).abs().mean(-1)
     zero_ref_l1 = est.abs().mean(-1)
     is_zero_ref = ref.abs().mean(-1) < kappa
-    return torch.where(is_zero_ref, zero_ref_l1, l1).mean()
+    per_sample = torch.where(is_zero_ref, zero_ref_l1, l1)
+    if reduction == "none":
+        return per_sample
+    return per_sample.mean()
 
 
 def mix_consistency_loss(s_tgt, s_res, x, eps=1e-8):
@@ -80,7 +88,12 @@ def mrstft_loss(est, ref, resolutions, eps=1e-6):
     return total / len(resolutions)
 
 
-def activity_bce_loss(p_tgt, frame_act, eps=1e-7):
-    """帧级活动度 BCE：p_tgt [B,Fr]（sigmoid 后概率），frame_act [B,Fr]∈{0,1}。"""
+def activity_bce_loss(p_tgt, frame_act, eps=1e-7, reduction="mean"):
+    """帧级活动度 BCE：p_tgt [B,Fr]（sigmoid 后概率），frame_act [B,Fr]∈{0,1}。
+    reduction='mean' 返回标量；'none' 返回 [B] 逐样本值（帧级平均后）。
+    """
     p = p_tgt.clamp(eps, 1.0 - eps)
-    return -(frame_act * torch.log(p) + (1.0 - frame_act) * torch.log(1.0 - p)).mean()
+    per_sample = -(frame_act * torch.log(p) + (1.0 - frame_act) * torch.log(1.0 - p)).mean(-1)
+    if reduction == "none":
+        return per_sample
+    return per_sample.mean()
