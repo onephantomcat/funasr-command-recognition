@@ -77,33 +77,17 @@ class B1Dataset(data.Dataset):
 
     SUPPORTED_MODES = ("b1", "b2", "b3")
 
-    def _resolve_path(self, p):
-        """Resolve audio path.
-        搜索顺序（从高到低）：
-          1) manifest_dir：manifest.jsonl 所在目录（P1 v3：assets/ 与 manifest 同目录）
-          2) cfg.datasets.data_root（可选，配置覆盖）
-          3) P1_DATA_ROOT 硬编码默认（P1 v2 兼容）
-          4) FUNASR_ROOT 项目根（P2 debug data 路径 P2_project/artifacts/...）
+    @staticmethod
+    def _resolve_path(p):
+        """Resolve audio path: try P1 root first, fallback to FUNASR_ROOT.
         对省略后缀（.npy/.wav）的 activity_mask 路径自动补全后缀（兼容 P1 v3 hash 路径）。"""
         p = str(p)
         if not p or p == "None":
             return None
-        roots = []
-        # 1) manifest dir（最高优先级：manifest 同级 assets）
-        if hasattr(self, "_manifest_dir") and self._manifest_dir is not None:
-            roots.append(self._manifest_dir)
-        # 2) cfg 可选 data_root
-        if hasattr(self, "cfg") and self.cfg is not None:
-            cfg_dr = self.cfg.get("datasets", {}).get("data_root") or self.cfg.get("data_root")
-            if cfg_dr:
-                roots.append(Path(cfg_dr))
-        # 3) 硬编码 P1 v2 默认
-        roots.append(P1_DATA_ROOT)
-        # 4) 项目根兜底（debug data）
-        roots.append(FUNASR_ROOT)
+        roots = [P1_DATA_ROOT, FUNASR_ROOT]
         suffixes = ("", ".npy", ".wav")  # 先试原路径 → .npy → .wav
         for root in roots:
-            candidate_base = Path(root) / p
+            candidate_base = root / p
             for suf in suffixes:
                 cand = Path(str(candidate_base) + suf)
                 if cand.exists():
@@ -127,9 +111,6 @@ class B1Dataset(data.Dataset):
 
     def __init__(self, manifest_path, cfg, seed=None, adapter=None, scene_mode=None, split_name=None):
         self.entries = []
-        self.cfg = cfg  # 提前赋值，供 _resolve_path 内取 cfg.datasets.data_root
-        # ---- manifest 所在目录（P1 v3：assets/ 相对 manifest 位置）----
-        self._manifest_dir = Path(manifest_path).resolve().parent
         # ---- scene_mode / split_name：CLI > cfg > 默认 ----
         self.scene_mode = (scene_mode or cfg.get("scene_mode") or "b1").lower()
         assert self.scene_mode in self.SUPPORTED_MODES, (
@@ -153,15 +134,16 @@ class B1Dataset(data.Dataset):
                 if self.split_name and e.get("split", "") != self.split_name:
                     skipped_split += 1
                     continue
-                # scenario 过滤（P1 v3 有 scenario 字段时严格过滤；v1/v2 P2 debug 无 scenario 字段 → 全通过，靠 is_absent/is_swap/target_present 旧字段判定）
+                # scenario 过滤（v1/v2 P2 debug data 没有 scenario 字段 → 全通过）
                 sc = e.get("scenario")
-                if self._scenario_filter and sc is not None and sc not in self._scenario_filter:
+                if self._scenario_filter and sc not in self._scenario_filter:
                     skipped_scenario += 1
                     continue
                 self.entries.append(e)
         LOG.info("加载 manifest=%s scene_mode=%s split_name=%s total=%d (skipped_split=%d scenario=%d)",
                  Path(manifest_path).name, self.scene_mode, self.split_name or "ALL",
                  len(self.entries), skipped_split, skipped_scenario)
+        self.cfg = cfg
         self.seg_samples = int(cfg["segment_length"] * cfg["sample_rate"])
         self.win_length = int(cfg["win_length"])
         self.hop_length = int(cfg["hop_length"])
@@ -171,18 +153,20 @@ class B1Dataset(data.Dataset):
         self.adapter = adapter or EnrollmentAdapter.from_config(cfg)
         self._camplus_fallback = False
         if self.adapter.mode == "campplus":
-            # 若主函数已预先强制加载成功（_backend 已存在），跳过重复加载，不允许 fallback
-            if getattr(self.adapter, "_backend", None) is not None:
-                LOG.info("CAMPLUS 后端已由主函数预加载（scene_mode=%s），跳过重复加载", self.scene_mode)
-            else:
-                # 只有主函数没预装时才尝试（一般是 --debug_data 模式）
-                try:
-                    self.adapter.load_backend()
-                    LOG.info("CAMPLUS 后端加载成功 (scene_mode=%s)", self.scene_mode)
-                except Exception as e:
-                    LOG.warning(f"CAMPLUS 后端加载失败，fallback BOOTSTRAP: {e}")
+            try:
+                self.adapter.load_backend()
+                LOG.info("CAMPLUS 后端加载成功 (scene_mode=%s)", self.scene_mode)
+            except Exception as e:
+                # 正式训练（非 --debug_data 空跑）禁止 silent fallback BOOTSTRAP
+                # 否则会导致模型在无效随机 embedding 上训练，输出近静音
+                if cfg.get("_p2_internal", {}).get("debug_data", False):
+                    LOG.warning("--debug_data 模式：CAMPLUS 加载失败允许 fallback BOOTSTRAP: %s", e)
                     self._camplus_fallback = True
                     self.adapter = EnrollmentAdapter.from_config(cfg, mode="bootstrap")
+                else:
+                    raise RuntimeError(
+                        f"CAMPLUS 后端加载失败，正式训练禁止 fallback BOOTSTRAP: {e}"
+                    ) from e
         # 场景统计（每 1000 条 __getitem__ 打一条 summary log）
         self._stats = {"present": 0, "absent": 0, "swap": 0}
         LOG.info("Dataset 场景模式: %s split=%s (总 %d 条 manifest)",
@@ -245,39 +229,6 @@ class B1Dataset(data.Dataset):
         act_resolved = self._resolve_path(act_path)
         act = self._load_activity_mask(act_resolved)
         assert sr == self.cfg["sample_rate"], f"采样率不一致: {sr} vs {self.cfg['sample_rate']}"
-
-        # ============================================================
-        # P1 v3 兼容修复：activity.npy 采样数 ≠ mix 采样数（常见 ratio≈0.552）
-        #   → 先 nearest-exact 将 act（0/1 标签，保语义无插值污染）对齐到 len(mix)
-        #   → 再走统一 crop/pad，保证后续 frame_activity() 帧数与 model STFT 严格一致
-        # ============================================================
-        _T_mix = len(mix)
-        _orig_act_len = int(act.size)
-        if _orig_act_len != _T_mix:
-            try:
-                if _orig_act_len == 0:
-                    act = np.zeros(_T_mix, dtype="float32")
-                else:
-                    _src = torch.from_numpy(act.astype("float32")).reshape(1, 1, -1)
-                    _aligned = torch.nn.functional.interpolate(
-                        _src, size=_T_mix, mode="nearest-exact"
-                    ).squeeze()
-                    act = _aligned.numpy().astype(act.dtype if hasattr(act, 'dtype') else 'float32')
-                if not getattr(self, "_actlen_fix_count", 0):
-                    LOG.info(
-                        "[ACT LEN FIX] sample-level activity %d → %d (len(mix)), ratio=%.3f  [后续将每 1000 次汇总 1 条]",
-                        _orig_act_len, _T_mix, _T_mix / max(1, _orig_act_len),
-                    )
-                self._actlen_fix_count = getattr(self, "_actlen_fix_count", 0) + 1
-                if self._actlen_fix_count % 1000 == 0:
-                    LOG.info("[ACT LEN FIX] 累计 %d 次 (最近 ratio=%.3f)",
-                             self._actlen_fix_count, _T_mix / max(1, _orig_act_len))
-            except Exception as _e:
-                LOG.warning("[ACT LEN FIX] align fail (%s), fallback pad/trim", _e)
-                if _orig_act_len < _T_mix:
-                    act = np.pad(act, (0, _T_mix - _orig_act_len))
-                else:
-                    act = act[:_T_mix]
 
         # ========== 场景判定 ==========
         is_absent = self._is_absent_entry(e, act)
@@ -368,6 +319,7 @@ class B1Dataset(data.Dataset):
             enroll = enroll_path or e.get("enrollment", e.get("enroll_wav", ""))
             enroll_resolved = self._resolve_path(enroll) if enroll else None
             if enroll_resolved and Path(enroll_resolved).exists():
+                # 缓存 key 用 enroll_path 的 MD5，swap enroll 与 target enroll 自动不冲突
                 cache_key = hashlib.md5(str(enroll_resolved).encode()).hexdigest() + ".pt"
                 cache_dir = P1_DATA_ROOT / "emb_cache_campplus"
                 cache_file = cache_dir / cache_key
@@ -380,22 +332,19 @@ class B1Dataset(data.Dataset):
                     torch.save(emb, cache_file)
                     return emb.squeeze(0)
                 except Exception as ex:
-                    if not getattr(self, "_camplus_fail_count", 0):
-                        LOG.warning(f"CAMPLUS encode 失败 ({speaker_hint}/{spk_id}), fallback BOOTSTRAP: {ex}  [后续同类错误将每 1000 次汇总 1 条]")
-                    self._camplus_fail_count = getattr(self, "_camplus_fail_count", 0) + 1
-                    if self._camplus_fail_count % 1000 == 0:
-                        LOG.warning(f"CAMPLUS fallback BOOTSTRAP 累计 {self._camplus_fail_count} 次 (最近 spk_id={spk_id})")
-            # 兜底：enroll 路径无效或 encode 异常 → BOOTSTRAP 确定性 emb（同 enroll→同 emb）
-            #   避免：① adapter.get_embedding(spk_id) → KeyError 未注册；
-            #        ② 调用模块级 bootstrap_embedding(...) → 云端脚本 import 被补丁打乱时 NameError。
-            #   直接内联 bootstrap 实现（与 train_overfit_debug.bootstrap_embedding 等价，0 外部 import 依赖）
-            _bo_text = enroll or enroll_path or str(spk_id)
-            try:
-                _bo_seed = int(sha256_text(_bo_text)[:8], 16)
-            except Exception:
-                _bo_seed = int(hashlib.sha256(str(_bo_text).encode()).hexdigest()[:8], 16)
-            _bo_gen = torch.Generator().manual_seed(_bo_seed)
-            return torch.randn(self.emb_dim, generator=_bo_gen)
+                    # 正式训练禁止 fallback；仅 --debug_data 空跑允许切换到 bootstrap
+                    # 注意：此处需要同时：1) 设置 fallback 标志 2) 重构造 bootstrap adapter
+                    #         3) 在新 adapter 上重新 get_embedding(spk_id) 返回
+                    #         （否则走 CAMPLUS adapter.get_embedding 会因 speaker 未注册抛 KeyError，见 enrollment_adapter L167-L171）
+                    if self.cfg.get("_p2_internal", {}).get("debug_data", False):
+                        LOG.warning(f"CAMPLUS encode 失败 ({speaker_hint}/{spk_id}), --debug_data 模式切换到 BOOTSTRAP: {ex}")
+                        if not self._camplus_fallback:
+                            self._camplus_fallback = True
+                            self.adapter = EnrollmentAdapter.from_config(self.cfg, mode="bootstrap")
+                        return self.adapter.get_embedding(spk_id).squeeze(0)
+                    raise RuntimeError(
+                        f"CAMPLUS encode 失败 ({speaker_hint}/{spk_id}), 正式训练禁止 fallback BOOTSTRAP: {ex}"
+                    ) from ex
         return self.adapter.get_embedding(spk_id).squeeze(0)
 
 
@@ -453,8 +402,6 @@ def main():
     ap.add_argument("--max_steps", type=int, default=None, help="覆盖 cfg.steps（空跑测试用）")
     ap.add_argument("--debug_data", action="store_true", help="用 P2-07 DEBUG 集空跑，非正式 B1/B2/B3")
     ap.add_argument("--resume", default=None, help="从 checkpoint 恢复续训")
-    ap.add_argument("--init_checkpoint", default=None,
-                    help="从已有 checkpoint 热启动（仅加载 model 权重，不加载 optimizer/scaler/step，用于 B3 从 B1 预训练权重起步）")
     ap.add_argument("--scene_mode", default=None, choices=["b1", "b2", "b3"],
                     help="场景模式覆盖配置：b1=PRESENT, b2=ABSENT, b3=ENROLL-SWAP")
     ap.add_argument("--train_split", default=None,
@@ -464,6 +411,8 @@ def main():
     args = ap.parse_args()
 
     cfg = yaml.safe_load(open(args.config, encoding="utf-8"))
+    # v2.3：注入内部调试标志，使用命名空间键 _p2_internal，避免与用户 YAML 配置冲突
+    cfg.setdefault("_p2_internal", {})["debug_data"] = bool(args.debug_data)
     seed = int(cfg["seed"])
     torch.manual_seed(seed)
     np.random.seed(seed)
@@ -497,30 +446,6 @@ def main():
 
     adapter = EnrollmentAdapter.from_config(cfg)
     LOG.info("EnrollmentAdapter mode=%s emb_dim=%d", adapter.mode, adapter.emb_dim)
-
-    # ============================================================
-    # ★ B1/B2/B3 正式训练强制 CAM++ 加载（禁止 silent fallback BOOTSTRAP）
-    #   B3 enroll-swap 场景必须使用真实 CAM++ embedding，
-    #   否则训练时 embedding 是随机向量，模型无法学会对同 speaker 不同注册句做正确选择，
-    #   评测时 choice_accuracy≈0.5。
-    #   只有 --debug_data 模式允许 fallback（纯 DEBUG_ONLY）。
-    # ============================================================
-    if adapter.mode == "campplus" and not args.debug_data:
-        _force_load_success = False
-        for _tries in range(3):
-            try:
-                adapter.load_backend()
-                _force_load_success = True
-                break
-            except Exception as _ex:
-                LOG.warning("[CAMPLUS FORCE LOAD] 第 %d/3 次尝试失败: %s，1s 后重试", _tries + 1, _ex)
-                time.sleep(1.0)
-        if not _force_load_success:
-            LOG.error("[CAMPLUS FORCE LOAD] 3 次尝试全部失败！终止训练（B1/B2/B3 正式训练不允许 fallback BOOTSTRAP，否则 B3 choice_accuracy 失效）。"
-                      "请检查：1) speakerlab_source 是否位于 P4_project/artifacts/models/speakerlab_source/；"
-                      "2) sys.path 是否包含该目录；3) 权重 campplus_cn_common.bin 是否存在。")
-            raise RuntimeError("CAM++ backend 强制加载失败，训练中止（若需要 DEBUG_ONLY fallback 模式，请加 --debug_data 参数）")
-        LOG.info("CAMPLUS 后端全局加载成功（train/dev 全部共用真实声纹，无 silent fallback）")
 
     shutil.copy(args.config, out_dir / "config.yaml")
     (out_dir / "config.sha256").write_text(sha256_file(out_dir / "config.yaml") + "\n", encoding="utf-8")
@@ -563,13 +488,6 @@ def main():
                        scene_mode=args.scene_mode, split_name=dev_split)
     batch_size = int(cfg["batch_size"])
     n_train_samples = len(train_ds)
-    if n_train_samples == 0:
-        LOG.error("train dataset 为空 0 条！请检查：scene_mode=%s 是否过滤了全部样本，或 manifest=%s 是否包含对应 split/scenario。",
-                  train_ds.scene_mode, train_manifest)
-        raise RuntimeError(f"train dataset 为空 (scene_mode={train_ds.scene_mode})")
-    if len(dev_ds) == 0:
-        LOG.warning("dev dataset 为空 0 条（跳过 dev 评测）。scene_mode=%s split=%s",
-                    dev_ds.scene_mode, dev_split or "-")
     if batch_size > n_train_samples:
         LOG.warning("batch_size=%d > 样本数=%d，降为 %d", batch_size, n_train_samples, n_train_samples)
         batch_size = n_train_samples
@@ -595,18 +513,6 @@ def main():
 
     model = DualOutputTSE(cfg).to(device)
     LOG.info("参数量 %d", sum(p.numel() for p in model.parameters()))
-
-    # ---- Warm-start: 从已有 checkpoint 加载 model 权重（仅权重，不含 optimizer/scaler/step）----
-    if args.init_checkpoint:
-        init_ckpt = torch.load(args.init_checkpoint, map_location=device, weights_only=False)
-        init_state = init_ckpt["model"] if "model" in init_ckpt else init_ckpt
-        missing, unexpected = model.load_state_dict(init_state, strict=False)
-        if missing:
-            LOG.warning("init_checkpoint 缺失参数: %s", missing[:5])
-        if unexpected:
-            LOG.warning("init_checkpoint 多余参数: %s", unexpected[:5])
-        LOG.info("Warm-start 从 %s 加载权重（step=%s）", args.init_checkpoint, init_ckpt.get("step", "?"))
-
     opt = torch.optim.Adam(model.parameters(), lr=float(cfg["lr"]))
     try:
         scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
@@ -661,29 +567,6 @@ def main():
 
         with torch.amp.autocast("cuda", enabled=use_amp):
             out = model(batch["mix"], batch["emb"])
-            # step 0 诊断：打印 batch 与 model 输出各张量形状
-            #   (用于定位云端 PyTorch 版本差异导致的 STFT 帧数不一致问题)
-            if step == 0:
-                try:
-                    s_tgt_0, s_res_0, p_tgt_0 = out
-                    LOG.info(
-                        "[SHAPE step0] PyTorch=%s device=%s | "
-                        "mix=%s target=%s frame_act(label)=%s | "
-                        "s_tgt=%s s_res=%s p_tgt(model)=%s | "
-                        "seg_samples(cfg)=%d n_fft=%d hop=%d win=%d sr=%d → "
-                        "理论 STFT 帧数(center=True)=%d  frame_activity 期望帧数=%d",
-                        torch.__version__, str(batch["mix"].device),
-                        tuple(batch["mix"].shape), tuple(batch["target"].shape),
-                        tuple(batch["frame_act"].shape),
-                        tuple(s_tgt_0.shape), tuple(s_res_0.shape), tuple(p_tgt_0.shape),
-                        int(cfg["segment_length"] * cfg["sample_rate"]),
-                        int(cfg["n_fft"]), int(cfg["hop_length"]), int(cfg["win_length"]),
-                        int(cfg["sample_rate"]),
-                        int(cfg["segment_length"] * cfg["sample_rate"]) // int(cfg["hop_length"]) + 1,
-                        int(cfg["segment_length"] * cfg["sample_rate"]) // int(cfg["hop_length"]) + 1,
-                    )
-                except Exception as _ex:
-                    LOG.warning("[SHAPE step0] 打印失败: %s", _ex)
             total, terms = compute_losses(cfg, out, batch)
 
         grad_norm, clipped = 0.0, False

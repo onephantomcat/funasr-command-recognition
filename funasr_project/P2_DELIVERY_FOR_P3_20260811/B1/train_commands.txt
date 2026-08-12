@@ -1,0 +1,3 @@
+# B1（scene_mode=b1）训练命令
+# 详细版本见交付根目录 train_commands.txt
+# 完整环境：AutoDL A100-40G / CUDA 11.8 / PyTorch 2.1.2 / Python 3.10 / sv_mode=campplus（强制加载）

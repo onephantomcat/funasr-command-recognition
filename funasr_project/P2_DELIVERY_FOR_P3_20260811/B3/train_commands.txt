@@ -1,0 +1,30 @@
+# ============================================================
+# P2 B3 ENROLL-SWAP v3（强修复版）训练命令 + 环境配置
+# ============================================================
+# 【模型版本】 B3_SWAP_v3_strong_fix / checkpoint_step20000.pt
+# 【SHA】     13bce1b90a80710c8342fd28f0aaad90f244571be3be4c7469570992fd96db8b
+# 【随机种子】 seed=20260813
+# 【运行环境】 AutoDL A100-40G / CUDA 11.8 / PyTorch 2.1.2 / Python 3.10
+# 【真实声纹】 sv_mode=campplus（强制加载，失败抛 RuntimeError，无 fallback）
+# 【Warm-start】 从 B1_50K_RESUME step20000 加载
+# 【配置】 configs/tse_b3_v3.yaml
+#   scene_mode: b3
+#   scenario_filter: [enroll_swap_target_1, enroll_swap_target_2, enroll_swap_absent]
+#   absent_loss_scale: 0.05   ← v3 修复：防 absent 压倒 PRESENT
+#   lambda_sisdr: 2.0         ← v3 修复：加大 SI-SDR
+#   lambda_act: 1.0           ← v3 修复：适中 act 权重
+#   lr_warmup_steps: 500      ← v3 修复：更长 warmup 稳梯度
+# ============================================================
+
+SMOKE_CMD="python tools/train_b1_trial.py \
+    --config configs/tse_b3_v3.yaml \
+    --manifest /root/autodl-tmp/P1_to_P2_v3_absent_swap/manifest.jsonl \
+    --device cuda --max_steps 5 --seed 20260813 \
+    --init_checkpoint artifacts/experiments/B1_50K_RESUME_seed20260723/checkpoint_step20000.pt"
+
+FULL_TRAIN_CMD="python tools/train_b1_trial.py \
+    --config configs/tse_b3_v3.yaml \
+    --manifest /root/autodl-tmp/P1_to_P2_v3_absent_swap/manifest.jsonl \
+    --device cuda --max_steps 20000 --seed 20260813 \
+    --init_checkpoint artifacts/experiments/B1_50K_RESUME_seed20260723/checkpoint_step20000.pt \
+    2>&1 | tee train_B3_v3_strong_fix.log"

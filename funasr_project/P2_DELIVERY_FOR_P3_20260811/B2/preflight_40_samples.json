@@ -1,0 +1,6 @@
+{
+  "note": "B2 ABSENT 预检（复用 B3 v3 权重）",
+  "formal_preflight_required": true,
+  "formal_eval_cmd_p3": "python tools/evaluate_tse.py --checkpoint B2 --manifest P1_v3 --data_root P1_v3 --scene-mode b2 --out P3_B2_eval",
+  "schema_determinism_expect": {"schema_validation": "PASS", "determinism_rescore": "PASS", "n_present_expected": 0}
+}

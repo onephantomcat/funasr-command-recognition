@@ -1,0 +1,10 @@
+{
+  "note": "B1 小样本预检占位（由 dev eval_summary 派生），P3 接入方使用 P1 外部集独立重跑 40 条（20 pos+20 neg）",
+  "formal_preflight_required": true,
+  "ref_from_b1_dev_eval": {
+    "corpus_sisdr_db": 5.246535460624717,
+    "mean_energy_ratio": 0.30355495962221174,
+    "mean_act_f1": 0.9750358879617677
+  },
+  "checkpoint_sha256_ref": "df95a0c25e02428d64c147bdbd94b1219a28c1f7338bd13745e3ccda26c6cfa3"
+}

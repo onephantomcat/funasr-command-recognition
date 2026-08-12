@@ -29,9 +29,19 @@ import soundfile as sf
 import torch
 import yaml
 
-P2_ROOT = Path(__file__).resolve().parents[1]
+# v2.3：灵活路径探测（同 evaluate_tse.py / diagnose_b3.py），兼容 P2_project/tools 与交付包 tools 两种结构
+_HERE = Path(__file__).resolve()
+_P2_ROOT = None
+for _parent in [_HERE.parents[1], _HERE.parents[0], *_HERE.parents[2:]]:
+    if (_parent / "src" / "tse" / "enrollment_adapter.py").exists():
+        _P2_ROOT = _parent
+        break
+if _P2_ROOT is None:
+    _P2_ROOT = _HERE.parents[1]
+P2_ROOT = _P2_ROOT
 FUNASR_ROOT = P2_ROOT.parent
 sys.path.insert(0, str(P2_ROOT))
+sys.path.insert(0, str(P2_ROOT / "tools"))
 
 from src.tse.model import DualOutputTSE
 from src.tse.losses import (
@@ -40,7 +50,6 @@ from src.tse.losses import (
     mix_consistency_loss,
     mrstft_loss,
     activity_bce_loss,
-    _stft_mag,
 )
 
 
@@ -118,20 +127,10 @@ def load_fixed_batch(cfg, manifest_path, batch_size, device):
 
 
 def compute_losses(cfg, model_out, batch):
-    """损失组装（支持 absent_loss_scale）。
-
-    当配置中存在 absent_loss_scale 时，对 absent 样本（target 全零）的
-    SI-SDR、MR-STFT 和 L1 损失乘以该系数，防止 absent 样本主导训练。
-    """
+    """PRESENT 损失组装（λ_id=0，无身份反向项）。"""
     s_tgt, s_res, p_tgt = model_out
     y, itr, x = batch["target"], batch["interferer"], batch["mix"]
     kappa = float(cfg["zero_ref_kappa"])
-
-    # 检测 absent 样本：target 全零
-    is_absent = (y.abs().mean(dim=-1) < 1e-6)  # [B]
-    n_absent = is_absent.sum().item()
-    n_present = y.shape[0] - n_absent
-
     terms = {
         "si_sdr_db": si_sdr(s_tgt, y),
         "wav_l1": scale_sensitive_l1(s_tgt, y, kappa),
@@ -140,26 +139,6 @@ def compute_losses(cfg, model_out, batch):
         "res_l1": scale_sensitive_l1(s_res, itr, kappa),
         "mix": mix_consistency_loss(s_tgt, s_res, x),
     }
-
-    # absent 样本损失缩放
-    absent_scale = float(cfg.get("absent_loss_scale", 1.0))
-    if absent_scale != 1.0 and n_absent > 0:
-        # 重新计算 per-sample 损失
-        si_sdr_per_sample = _si_sdr_per_sample(s_tgt, y)
-        mrstft_per_sample = _mrstft_per_sample(s_tgt, y, cfg["mrstft_resolutions"])
-        wav_l1_per_sample = _scale_sensitive_l1_per_sample(s_tgt, y, kappa)
-
-        # absent 样本缩放
-        si_sdr_per_sample[is_absent] *= absent_scale
-        mrstft_per_sample[is_absent] *= absent_scale
-        wav_l1_per_sample[is_absent] *= absent_scale
-
-        terms["si_sdr_db"] = si_sdr_per_sample.mean()
-        terms["mrstft"] = mrstft_per_sample.mean()
-        terms["wav_l1"] = wav_l1_per_sample.mean()
-        terms["_absent_count"] = n_absent
-        terms["_present_count"] = n_present
-
     total = (-float(cfg["lambda_sisdr"]) * terms["si_sdr_db"]
              + float(cfg["lambda_wav"]) * terms["wav_l1"]
              + float(cfg["lambda_stft"]) * terms["mrstft"]
@@ -167,40 +146,6 @@ def compute_losses(cfg, model_out, batch):
              + float(cfg["lambda_residual"]) * terms["res_l1"]
              + float(cfg["lambda_mix"]) * terms["mix"])
     return total, terms
-
-
-def _si_sdr_per_sample(est, ref, eps=1e-6):
-    """计算 per-sample SI-SDR [B]"""
-    ref_energy = (ref ** 2).sum(-1)
-    scale = (est * ref).sum(-1) / (ref_energy + eps)
-    target = scale.unsqueeze(-1) * ref
-    noise = est - target
-    ratio = (target ** 2).sum(-1) / (noise ** 2).sum(-1) + eps
-    return 10.0 * torch.log10(ratio + eps)
-
-
-def _mrstft_per_sample(est, ref, resolutions, eps=1e-6):
-    """计算 per-sample MR-STFT 损失 [B]"""
-    total = est.new_zeros(est.shape[0])
-    for n_fft, hop, win in resolutions:
-        m_est = _stft_mag(est, n_fft, hop, win)
-        m_ref = _stft_mag(ref, n_fft, hop, win)
-        sc = (m_est - m_ref).flatten(1).norm(dim=1) / (m_ref.flatten(1).norm(dim=1) + eps)
-        mag_est = torch.log(m_est.float() + eps)
-        mag_ref = torch.log(m_ref.float() + eps)
-        mag = (mag_est - mag_ref).abs().mean(dim=(1, 2))
-        total = total + (sc + mag)
-    return total / len(resolutions)
-
-
-def _scale_sensitive_l1_per_sample(est, ref, kappa, eps=1e-6):
-    """计算 per-sample scale_sensitive_l1 [B]"""
-    ref_energy = (ref ** 2).sum(-1)
-    alpha = (est * ref).sum(-1) / (ref_energy + eps)
-    l1 = (est - alpha.unsqueeze(-1) * ref).abs().mean(-1)
-    zero_ref_l1 = est.abs().mean(-1)
-    is_zero_ref = ref.abs().mean(-1) < kappa
-    return torch.where(is_zero_ref, zero_ref_l1, l1)
 
 
 def save_audio_triplet(out_dir, tag, idx, batch, s_tgt, sr):

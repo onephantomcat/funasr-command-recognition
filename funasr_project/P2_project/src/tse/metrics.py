@@ -78,13 +78,9 @@ def mrstft_eval(est, ref, resolutions=None):
 
 
 def activity_prf(p_tgt, frame_act, tau=TAU_DEBUG):
-    """帧级活动度 precision/recall/F1。p_tgt∈[0,1]，frame_act∈{0,1}。
-
-    健壮性：与 activity_bce_loss 对齐策略一致（若帧数不一致先 nearest 对齐标签）。
-    """
+    """帧级活动度 precision/recall/F1。p_tgt∈[0,1]，frame_act∈{0,1}。"""
     if p_tgt.shape != frame_act.shape:
-        from .losses import _align_frames
-        frame_act = _align_frames(frame_act, p_tgt.shape[-1], mode="nearest")
+        raise ValueError("p_tgt 与 frame_act 形状不一致")
     if not torch.isfinite(p_tgt).all():
         raise ValueError("p_tgt 含 NaN/Inf")
     pred = (p_tgt > tau)

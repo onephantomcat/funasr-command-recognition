@@ -1,0 +1,23 @@
+{
+  "B1_50K": {
+    "source": "/root/autodl-tmp/P1_to_P2_v2_b1/manifest.jsonl",
+    "scene_mode": "b1",
+    "train_n": 100000,
+    "dev_n": 16000
+  },
+  "B2_ABSENT": {
+    "source": "/root/autodl-tmp/P1_to_P2_v3_absent_swap/manifest.jsonl",
+    "scene_mode": "b2",
+    "filter_note": "仅 absent（target_present=False）",
+    "train_n": 30000,
+    "dev_n": 5000,
+    "note": "权重复用 B3 v3，manifest 按 B2 scene_mode 独立切分"
+  },
+  "B3_SWAP_v3": {
+    "source": "/root/autodl-tmp/P1_to_P2_v3_absent_swap/manifest.jsonl",
+    "scene_mode": "b3",
+    "filter_note": "swap_target_1/2 + enroll_swap_absent",
+    "train_n": 50000,
+    "dev_n": 9000
+  }
+}

@@ -158,7 +158,7 @@ class CampplusBackendConfig:
     """
     model_id: str = "iic/speech_campplus_sv_zh-cn_16k-common"
     feat_dim: int = 80
-    embedding_size: int = 192
+    embedding_size: int = 512
     sample_rate: int = 16000
     mean_norm: bool = True
     device: str = "cpu"

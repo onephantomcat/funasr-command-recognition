@@ -1,0 +1,1618 @@
+2026-08-09 19:06:56,362 INFO config=configs/tse_b1.yaml device=cuda seed=20260723 amp=False sv_mode=campplus
+2026-08-09 19:06:56,554 INFO torch=2.1.2+cu118 cuda=True
+2026-08-09 19:06:56,554 INFO EnrollmentAdapter mode=campplus emb_dim=192
+2026-08-09 19:06:56,554 INFO P1 v3 单 manifest 模式：manifest=manifest.jsonl train_split=train dev_split=dev
+2026-08-09 19:06:59,375 INFO 加载 manifest=manifest.jsonl scene_mode=b1 split_name=train total=100000 (skipped_split=16000 scenario=0)
+2026-08-09 19:06:59,665 INFO CAMPLUS 后端加载成功 (scene_mode=b1)
+2026-08-09 19:06:59,665 INFO Dataset 场景模式: b1 split=train (总 100000 条 manifest)
+2026-08-09 19:07:01,487 INFO 加载 manifest=manifest.jsonl scene_mode=b1 split_name=dev total=10000 (skipped_split=106000 scenario=0)
+2026-08-09 19:07:01,488 INFO CAMPLUS 后端加载成功 (scene_mode=b1)
+2026-08-09 19:07:01,488 INFO Dataset 场景模式: b1 split=dev (总 10000 条 manifest)
+2026-08-09 19:07:01,488 INFO scene_mode=b1 split=[train=train,dev=dev] train=100000 条 dev=10000 条 batch=16 seg=8s drop_last=True
+2026-08-09 19:07:02,213 INFO 参数量 1349891
+2026-08-09 19:07:03,475 INFO 基线 SI-SDR(mixture)=-2.25 dB
+2026-08-09 19:07:03,567 INFO [SHAPE step0] PyTorch=2.1.2+cu118 device=cuda:0 | mix=(16, 128000) target=(16, 128000) frame_act(label)=(16, 1001) | s_tgt=(16, 128000) s_res=(16, 128000) p_tgt(model)=(16, 1001) | seg_samples(cfg)=128000 n_fft=512 hop=128 win=512 sr=16000 → 理论 STFT 帧数(center=True)=1001  frame_activity 期望帧数=1001
+2026-08-09 19:07:03,606 INFO step=0/20000 total=4.1815 si_sdr=-2.23 si_sdri=0.01 lr=3.00e-06 |g|=0.000 mem=0.91GB 1014ms/step data=79%
+2026-08-09 19:07:05,377 INFO step=25/20000 total=1.5234 si_sdr=0.24 si_sdri=2.48 lr=7.80e-05 |g|=4.171 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:07:06,560 INFO step=50/20000 total=3.0179 si_sdr=-1.23 si_sdri=1.01 lr=1.53e-04 |g|=0.718 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:07:07,774 INFO step=75/20000 total=3.7182 si_sdr=-2.00 si_sdri=0.25 lr=2.28e-04 |g|=0.599 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:07:08,986 INFO step=100/20000 total=1.3306 si_sdr=0.29 si_sdri=2.53 lr=3.00e-04 |g|=4.359 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:07:09,920 INFO Dataset 样本统计 [total=1000] present=1000 absent=0 swap=0
+2026-08-09 19:07:09,969 INFO Dataset 样本统计 [total=1000] present=1000 absent=0 swap=0
+2026-08-09 19:07:10,193 INFO step=125/20000 total=3.2688 si_sdr=-1.62 si_sdri=0.63 lr=3.00e-04 |g|=2.090 mem=1.73GB 48ms/step data=1%
+2026-08-09 19:07:11,392 INFO step=150/20000 total=0.1276 si_sdr=1.44 si_sdri=3.68 lr=3.00e-04 |g|=10.407 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:07:12,594 INFO step=175/20000 total=-1.0278 si_sdr=2.51 si_sdri=4.76 lr=3.00e-04 |g|=8.658 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:07:13,793 INFO step=200/20000 total=3.6980 si_sdr=-2.10 si_sdri=0.14 lr=3.00e-04 |g|=2.954 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:07:15,006 INFO step=225/20000 total=-1.1055 si_sdr=2.69 si_sdri=4.94 lr=3.00e-04 |g|=8.981 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:07:15,900 INFO Dataset 样本统计 [total=2000] present=2000 absent=0 swap=0
+2026-08-09 19:07:15,947 INFO Dataset 样本统计 [total=2000] present=2000 absent=0 swap=0
+2026-08-09 19:07:16,203 INFO step=250/20000 total=-3.8685 si_sdr=5.29 si_sdri=7.53 lr=3.00e-04 |g|=13.965 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:07:17,403 INFO step=275/20000 total=3.8690 si_sdr=-2.25 si_sdri=-0.00 lr=3.00e-04 |g|=2.844 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:07:18,605 INFO step=300/20000 total=1.9081 si_sdr=-0.50 si_sdri=1.75 lr=3.00e-04 |g|=2.173 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:07:19,809 INFO step=325/20000 total=1.3706 si_sdr=-0.04 si_sdri=2.21 lr=3.00e-04 |g|=11.613 mem=1.73GB 49ms/step data=1%
+2026-08-09 19:07:21,009 INFO step=350/20000 total=0.8225 si_sdr=0.56 si_sdri=2.80 lr=3.00e-04 |g|=3.360 mem=1.73GB 50ms/step data=0%
+2026-08-09 19:07:21,929 INFO Dataset 样本统计 [total=3000] present=3000 absent=0 swap=0
+2026-08-09 19:07:21,975 INFO Dataset 样本统计 [total=3000] present=3000 absent=0 swap=0
+2026-08-09 19:07:22,194 INFO step=375/20000 total=1.2407 si_sdr=0.17 si_sdri=2.41 lr=3.00e-04 |g|=25.600 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:07:23,383 INFO step=400/20000 total=0.7362 si_sdr=0.52 si_sdri=2.77 lr=3.00e-04 |g|=3.367 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:07:24,572 INFO step=425/20000 total=-0.6137 si_sdr=2.05 si_sdri=4.29 lr=3.00e-04 |g|=10.100 mem=1.73GB 45ms/step data=1%
+2026-08-09 19:07:25,763 INFO step=450/20000 total=1.0403 si_sdr=0.28 si_sdri=2.52 lr=3.00e-04 |g|=6.364 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:07:26,954 INFO step=475/20000 total=-3.3479 si_sdr=4.70 si_sdri=6.95 lr=3.00e-04 |g|=23.673 mem=1.73GB 47ms/step data=1%
+2026-08-09 19:07:27,841 INFO Dataset 样本统计 [total=4000] present=4000 absent=0 swap=0
+2026-08-09 19:07:27,890 INFO Dataset 样本统计 [total=4000] present=4000 absent=0 swap=0
+2026-08-09 19:07:28,145 INFO step=500/20000 total=-0.0414 si_sdr=1.46 si_sdri=3.71 lr=3.00e-04 |g|=9.695 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:07:28,211 INFO 存 checkpoint: checkpoint_step500.pt
+2026-08-09 19:07:31,460 INFO Dataset 样本统计 [total=1000] present=1000 absent=0 swap=0
+2026-08-09 19:07:34,867 INFO Dataset 样本统计 [total=2000] present=2000 absent=0 swap=0
+2026-08-09 19:07:38,124 INFO Dataset 样本统计 [total=3000] present=3000 absent=0 swap=0
+2026-08-09 19:07:41,524 INFO Dataset 样本统计 [total=4000] present=4000 absent=0 swap=0
+2026-08-09 19:07:44,969 INFO Dataset 样本统计 [total=5000] present=5000 absent=0 swap=0
+2026-08-09 19:07:48,440 INFO Dataset 样本统计 [total=6000] present=6000 absent=0 swap=0
+2026-08-09 19:07:51,866 INFO Dataset 样本统计 [total=7000] present=7000 absent=0 swap=0
+2026-08-09 19:07:55,308 INFO Dataset 样本统计 [total=8000] present=8000 absent=0 swap=0
+2026-08-09 19:07:58,703 INFO Dataset 样本统计 [total=9000] present=9000 absent=0 swap=0
+2026-08-09 19:08:02,194 INFO Dataset 样本统计 [total=10000] present=10000 absent=0 swap=0
+2026-08-09 19:08:02,223 INFO   dev_loss=-0.6350 dev_sisdr=2.01 dB
+2026-08-09 19:08:03,412 INFO step=525/20000 total=2.5405 si_sdr=-1.15 si_sdri=1.09 lr=3.00e-04 |g|=2.747 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:08:04,610 INFO step=550/20000 total=2.7992 si_sdr=-1.33 si_sdri=0.91 lr=3.00e-04 |g|=3.427 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:08:05,814 INFO step=575/20000 total=-4.7366 si_sdr=5.97 si_sdri=8.22 lr=3.00e-04 |g|=43.744 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:08:07,093 INFO step=600/20000 total=-1.4064 si_sdr=2.74 si_sdri=4.99 lr=3.00e-04 |g|=29.288 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:08:08,026 INFO Dataset 样本统计 [total=5000] present=5000 absent=0 swap=0
+2026-08-09 19:08:08,074 INFO Dataset 样本统计 [total=5000] present=5000 absent=0 swap=0
+2026-08-09 19:08:08,297 INFO step=625/20000 total=2.2901 si_sdr=-0.86 si_sdri=1.39 lr=2.99e-04 |g|=2.657 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:08:09,503 INFO step=650/20000 total=-1.1061 si_sdr=2.48 si_sdri=4.73 lr=2.99e-04 |g|=11.322 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:08:10,763 INFO step=675/20000 total=0.9959 si_sdr=0.29 si_sdri=2.54 lr=2.99e-04 |g|=1.720 mem=1.73GB 47ms/step data=1%
+2026-08-09 19:08:11,976 INFO step=700/20000 total=1.8044 si_sdr=-0.39 si_sdri=1.85 lr=2.99e-04 |g|=2.856 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:08:13,189 INFO step=725/20000 total=3.0616 si_sdr=-1.72 si_sdri=0.53 lr=2.99e-04 |g|=1.956 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:08:14,090 INFO Dataset 样本统计 [total=6000] present=6000 absent=0 swap=0
+2026-08-09 19:08:14,138 INFO Dataset 样本统计 [total=6000] present=6000 absent=0 swap=0
+2026-08-09 19:08:14,397 INFO step=750/20000 total=-0.6469 si_sdr=2.00 si_sdri=4.25 lr=2.99e-04 |g|=20.036 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:08:15,609 INFO step=775/20000 total=2.9299 si_sdr=-1.59 si_sdri=0.66 lr=2.99e-04 |g|=2.864 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:08:16,817 INFO step=800/20000 total=-5.6577 si_sdr=6.96 si_sdri=9.20 lr=2.99e-04 |g|=25.537 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:08:18,029 INFO step=825/20000 total=-2.3904 si_sdr=3.68 si_sdri=5.93 lr=2.99e-04 |g|=10.960 mem=1.73GB 52ms/step data=1%
+2026-08-09 19:08:19,236 INFO step=850/20000 total=-5.5241 si_sdr=6.75 si_sdri=9.00 lr=2.99e-04 |g|=24.421 mem=1.73GB 48ms/step data=1%
+2026-08-09 19:08:20,174 INFO Dataset 样本统计 [total=7000] present=7000 absent=0 swap=0
+2026-08-09 19:08:20,224 INFO Dataset 样本统计 [total=7000] present=7000 absent=0 swap=0
+2026-08-09 19:08:20,450 INFO step=875/20000 total=-0.6271 si_sdr=1.95 si_sdri=4.19 lr=2.99e-04 |g|=19.892 mem=1.73GB 47ms/step data=1%
+2026-08-09 19:08:21,660 INFO step=900/20000 total=3.0710 si_sdr=-1.71 si_sdri=0.54 lr=2.99e-04 |g|=3.988 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:08:22,863 INFO step=925/20000 total=0.8168 si_sdr=0.52 si_sdri=2.77 lr=2.99e-04 |g|=3.484 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:08:24,067 INFO step=950/20000 total=-10.8520 si_sdr=12.09 si_sdri=14.34 lr=2.99e-04 |g|=65.640 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:08:25,269 INFO step=975/20000 total=-7.9131 si_sdr=9.12 si_sdri=11.36 lr=2.99e-04 |g|=36.801 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:08:26,168 INFO Dataset 样本统计 [total=8000] present=8000 absent=0 swap=0
+2026-08-09 19:08:26,217 INFO Dataset 样本统计 [total=8000] present=8000 absent=0 swap=0
+2026-08-09 19:08:26,476 INFO step=1000/20000 total=-1.3486 si_sdr=2.73 si_sdri=4.97 lr=2.98e-04 |g|=17.512 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:08:26,537 INFO 存 checkpoint: checkpoint_step1000.pt
+2026-08-09 19:08:29,563 INFO Dataset 样本统计 [total=11000] present=11000 absent=0 swap=0
+2026-08-09 19:08:32,624 INFO Dataset 样本统计 [total=12000] present=12000 absent=0 swap=0
+2026-08-09 19:08:35,701 INFO Dataset 样本统计 [total=13000] present=13000 absent=0 swap=0
+2026-08-09 19:08:38,785 INFO Dataset 样本统计 [total=14000] present=14000 absent=0 swap=0
+2026-08-09 19:08:42,123 INFO Dataset 样本统计 [total=15000] present=15000 absent=0 swap=0
+2026-08-09 19:08:45,254 INFO Dataset 样本统计 [total=16000] present=16000 absent=0 swap=0
+2026-08-09 19:08:48,429 INFO Dataset 样本统计 [total=17000] present=17000 absent=0 swap=0
+2026-08-09 19:08:51,567 INFO Dataset 样本统计 [total=18000] present=18000 absent=0 swap=0
+2026-08-09 19:08:54,743 INFO Dataset 样本统计 [total=19000] present=19000 absent=0 swap=0
+2026-08-09 19:08:57,915 INFO Dataset 样本统计 [total=20000] present=20000 absent=0 swap=0
+2026-08-09 19:08:57,940 INFO   dev_loss=-1.1074 dev_sisdr=2.43 dB
+2026-08-09 19:08:59,145 INFO step=1025/20000 total=1.1173 si_sdr=0.38 si_sdri=2.63 lr=2.98e-04 |g|=4.191 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:09:00,349 INFO step=1050/20000 total=2.6595 si_sdr=-1.33 si_sdri=0.92 lr=2.98e-04 |g|=5.030 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:09:01,565 INFO step=1075/20000 total=0.9547 si_sdr=0.35 si_sdri=2.60 lr=2.98e-04 |g|=3.021 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:09:02,780 INFO step=1100/20000 total=-4.7412 si_sdr=6.04 si_sdri=8.29 lr=2.98e-04 |g|=36.853 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:09:03,716 INFO Dataset 样本统计 [total=9000] present=9000 absent=0 swap=0
+2026-08-09 19:09:03,763 INFO Dataset 样本统计 [total=9000] present=9000 absent=0 swap=0
+2026-08-09 19:09:03,987 INFO step=1125/20000 total=1.3370 si_sdr=-0.12 si_sdri=2.13 lr=2.98e-04 |g|=2.536 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:09:05,195 INFO step=1150/20000 total=-1.3621 si_sdr=2.53 si_sdri=4.78 lr=2.98e-04 |g|=8.270 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:09:06,395 INFO step=1175/20000 total=-0.0064 si_sdr=1.27 si_sdri=3.52 lr=2.98e-04 |g|=3.826 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:09:07,604 INFO step=1200/20000 total=-1.7031 si_sdr=2.98 si_sdri=5.23 lr=2.98e-04 |g|=12.446 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:09:08,809 INFO step=1225/20000 total=-2.6041 si_sdr=3.93 si_sdri=6.18 lr=2.98e-04 |g|=36.097 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:09:09,715 INFO Dataset 样本统计 [total=10000] present=10000 absent=0 swap=0
+2026-08-09 19:09:09,763 INFO Dataset 样本统计 [total=10000] present=10000 absent=0 swap=0
+2026-08-09 19:09:10,022 INFO step=1250/20000 total=2.4486 si_sdr=-1.00 si_sdri=1.25 lr=2.98e-04 |g|=4.527 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:09:11,232 INFO step=1275/20000 total=2.4271 si_sdr=-1.09 si_sdri=1.15 lr=2.97e-04 |g|=3.132 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:09:12,540 INFO step=1300/20000 total=1.5331 si_sdr=-0.13 si_sdri=2.11 lr=2.97e-04 |g|=4.187 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:09:13,817 INFO step=1325/20000 total=-4.3460 si_sdr=5.48 si_sdri=7.73 lr=2.97e-04 |g|=40.570 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:09:15,033 INFO step=1350/20000 total=-1.7227 si_sdr=3.14 si_sdri=5.39 lr=2.97e-04 |g|=18.138 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:09:15,961 INFO Dataset 样本统计 [total=11000] present=11000 absent=0 swap=0
+2026-08-09 19:09:16,006 INFO Dataset 样本统计 [total=11000] present=11000 absent=0 swap=0
+2026-08-09 19:09:16,227 INFO step=1375/20000 total=0.5356 si_sdr=0.77 si_sdri=3.02 lr=2.97e-04 |g|=3.657 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:09:17,436 INFO step=1400/20000 total=-9.9846 si_sdr=11.27 si_sdri=13.52 lr=2.97e-04 |g|=82.492 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:09:18,641 INFO step=1425/20000 total=1.6819 si_sdr=-0.38 si_sdri=1.86 lr=2.97e-04 |g|=7.877 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:09:19,846 INFO step=1450/20000 total=0.5411 si_sdr=0.71 si_sdri=2.96 lr=2.97e-04 |g|=4.162 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:09:21,059 INFO step=1475/20000 total=1.5376 si_sdr=-0.19 si_sdri=2.05 lr=2.96e-04 |g|=24.988 mem=1.73GB 51ms/step data=0%
+2026-08-09 19:09:21,954 INFO Dataset 样本统计 [total=12000] present=12000 absent=0 swap=0
+2026-08-09 19:09:22,002 INFO Dataset 样本统计 [total=12000] present=12000 absent=0 swap=0
+2026-08-09 19:09:22,261 INFO step=1500/20000 total=0.4702 si_sdr=0.79 si_sdri=3.03 lr=2.96e-04 |g|=3.759 mem=1.73GB 48ms/step data=1%
+2026-08-09 19:09:22,324 INFO 存 checkpoint: checkpoint_step1500.pt
+2026-08-09 19:09:25,276 INFO Dataset 样本统计 [total=21000] present=21000 absent=0 swap=0
+2026-08-09 19:09:28,221 INFO Dataset 样本统计 [total=22000] present=22000 absent=0 swap=0
+2026-08-09 19:09:31,195 INFO Dataset 样本统计 [total=23000] present=23000 absent=0 swap=0
+2026-08-09 19:09:34,223 INFO Dataset 样本统计 [total=24000] present=24000 absent=0 swap=0
+2026-08-09 19:09:37,350 INFO Dataset 样本统计 [total=25000] present=25000 absent=0 swap=0
+2026-08-09 19:09:40,470 INFO Dataset 样本统计 [total=26000] present=26000 absent=0 swap=0
+2026-08-09 19:09:43,635 INFO Dataset 样本统计 [total=27000] present=27000 absent=0 swap=0
+2026-08-09 19:09:46,846 INFO Dataset 样本统计 [total=28000] present=28000 absent=0 swap=0
+2026-08-09 19:09:49,973 INFO Dataset 样本统计 [total=29000] present=29000 absent=0 swap=0
+2026-08-09 19:09:53,104 INFO Dataset 样本统计 [total=30000] present=30000 absent=0 swap=0
+2026-08-09 19:09:53,129 INFO   dev_loss=-1.3992 dev_sisdr=2.70 dB
+2026-08-09 19:09:54,329 INFO step=1525/20000 total=-6.0019 si_sdr=7.21 si_sdri=9.46 lr=2.96e-04 |g|=43.897 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:09:55,527 INFO step=1550/20000 total=-2.1557 si_sdr=3.50 si_sdri=5.74 lr=2.96e-04 |g|=13.321 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:09:56,725 INFO step=1575/20000 total=-3.4259 si_sdr=4.60 si_sdri=6.85 lr=2.96e-04 |g|=22.530 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:09:57,920 INFO step=1600/20000 total=0.3079 si_sdr=1.03 si_sdri=3.27 lr=2.96e-04 |g|=8.127 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:09:58,848 INFO Dataset 样本统计 [total=13000] present=13000 absent=0 swap=0
+2026-08-09 19:09:58,895 INFO Dataset 样本统计 [total=13000] present=13000 absent=0 swap=0
+2026-08-09 19:09:59,116 INFO step=1625/20000 total=1.6143 si_sdr=-0.28 si_sdri=1.96 lr=2.96e-04 |g|=4.062 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:10:00,305 INFO step=1650/20000 total=2.5080 si_sdr=-0.97 si_sdri=1.28 lr=2.96e-04 |g|=4.466 mem=1.73GB 45ms/step data=1%
+2026-08-09 19:10:01,484 INFO step=1675/20000 total=-3.6935 si_sdr=4.94 si_sdri=7.18 lr=2.95e-04 |g|=38.408 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:10:02,666 INFO step=1700/20000 total=-1.0626 si_sdr=2.50 si_sdri=4.75 lr=2.95e-04 |g|=30.687 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:10:03,863 INFO step=1725/20000 total=2.2793 si_sdr=-0.81 si_sdri=1.44 lr=2.95e-04 |g|=4.525 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:10:04,761 INFO Dataset 样本统计 [total=14000] present=14000 absent=0 swap=0
+2026-08-09 19:10:04,808 INFO Dataset 样本统计 [total=14000] present=14000 absent=0 swap=0
+2026-08-09 19:10:05,065 INFO step=1750/20000 total=-10.2961 si_sdr=11.46 si_sdri=13.71 lr=2.95e-04 |g|=43.479 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:10:06,256 INFO step=1775/20000 total=-10.7090 si_sdr=11.88 si_sdri=14.12 lr=2.95e-04 |g|=59.670 mem=1.73GB 48ms/step data=1%
+2026-08-09 19:10:07,448 INFO step=1800/20000 total=-2.0478 si_sdr=3.39 si_sdri=5.64 lr=2.95e-04 |g|=25.189 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:10:08,643 INFO step=1825/20000 total=-1.8118 si_sdr=3.09 si_sdri=5.33 lr=2.94e-04 |g|=19.131 mem=1.73GB 48ms/step data=1%
+2026-08-09 19:10:09,832 INFO step=1850/20000 total=0.8824 si_sdr=0.34 si_sdri=2.58 lr=2.94e-04 |g|=5.594 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:10:10,753 INFO Dataset 样本统计 [total=15000] present=15000 absent=0 swap=0
+2026-08-09 19:10:10,800 INFO Dataset 样本统计 [total=15000] present=15000 absent=0 swap=0
+2026-08-09 19:10:11,022 INFO step=1875/20000 total=-4.2327 si_sdr=5.57 si_sdri=7.82 lr=2.94e-04 |g|=22.187 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:10:12,221 INFO step=1900/20000 total=-4.9506 si_sdr=6.33 si_sdri=8.58 lr=2.94e-04 |g|=55.081 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:10:13,537 INFO step=1925/20000 total=0.5648 si_sdr=0.71 si_sdri=2.96 lr=2.94e-04 |g|=6.035 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:10:14,739 INFO step=1950/20000 total=-0.4418 si_sdr=1.63 si_sdri=3.88 lr=2.94e-04 |g|=5.845 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:10:15,939 INFO step=1975/20000 total=-4.3487 si_sdr=5.60 si_sdri=7.84 lr=2.93e-04 |g|=35.072 mem=1.73GB 47ms/step data=1%
+2026-08-09 19:10:16,835 INFO Dataset 样本统计 [total=16000] present=16000 absent=0 swap=0
+2026-08-09 19:10:16,882 INFO Dataset 样本统计 [total=16000] present=16000 absent=0 swap=0
+2026-08-09 19:10:17,139 INFO step=2000/20000 total=-0.5053 si_sdr=1.77 si_sdri=4.02 lr=2.93e-04 |g|=3.950 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:10:17,200 INFO 存 checkpoint: checkpoint_step2000.pt
+2026-08-09 19:10:20,241 INFO Dataset 样本统计 [total=31000] present=31000 absent=0 swap=0
+2026-08-09 19:10:23,242 INFO Dataset 样本统计 [total=32000] present=32000 absent=0 swap=0
+2026-08-09 19:10:26,263 INFO Dataset 样本统计 [total=33000] present=33000 absent=0 swap=0
+2026-08-09 19:10:29,323 INFO Dataset 样本统计 [total=34000] present=34000 absent=0 swap=0
+2026-08-09 19:10:32,492 INFO Dataset 样本统计 [total=35000] present=35000 absent=0 swap=0
+2026-08-09 19:10:35,625 INFO Dataset 样本统计 [total=36000] present=36000 absent=0 swap=0
+2026-08-09 19:10:38,852 INFO Dataset 样本统计 [total=37000] present=37000 absent=0 swap=0
+2026-08-09 19:10:42,109 INFO Dataset 样本统计 [total=38000] present=38000 absent=0 swap=0
+2026-08-09 19:10:45,398 INFO Dataset 样本统计 [total=39000] present=39000 absent=0 swap=0
+2026-08-09 19:10:48,617 INFO Dataset 样本统计 [total=40000] present=40000 absent=0 swap=0
+2026-08-09 19:10:48,645 INFO   dev_loss=-1.7855 dev_sisdr=3.07 dB
+2026-08-09 19:10:49,842 INFO step=2025/20000 total=0.5993 si_sdr=0.79 si_sdri=3.04 lr=2.93e-04 |g|=7.205 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:10:51,047 INFO step=2050/20000 total=-1.3331 si_sdr=2.81 si_sdri=5.06 lr=2.93e-04 |g|=35.759 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:10:52,285 INFO step=2075/20000 total=-1.2560 si_sdr=2.47 si_sdri=4.71 lr=2.93e-04 |g|=16.838 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:10:53,475 INFO step=2100/20000 total=2.7956 si_sdr=-1.45 si_sdri=0.80 lr=2.93e-04 |g|=9.023 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:10:54,395 INFO Dataset 样本统计 [total=17000] present=17000 absent=0 swap=0
+2026-08-09 19:10:54,439 INFO Dataset 样本统计 [total=17000] present=17000 absent=0 swap=0
+2026-08-09 19:10:54,659 INFO step=2125/20000 total=1.8032 si_sdr=-0.34 si_sdri=1.90 lr=2.92e-04 |g|=6.745 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:10:55,850 INFO step=2150/20000 total=0.8351 si_sdr=0.57 si_sdri=2.82 lr=2.92e-04 |g|=5.908 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:10:57,044 INFO step=2175/20000 total=0.3675 si_sdr=1.12 si_sdri=3.37 lr=2.92e-04 |g|=9.930 mem=1.73GB 50ms/step data=1%
+2026-08-09 19:10:58,228 INFO step=2200/20000 total=-2.6833 si_sdr=4.00 si_sdri=6.24 lr=2.92e-04 |g|=55.285 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:10:59,413 INFO step=2225/20000 total=-0.1303 si_sdr=1.43 si_sdri=3.67 lr=2.92e-04 |g|=7.277 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:11:00,307 INFO Dataset 样本统计 [total=18000] present=18000 absent=0 swap=0
+2026-08-09 19:11:00,355 INFO Dataset 样本统计 [total=18000] present=18000 absent=0 swap=0
+2026-08-09 19:11:00,613 INFO step=2250/20000 total=-2.6769 si_sdr=3.98 si_sdri=6.23 lr=2.91e-04 |g|=33.069 mem=1.73GB 48ms/step data=1%
+2026-08-09 19:11:01,802 INFO step=2275/20000 total=-2.5630 si_sdr=3.86 si_sdri=6.10 lr=2.91e-04 |g|=42.786 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:11:02,991 INFO step=2300/20000 total=-5.7118 si_sdr=7.00 si_sdri=9.24 lr=2.91e-04 |g|=41.294 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:11:04,179 INFO step=2325/20000 total=-6.3643 si_sdr=7.58 si_sdri=9.83 lr=2.91e-04 |g|=38.457 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:11:05,356 INFO step=2350/20000 total=-4.2643 si_sdr=5.48 si_sdri=7.73 lr=2.91e-04 |g|=54.915 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:11:06,266 INFO Dataset 样本统计 [total=19000] present=19000 absent=0 swap=0
+2026-08-09 19:11:06,315 INFO Dataset 样本统计 [total=19000] present=19000 absent=0 swap=0
+2026-08-09 19:11:06,531 INFO step=2375/20000 total=1.5705 si_sdr=-0.27 si_sdri=1.98 lr=2.90e-04 |g|=6.477 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:11:07,735 INFO step=2400/20000 total=-8.7338 si_sdr=9.91 si_sdri=12.15 lr=2.90e-04 |g|=59.673 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:11:08,938 INFO step=2425/20000 total=-3.1230 si_sdr=4.42 si_sdri=6.67 lr=2.90e-04 |g|=54.665 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:11:10,140 INFO step=2450/20000 total=-1.2031 si_sdr=2.71 si_sdri=4.96 lr=2.90e-04 |g|=14.964 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:11:11,350 INFO step=2475/20000 total=0.7966 si_sdr=0.46 si_sdri=2.71 lr=2.90e-04 |g|=9.636 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:11:12,245 INFO Dataset 样本统计 [total=20000] present=20000 absent=0 swap=0
+2026-08-09 19:11:12,293 INFO Dataset 样本统计 [total=20000] present=20000 absent=0 swap=0
+2026-08-09 19:11:12,555 INFO step=2500/20000 total=-2.9492 si_sdr=4.15 si_sdri=6.40 lr=2.89e-04 |g|=31.279 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:11:12,618 INFO 存 checkpoint: checkpoint_step2500.pt
+2026-08-09 19:11:15,611 INFO Dataset 样本统计 [total=41000] present=41000 absent=0 swap=0
+2026-08-09 19:11:18,609 INFO Dataset 样本统计 [total=42000] present=42000 absent=0 swap=0
+2026-08-09 19:11:21,658 INFO Dataset 样本统计 [total=43000] present=43000 absent=0 swap=0
+2026-08-09 19:11:24,784 INFO Dataset 样本统计 [total=44000] present=44000 absent=0 swap=0
+2026-08-09 19:11:28,117 INFO Dataset 样本统计 [total=45000] present=45000 absent=0 swap=0
+2026-08-09 19:11:31,309 INFO Dataset 样本统计 [total=46000] present=46000 absent=0 swap=0
+2026-08-09 19:11:34,510 INFO Dataset 样本统计 [total=47000] present=47000 absent=0 swap=0
+2026-08-09 19:11:37,650 INFO Dataset 样本统计 [total=48000] present=48000 absent=0 swap=0
+2026-08-09 19:11:40,857 INFO Dataset 样本统计 [total=49000] present=49000 absent=0 swap=0
+2026-08-09 19:11:44,053 INFO Dataset 样本统计 [total=50000] present=50000 absent=0 swap=0
+2026-08-09 19:11:44,078 INFO   dev_loss=-2.0692 dev_sisdr=3.33 dB
+2026-08-09 19:11:45,282 INFO step=2525/20000 total=1.4992 si_sdr=-0.21 si_sdri=2.04 lr=2.89e-04 |g|=3.617 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:11:46,455 INFO step=2550/20000 total=-2.9271 si_sdr=4.12 si_sdri=6.37 lr=2.89e-04 |g|=11.890 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:11:47,621 INFO step=2575/20000 total=-4.0908 si_sdr=5.33 si_sdri=7.57 lr=2.89e-04 |g|=28.190 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:11:48,801 INFO step=2600/20000 total=-3.3729 si_sdr=4.71 si_sdri=6.95 lr=2.88e-04 |g|=54.560 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:11:49,723 INFO Dataset 样本统计 [total=21000] present=21000 absent=0 swap=0
+2026-08-09 19:11:49,772 INFO Dataset 样本统计 [total=21000] present=21000 absent=0 swap=0
+2026-08-09 19:11:49,993 INFO step=2625/20000 total=0.8783 si_sdr=0.34 si_sdri=2.59 lr=2.88e-04 |g|=6.748 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:11:51,171 INFO step=2650/20000 total=2.3976 si_sdr=-0.99 si_sdri=1.25 lr=2.88e-04 |g|=9.149 mem=1.73GB 47ms/step data=1%
+2026-08-09 19:11:52,358 INFO step=2675/20000 total=-3.5628 si_sdr=4.86 si_sdri=7.10 lr=2.88e-04 |g|=30.136 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:11:53,549 INFO step=2700/20000 total=1.3929 si_sdr=-0.11 si_sdri=2.14 lr=2.88e-04 |g|=8.570 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:11:54,762 INFO step=2725/20000 total=1.6249 si_sdr=-0.41 si_sdri=1.84 lr=2.87e-04 |g|=7.533 mem=1.73GB 55ms/step data=0%
+2026-08-09 19:11:55,677 INFO Dataset 样本统计 [total=22000] present=22000 absent=0 swap=0
+2026-08-09 19:11:55,724 INFO Dataset 样本统计 [total=22000] present=22000 absent=0 swap=0
+2026-08-09 19:11:55,982 INFO step=2750/20000 total=-1.0241 si_sdr=2.35 si_sdri=4.60 lr=2.87e-04 |g|=9.449 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:11:57,185 INFO step=2775/20000 total=-2.7058 si_sdr=3.98 si_sdri=6.23 lr=2.87e-04 |g|=36.979 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:11:58,391 INFO step=2800/20000 total=-2.0511 si_sdr=3.31 si_sdri=5.55 lr=2.87e-04 |g|=22.698 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:11:59,584 INFO step=2825/20000 total=-3.6377 si_sdr=4.87 si_sdri=7.11 lr=2.86e-04 |g|=21.950 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:12:00,785 INFO step=2850/20000 total=-2.8812 si_sdr=4.23 si_sdri=6.48 lr=2.86e-04 |g|=29.653 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:12:01,720 INFO Dataset 样本统计 [total=23000] present=23000 absent=0 swap=0
+2026-08-09 19:12:01,770 INFO Dataset 样本统计 [total=23000] present=23000 absent=0 swap=0
+2026-08-09 19:12:01,991 INFO step=2875/20000 total=-1.9465 si_sdr=3.36 si_sdri=5.61 lr=2.86e-04 |g|=43.059 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:12:03,192 INFO step=2900/20000 total=-3.2703 si_sdr=4.47 si_sdri=6.72 lr=2.86e-04 |g|=63.613 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:12:04,399 INFO step=2925/20000 total=-0.6108 si_sdr=1.88 si_sdri=4.13 lr=2.85e-04 |g|=8.734 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:12:05,597 INFO step=2950/20000 total=0.1874 si_sdr=1.04 si_sdri=3.29 lr=2.85e-04 |g|=12.144 mem=1.73GB 47ms/step data=1%
+2026-08-09 19:12:06,794 INFO step=2975/20000 total=-2.7847 si_sdr=4.13 si_sdri=6.37 lr=2.85e-04 |g|=38.325 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:12:07,683 INFO Dataset 样本统计 [total=24000] present=24000 absent=0 swap=0
+2026-08-09 19:12:07,730 INFO Dataset 样本统计 [total=24000] present=24000 absent=0 swap=0
+2026-08-09 19:12:07,983 INFO step=3000/20000 total=-2.5344 si_sdr=3.81 si_sdri=6.06 lr=2.85e-04 |g|=25.309 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:12:08,047 INFO 存 checkpoint: checkpoint_step3000.pt
+2026-08-09 19:12:11,021 INFO Dataset 样本统计 [total=51000] present=51000 absent=0 swap=0
+2026-08-09 19:12:14,060 INFO Dataset 样本统计 [total=52000] present=52000 absent=0 swap=0
+2026-08-09 19:12:17,032 INFO Dataset 样本统计 [total=53000] present=53000 absent=0 swap=0
+2026-08-09 19:12:20,142 INFO Dataset 样本统计 [total=54000] present=54000 absent=0 swap=0
+2026-08-09 19:12:23,518 INFO Dataset 样本统计 [total=55000] present=55000 absent=0 swap=0
+2026-08-09 19:12:26,729 INFO Dataset 样本统计 [total=56000] present=56000 absent=0 swap=0
+2026-08-09 19:12:30,109 INFO Dataset 样本统计 [total=57000] present=57000 absent=0 swap=0
+2026-08-09 19:12:33,375 INFO Dataset 样本统计 [total=58000] present=58000 absent=0 swap=0
+2026-08-09 19:12:36,646 INFO Dataset 样本统计 [total=59000] present=59000 absent=0 swap=0
+2026-08-09 19:12:39,988 INFO Dataset 样本统计 [total=60000] present=60000 absent=0 swap=0
+2026-08-09 19:12:40,016 INFO   dev_loss=-1.9570 dev_sisdr=3.24 dB
+2026-08-09 19:12:41,209 INFO step=3025/20000 total=1.8353 si_sdr=-0.38 si_sdri=1.87 lr=2.84e-04 |g|=9.310 mem=1.73GB 47ms/step data=1%
+2026-08-09 19:12:42,399 INFO step=3050/20000 total=0.0173 si_sdr=1.25 si_sdri=3.50 lr=2.84e-04 |g|=6.116 mem=1.73GB 47ms/step data=1%
+2026-08-09 19:12:43,600 INFO step=3075/20000 total=-1.6264 si_sdr=2.87 si_sdri=5.12 lr=2.84e-04 |g|=6.137 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:12:44,793 INFO step=3100/20000 total=-0.3775 si_sdr=1.57 si_sdri=3.81 lr=2.83e-04 |g|=8.308 mem=1.73GB 47ms/step data=1%
+2026-08-09 19:12:45,715 INFO Dataset 样本统计 [total=25000] present=25000 absent=0 swap=0
+2026-08-09 19:12:45,765 INFO Dataset 样本统计 [total=25000] present=25000 absent=0 swap=0
+2026-08-09 19:12:45,991 INFO step=3125/20000 total=-4.8842 si_sdr=6.06 si_sdri=8.30 lr=2.83e-04 |g|=39.250 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:12:47,260 INFO step=3150/20000 total=-7.1988 si_sdr=8.48 si_sdri=10.72 lr=2.83e-04 |g|=49.788 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:12:48,454 INFO step=3175/20000 total=1.4703 si_sdr=-0.14 si_sdri=2.11 lr=2.83e-04 |g|=9.477 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:12:49,660 INFO step=3200/20000 total=-3.4625 si_sdr=4.68 si_sdri=6.92 lr=2.82e-04 |g|=67.686 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:12:50,861 INFO step=3225/20000 total=-1.7602 si_sdr=2.98 si_sdri=5.23 lr=2.82e-04 |g|=21.696 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:12:51,767 INFO Dataset 样本统计 [total=26000] present=26000 absent=0 swap=0
+2026-08-09 19:12:51,815 INFO Dataset 样本统计 [total=26000] present=26000 absent=0 swap=0
+2026-08-09 19:12:52,071 INFO step=3250/20000 total=-3.0841 si_sdr=4.25 si_sdri=6.50 lr=2.82e-04 |g|=3.941 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:12:53,280 INFO step=3275/20000 total=-3.3704 si_sdr=4.67 si_sdri=6.92 lr=2.82e-04 |g|=37.743 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:12:54,501 INFO step=3300/20000 total=0.9648 si_sdr=0.33 si_sdri=2.58 lr=2.81e-04 |g|=8.030 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:12:55,707 INFO step=3325/20000 total=2.2167 si_sdr=-0.89 si_sdri=1.36 lr=2.81e-04 |g|=24.620 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:12:56,933 INFO step=3350/20000 total=-1.2119 si_sdr=2.32 si_sdri=4.57 lr=2.81e-04 |g|=6.571 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:12:57,866 INFO Dataset 样本统计 [total=27000] present=27000 absent=0 swap=0
+2026-08-09 19:12:57,915 INFO Dataset 样本统计 [total=27000] present=27000 absent=0 swap=0
+2026-08-09 19:12:58,137 INFO step=3375/20000 total=-3.5725 si_sdr=4.73 si_sdri=6.98 lr=2.80e-04 |g|=65.063 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:12:59,341 INFO step=3400/20000 total=-2.4427 si_sdr=3.72 si_sdri=5.97 lr=2.80e-04 |g|=100.528 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:13:00,532 INFO step=3425/20000 total=-7.7207 si_sdr=8.85 si_sdri=11.10 lr=2.80e-04 |g|=120.653 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:13:01,728 INFO step=3450/20000 total=0.2368 si_sdr=0.94 si_sdri=3.19 lr=2.80e-04 |g|=29.546 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:13:02,917 INFO step=3475/20000 total=-7.8464 si_sdr=8.98 si_sdri=11.22 lr=2.79e-04 |g|=47.920 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:13:03,816 INFO Dataset 样本统计 [total=28000] present=28000 absent=0 swap=0
+2026-08-09 19:13:03,864 INFO Dataset 样本统计 [total=28000] present=28000 absent=0 swap=0
+2026-08-09 19:13:04,124 INFO step=3500/20000 total=-2.7386 si_sdr=4.04 si_sdri=6.29 lr=2.79e-04 |g|=55.368 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:13:04,186 INFO 存 checkpoint: checkpoint_step3500.pt
+2026-08-09 19:13:07,435 INFO Dataset 样本统计 [total=61000] present=61000 absent=0 swap=0
+2026-08-09 19:13:10,439 INFO Dataset 样本统计 [total=62000] present=62000 absent=0 swap=0
+2026-08-09 19:13:13,484 INFO Dataset 样本统计 [total=63000] present=63000 absent=0 swap=0
+2026-08-09 19:13:16,599 INFO Dataset 样本统计 [total=64000] present=64000 absent=0 swap=0
+2026-08-09 19:13:19,878 INFO Dataset 样本统计 [total=65000] present=65000 absent=0 swap=0
+2026-08-09 19:13:23,118 INFO Dataset 样本统计 [total=66000] present=66000 absent=0 swap=0
+2026-08-09 19:13:26,360 INFO Dataset 样本统计 [total=67000] present=67000 absent=0 swap=0
+2026-08-09 19:13:29,556 INFO Dataset 样本统计 [total=68000] present=68000 absent=0 swap=0
+2026-08-09 19:13:32,835 INFO Dataset 样本统计 [total=69000] present=69000 absent=0 swap=0
+2026-08-09 19:13:36,060 INFO Dataset 样本统计 [total=70000] present=70000 absent=0 swap=0
+2026-08-09 19:13:36,087 INFO   dev_loss=-2.5431 dev_sisdr=3.80 dB
+2026-08-09 19:13:37,284 INFO step=3525/20000 total=-0.9200 si_sdr=2.24 si_sdri=4.49 lr=2.79e-04 |g|=10.682 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:13:38,557 INFO step=3550/20000 total=1.8851 si_sdr=-0.58 si_sdri=1.67 lr=2.78e-04 |g|=9.274 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:13:39,745 INFO step=3575/20000 total=2.3884 si_sdr=-1.01 si_sdri=1.23 lr=2.78e-04 |g|=12.768 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:13:40,944 INFO step=3600/20000 total=-4.3335 si_sdr=5.56 si_sdri=7.81 lr=2.78e-04 |g|=46.673 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:13:41,871 INFO Dataset 样本统计 [total=29000] present=29000 absent=0 swap=0
+2026-08-09 19:13:41,918 INFO Dataset 样本统计 [total=29000] present=29000 absent=0 swap=0
+2026-08-09 19:13:42,145 INFO step=3625/20000 total=-7.0162 si_sdr=8.30 si_sdri=10.55 lr=2.77e-04 |g|=99.367 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:13:43,355 INFO step=3650/20000 total=-2.1808 si_sdr=3.52 si_sdri=5.76 lr=2.77e-04 |g|=88.461 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:13:44,564 INFO step=3675/20000 total=0.6850 si_sdr=0.54 si_sdri=2.79 lr=2.77e-04 |g|=7.159 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:13:45,778 INFO step=3700/20000 total=-9.4041 si_sdr=10.63 si_sdri=12.88 lr=2.76e-04 |g|=1519.213 mem=1.73GB 49ms/step data=1%
+2026-08-09 19:13:46,975 INFO step=3725/20000 total=0.5763 si_sdr=0.75 si_sdri=2.99 lr=2.76e-04 |g|=7.647 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:13:47,896 INFO Dataset 样本统计 [total=30000] present=30000 absent=0 swap=0
+2026-08-09 19:13:47,943 INFO Dataset 样本统计 [total=30000] present=30000 absent=0 swap=0
+2026-08-09 19:13:48,197 INFO step=3750/20000 total=-8.4500 si_sdr=9.74 si_sdri=11.99 lr=2.76e-04 |g|=86.885 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:13:49,383 INFO step=3775/20000 total=1.7222 si_sdr=-0.37 si_sdri=1.88 lr=2.75e-04 |g|=6.573 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:13:50,569 INFO step=3800/20000 total=-4.8841 si_sdr=6.02 si_sdri=8.26 lr=2.75e-04 |g|=34.119 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:13:51,764 INFO step=3825/20000 total=-15.1765 si_sdr=16.32 si_sdri=18.56 lr=2.75e-04 |g|=157.027 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:13:52,951 INFO step=3850/20000 total=-5.1164 si_sdr=6.28 si_sdri=8.53 lr=2.74e-04 |g|=69.260 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:13:53,872 INFO Dataset 样本统计 [total=31000] present=31000 absent=0 swap=0
+2026-08-09 19:13:53,917 INFO Dataset 样本统计 [total=31000] present=31000 absent=0 swap=0
+2026-08-09 19:13:54,142 INFO step=3875/20000 total=-7.7921 si_sdr=9.01 si_sdri=11.26 lr=2.74e-04 |g|=73.895 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:13:55,327 INFO step=3900/20000 total=-0.6302 si_sdr=1.83 si_sdri=4.08 lr=2.74e-04 |g|=9.895 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:13:56,518 INFO step=3925/20000 total=-2.8707 si_sdr=4.10 si_sdri=6.35 lr=2.73e-04 |g|=24.439 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:13:57,710 INFO step=3950/20000 total=0.1920 si_sdr=1.22 si_sdri=3.46 lr=2.73e-04 |g|=12.167 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:13:58,912 INFO step=3975/20000 total=-7.4107 si_sdr=8.59 si_sdri=10.84 lr=2.73e-04 |g|=52.189 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:13:59,803 INFO Dataset 样本统计 [total=32000] present=32000 absent=0 swap=0
+2026-08-09 19:13:59,848 INFO Dataset 样本统计 [total=32000] present=32000 absent=0 swap=0
+2026-08-09 19:14:00,102 INFO step=4000/20000 total=-0.2207 si_sdr=1.46 si_sdri=3.71 lr=2.72e-04 |g|=7.664 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:14:00,164 INFO 存 checkpoint: checkpoint_step4000.pt
+2026-08-09 19:14:03,239 INFO Dataset 样本统计 [total=71000] present=71000 absent=0 swap=0
+2026-08-09 19:14:06,315 INFO Dataset 样本统计 [total=72000] present=72000 absent=0 swap=0
+2026-08-09 19:14:09,443 INFO Dataset 样本统计 [total=73000] present=73000 absent=0 swap=0
+2026-08-09 19:14:12,611 INFO Dataset 样本统计 [total=74000] present=74000 absent=0 swap=0
+2026-08-09 19:14:15,827 INFO Dataset 样本统计 [total=75000] present=75000 absent=0 swap=0
+2026-08-09 19:14:18,951 INFO Dataset 样本统计 [total=76000] present=76000 absent=0 swap=0
+2026-08-09 19:14:22,228 INFO Dataset 样本统计 [total=77000] present=77000 absent=0 swap=0
+2026-08-09 19:14:25,462 INFO Dataset 样本统计 [total=78000] present=78000 absent=0 swap=0
+2026-08-09 19:14:28,748 INFO Dataset 样本统计 [total=79000] present=79000 absent=0 swap=0
+2026-08-09 19:14:31,979 INFO Dataset 样本统计 [total=80000] present=80000 absent=0 swap=0
+2026-08-09 19:14:32,004 INFO   dev_loss=-2.5047 dev_sisdr=3.75 dB
+2026-08-09 19:14:33,219 INFO step=4025/20000 total=-4.2507 si_sdr=5.43 si_sdri=7.67 lr=2.72e-04 |g|=35.677 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:14:34,429 INFO step=4050/20000 total=-3.3206 si_sdr=4.51 si_sdri=6.76 lr=2.72e-04 |g|=41.356 mem=1.73GB 47ms/step data=1%
+2026-08-09 19:14:35,624 INFO step=4075/20000 total=0.2300 si_sdr=1.00 si_sdri=3.25 lr=2.71e-04 |g|=7.911 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:14:36,824 INFO step=4100/20000 total=-6.6675 si_sdr=8.02 si_sdri=10.27 lr=2.71e-04 |g|=17.844 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:14:37,747 INFO Dataset 样本统计 [total=33000] present=33000 absent=0 swap=0
+2026-08-09 19:14:37,793 INFO Dataset 样本统计 [total=33000] present=33000 absent=0 swap=0
+2026-08-09 19:14:38,020 INFO step=4125/20000 total=1.1309 si_sdr=0.21 si_sdri=2.46 lr=2.71e-04 |g|=8.723 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:14:39,221 INFO step=4150/20000 total=-0.3117 si_sdr=1.62 si_sdri=3.87 lr=2.70e-04 |g|=7.604 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:14:40,426 INFO step=4175/20000 total=-3.7267 si_sdr=5.10 si_sdri=7.34 lr=2.70e-04 |g|=53.450 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:14:41,620 INFO step=4200/20000 total=-3.1189 si_sdr=4.42 si_sdri=6.66 lr=2.70e-04 |g|=79.605 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:14:42,831 INFO step=4225/20000 total=0.5275 si_sdr=0.72 si_sdri=2.97 lr=2.69e-04 |g|=11.186 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:14:43,785 INFO Dataset 样本统计 [total=34000] present=34000 absent=0 swap=0
+2026-08-09 19:14:43,835 INFO Dataset 样本统计 [total=34000] present=34000 absent=0 swap=0
+2026-08-09 19:14:44,089 INFO step=4250/20000 total=-2.4816 si_sdr=3.91 si_sdri=6.16 lr=2.69e-04 |g|=63.379 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:14:45,288 INFO step=4275/20000 total=-4.9828 si_sdr=6.12 si_sdri=8.37 lr=2.69e-04 |g|=41.943 mem=1.73GB 47ms/step data=1%
+2026-08-09 19:14:46,496 INFO step=4300/20000 total=-0.1014 si_sdr=1.33 si_sdri=3.58 lr=2.68e-04 |g|=10.326 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:14:47,697 INFO step=4325/20000 total=-4.9005 si_sdr=6.16 si_sdri=8.40 lr=2.68e-04 |g|=131.309 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:14:48,892 INFO step=4350/20000 total=-0.1860 si_sdr=1.49 si_sdri=3.74 lr=2.67e-04 |g|=10.775 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:14:49,870 INFO Dataset 样本统计 [total=35000] present=35000 absent=0 swap=0
+2026-08-09 19:14:49,918 INFO Dataset 样本统计 [total=35000] present=35000 absent=0 swap=0
+2026-08-09 19:14:50,143 INFO step=4375/20000 total=-4.8556 si_sdr=6.15 si_sdri=8.40 lr=2.67e-04 |g|=70.027 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:14:51,338 INFO step=4400/20000 total=-2.1485 si_sdr=3.27 si_sdri=5.52 lr=2.67e-04 |g|=58.970 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:14:52,537 INFO step=4425/20000 total=-3.1698 si_sdr=4.53 si_sdri=6.78 lr=2.66e-04 |g|=59.854 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:14:53,738 INFO step=4450/20000 total=-0.9667 si_sdr=2.14 si_sdri=4.39 lr=2.66e-04 |g|=12.925 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:14:54,937 INFO step=4475/20000 total=1.7651 si_sdr=-0.35 si_sdri=1.90 lr=2.66e-04 |g|=25.151 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:14:55,834 INFO Dataset 样本统计 [total=36000] present=36000 absent=0 swap=0
+2026-08-09 19:14:55,882 INFO Dataset 样本统计 [total=36000] present=36000 absent=0 swap=0
+2026-08-09 19:14:56,138 INFO step=4500/20000 total=-1.6288 si_sdr=2.80 si_sdri=5.05 lr=2.65e-04 |g|=15.085 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:14:56,201 INFO 存 checkpoint: checkpoint_step4500.pt
+2026-08-09 19:14:59,255 INFO Dataset 样本统计 [total=81000] present=81000 absent=0 swap=0
+2026-08-09 19:15:02,332 INFO Dataset 样本统计 [total=82000] present=82000 absent=0 swap=0
+2026-08-09 19:15:05,411 INFO Dataset 样本统计 [total=83000] present=83000 absent=0 swap=0
+2026-08-09 19:15:08,486 INFO Dataset 样本统计 [total=84000] present=84000 absent=0 swap=0
+2026-08-09 19:15:11,730 INFO Dataset 样本统计 [total=85000] present=85000 absent=0 swap=0
+2026-08-09 19:15:14,872 INFO Dataset 样本统计 [total=86000] present=86000 absent=0 swap=0
+2026-08-09 19:15:18,140 INFO Dataset 样本统计 [total=87000] present=87000 absent=0 swap=0
+2026-08-09 19:15:21,360 INFO Dataset 样本统计 [total=88000] present=88000 absent=0 swap=0
+2026-08-09 19:15:24,519 INFO Dataset 样本统计 [total=89000] present=89000 absent=0 swap=0
+2026-08-09 19:15:27,774 INFO Dataset 样本统计 [total=90000] present=90000 absent=0 swap=0
+2026-08-09 19:15:27,799 INFO   dev_loss=-2.6363 dev_sisdr=3.87 dB
+2026-08-09 19:15:29,023 INFO step=4525/20000 total=-1.2960 si_sdr=2.51 si_sdri=4.75 lr=2.65e-04 |g|=9.976 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:15:30,210 INFO step=4550/20000 total=-4.7914 si_sdr=5.99 si_sdri=8.24 lr=2.64e-04 |g|=84.386 mem=1.73GB 48ms/step data=1%
+2026-08-09 19:15:31,414 INFO step=4575/20000 total=-0.1693 si_sdr=1.50 si_sdri=3.74 lr=2.64e-04 |g|=8.246 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:15:32,609 INFO step=4600/20000 total=-0.9893 si_sdr=2.25 si_sdri=4.50 lr=2.64e-04 |g|=22.996 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:15:33,531 INFO Dataset 样本统计 [total=37000] present=37000 absent=0 swap=0
+2026-08-09 19:15:33,581 INFO Dataset 样本统计 [total=37000] present=37000 absent=0 swap=0
+2026-08-09 19:15:33,804 INFO step=4625/20000 total=1.1619 si_sdr=0.07 si_sdri=2.32 lr=2.63e-04 |g|=8.188 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:15:35,016 INFO step=4650/20000 total=-0.7528 si_sdr=1.94 si_sdri=4.19 lr=2.63e-04 |g|=9.529 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:15:36,236 INFO step=4675/20000 total=-0.6559 si_sdr=1.83 si_sdri=4.08 lr=2.63e-04 |g|=71.314 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:15:37,440 INFO step=4700/20000 total=-1.0878 si_sdr=2.27 si_sdri=4.51 lr=2.62e-04 |g|=10.732 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:15:38,662 INFO step=4725/20000 total=-4.1744 si_sdr=5.39 si_sdri=7.64 lr=2.62e-04 |g|=56.927 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:15:39,555 INFO Dataset 样本统计 [total=38000] present=38000 absent=0 swap=0
+2026-08-09 19:15:39,604 INFO Dataset 样本统计 [total=38000] present=38000 absent=0 swap=0
+2026-08-09 19:15:39,860 INFO step=4750/20000 total=-0.1893 si_sdr=1.45 si_sdri=3.70 lr=2.61e-04 |g|=11.079 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:15:41,037 INFO step=4775/20000 total=0.9030 si_sdr=0.39 si_sdri=2.63 lr=2.61e-04 |g|=10.166 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:15:42,221 INFO step=4800/20000 total=0.7804 si_sdr=0.48 si_sdri=2.72 lr=2.61e-04 |g|=5.805 mem=1.73GB 48ms/step data=1%
+2026-08-09 19:15:43,419 INFO step=4825/20000 total=-1.2957 si_sdr=2.54 si_sdri=4.78 lr=2.60e-04 |g|=18.898 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:15:44,610 INFO step=4850/20000 total=0.7454 si_sdr=0.60 si_sdri=2.85 lr=2.60e-04 |g|=9.765 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:15:45,519 INFO Dataset 样本统计 [total=39000] present=39000 absent=0 swap=0
+2026-08-09 19:15:45,568 INFO Dataset 样本统计 [total=39000] present=39000 absent=0 swap=0
+2026-08-09 19:15:45,792 INFO step=4875/20000 total=-4.5613 si_sdr=5.76 si_sdri=8.00 lr=2.59e-04 |g|=42.277 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:15:46,983 INFO step=4900/20000 total=-3.4491 si_sdr=4.70 si_sdri=6.95 lr=2.59e-04 |g|=35.248 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:15:48,186 INFO step=4925/20000 total=-2.4877 si_sdr=3.62 si_sdri=5.87 lr=2.59e-04 |g|=7.894 mem=1.73GB 51ms/step data=0%
+2026-08-09 19:15:49,442 INFO step=4950/20000 total=-0.0408 si_sdr=1.27 si_sdri=3.52 lr=2.58e-04 |g|=17.382 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:15:50,649 INFO step=4975/20000 total=-3.5695 si_sdr=4.76 si_sdri=7.01 lr=2.58e-04 |g|=108.476 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:15:51,633 INFO Dataset 样本统计 [total=40000] present=40000 absent=0 swap=0
+2026-08-09 19:15:51,680 INFO Dataset 样本统计 [total=40000] present=40000 absent=0 swap=0
+2026-08-09 19:15:51,934 INFO step=5000/20000 total=-0.9449 si_sdr=2.14 si_sdri=4.39 lr=2.57e-04 |g|=9.924 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:15:51,998 INFO 存 checkpoint: checkpoint_step5000.pt
+2026-08-09 19:15:55,046 INFO Dataset 样本统计 [total=91000] present=91000 absent=0 swap=0
+2026-08-09 19:15:58,022 INFO Dataset 样本统计 [total=92000] present=92000 absent=0 swap=0
+2026-08-09 19:16:01,110 INFO Dataset 样本统计 [total=93000] present=93000 absent=0 swap=0
+2026-08-09 19:16:04,316 INFO Dataset 样本统计 [total=94000] present=94000 absent=0 swap=0
+2026-08-09 19:16:07,531 INFO Dataset 样本统计 [total=95000] present=95000 absent=0 swap=0
+2026-08-09 19:16:10,700 INFO Dataset 样本统计 [total=96000] present=96000 absent=0 swap=0
+2026-08-09 19:16:13,977 INFO Dataset 样本统计 [total=97000] present=97000 absent=0 swap=0
+2026-08-09 19:16:17,180 INFO Dataset 样本统计 [total=98000] present=98000 absent=0 swap=0
+2026-08-09 19:16:20,430 INFO Dataset 样本统计 [total=99000] present=99000 absent=0 swap=0
+2026-08-09 19:16:23,709 INFO Dataset 样本统计 [total=100000] present=100000 absent=0 swap=0
+2026-08-09 19:16:23,743 INFO   dev_loss=-2.8162 dev_sisdr=4.04 dB
+2026-08-09 19:16:24,942 INFO step=5025/20000 total=-0.4927 si_sdr=1.67 si_sdri=3.91 lr=2.57e-04 |g|=12.632 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:16:26,132 INFO step=5050/20000 total=-2.9184 si_sdr=4.01 si_sdri=6.26 lr=2.56e-04 |g|=11.787 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:16:27,313 INFO step=5075/20000 total=-2.4311 si_sdr=3.72 si_sdri=5.96 lr=2.56e-04 |g|=18.962 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:16:28,494 INFO step=5100/20000 total=-4.8955 si_sdr=6.02 si_sdri=8.27 lr=2.56e-04 |g|=81.090 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:16:29,409 INFO Dataset 样本统计 [total=41000] present=41000 absent=0 swap=0
+2026-08-09 19:16:29,457 INFO Dataset 样本统计 [total=41000] present=41000 absent=0 swap=0
+2026-08-09 19:16:29,679 INFO step=5125/20000 total=-12.5083 si_sdr=13.72 si_sdri=15.97 lr=2.55e-04 |g|=159.741 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:16:30,868 INFO step=5150/20000 total=-0.3812 si_sdr=1.61 si_sdri=3.86 lr=2.55e-04 |g|=16.426 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:16:32,063 INFO step=5175/20000 total=-8.1275 si_sdr=9.43 si_sdri=11.68 lr=2.54e-04 |g|=100.357 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:16:33,232 INFO step=5200/20000 total=2.4768 si_sdr=-1.23 si_sdri=1.01 lr=2.54e-04 |g|=8.540 mem=1.73GB 48ms/step data=1%
+2026-08-09 19:16:34,420 INFO step=5225/20000 total=-0.0273 si_sdr=1.23 si_sdri=3.48 lr=2.54e-04 |g|=10.802 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:16:35,311 INFO Dataset 样本统计 [total=42000] present=42000 absent=0 swap=0
+2026-08-09 19:16:35,360 INFO Dataset 样本统计 [total=42000] present=42000 absent=0 swap=0
+2026-08-09 19:16:35,614 INFO step=5250/20000 total=-4.6353 si_sdr=5.93 si_sdri=8.18 lr=2.53e-04 |g|=85.788 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:16:36,810 INFO step=5275/20000 total=-2.7207 si_sdr=3.98 si_sdri=6.23 lr=2.53e-04 |g|=72.127 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:16:38,011 INFO step=5300/20000 total=-4.4360 si_sdr=5.68 si_sdri=7.93 lr=2.52e-04 |g|=91.940 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:16:39,205 INFO step=5325/20000 total=1.4291 si_sdr=-0.14 si_sdri=2.11 lr=2.52e-04 |g|=12.515 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:16:40,403 INFO step=5350/20000 total=-10.0202 si_sdr=11.11 si_sdri=13.36 lr=2.51e-04 |g|=51.110 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:16:41,322 INFO Dataset 样本统计 [total=43000] present=43000 absent=0 swap=0
+2026-08-09 19:16:41,370 INFO Dataset 样本统计 [total=43000] present=43000 absent=0 swap=0
+2026-08-09 19:16:41,594 INFO step=5375/20000 total=-4.5830 si_sdr=5.68 si_sdri=7.93 lr=2.51e-04 |g|=51.171 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:16:42,784 INFO step=5400/20000 total=-0.0499 si_sdr=1.27 si_sdri=3.52 lr=2.50e-04 |g|=9.241 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:16:43,970 INFO step=5425/20000 total=-0.0295 si_sdr=1.23 si_sdri=3.47 lr=2.50e-04 |g|=10.650 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:16:45,161 INFO step=5450/20000 total=-1.3709 si_sdr=2.54 si_sdri=4.79 lr=2.50e-04 |g|=9.332 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:16:46,363 INFO step=5475/20000 total=-11.2758 si_sdr=12.36 si_sdri=14.61 lr=2.49e-04 |g|=69.282 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:16:47,258 INFO Dataset 样本统计 [total=44000] present=44000 absent=0 swap=0
+2026-08-09 19:16:47,306 INFO Dataset 样本统计 [total=44000] present=44000 absent=0 swap=0
+2026-08-09 19:16:47,562 INFO step=5500/20000 total=-0.5117 si_sdr=1.72 si_sdri=3.96 lr=2.49e-04 |g|=18.542 mem=1.73GB 47ms/step data=1%
+2026-08-09 19:16:47,624 INFO 存 checkpoint: checkpoint_step5500.pt
+2026-08-09 19:16:50,684 INFO Dataset 样本统计 [total=101000] present=101000 absent=0 swap=0
+2026-08-09 19:16:53,745 INFO Dataset 样本统计 [total=102000] present=102000 absent=0 swap=0
+2026-08-09 19:16:57,027 INFO Dataset 样本统计 [total=103000] present=103000 absent=0 swap=0
+2026-08-09 19:17:00,185 INFO Dataset 样本统计 [total=104000] present=104000 absent=0 swap=0
+2026-08-09 19:17:03,459 INFO Dataset 样本统计 [total=105000] present=105000 absent=0 swap=0
+2026-08-09 19:17:06,973 INFO Dataset 样本统计 [total=106000] present=106000 absent=0 swap=0
+2026-08-09 19:17:10,163 INFO Dataset 样本统计 [total=107000] present=107000 absent=0 swap=0
+2026-08-09 19:17:13,276 INFO Dataset 样本统计 [total=108000] present=108000 absent=0 swap=0
+2026-08-09 19:17:16,416 INFO Dataset 样本统计 [total=109000] present=109000 absent=0 swap=0
+2026-08-09 19:17:19,557 INFO Dataset 样本统计 [total=110000] present=110000 absent=0 swap=0
+2026-08-09 19:17:19,581 INFO   dev_loss=-3.1362 dev_sisdr=4.36 dB
+2026-08-09 19:17:20,783 INFO step=5525/20000 total=-4.8513 si_sdr=6.11 si_sdri=8.36 lr=2.48e-04 |g|=63.024 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:17:21,977 INFO step=5550/20000 total=-2.6256 si_sdr=3.76 si_sdri=6.01 lr=2.48e-04 |g|=10.774 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:17:23,165 INFO step=5575/20000 total=0.0057 si_sdr=1.32 si_sdri=3.56 lr=2.47e-04 |g|=5.366 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:17:24,354 INFO step=5600/20000 total=-4.5949 si_sdr=5.70 si_sdri=7.95 lr=2.47e-04 |g|=17.261 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:17:25,281 INFO Dataset 样本统计 [total=45000] present=45000 absent=0 swap=0
+2026-08-09 19:17:25,332 INFO Dataset 样本统计 [total=45000] present=45000 absent=0 swap=0
+2026-08-09 19:17:25,553 INFO step=5625/20000 total=-1.9861 si_sdr=3.23 si_sdri=5.48 lr=2.46e-04 |g|=10.928 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:17:26,758 INFO step=5650/20000 total=-5.2456 si_sdr=6.47 si_sdri=8.72 lr=2.46e-04 |g|=97.701 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:17:27,951 INFO step=5675/20000 total=-4.3669 si_sdr=5.66 si_sdri=7.91 lr=2.46e-04 |g|=55.672 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:17:29,176 INFO step=5700/20000 total=0.8239 si_sdr=0.57 si_sdri=2.81 lr=2.45e-04 |g|=12.987 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:17:30,412 INFO step=5725/20000 total=-7.2645 si_sdr=8.42 si_sdri=10.67 lr=2.45e-04 |g|=45.793 mem=1.73GB 60ms/step data=0%
+2026-08-09 19:17:31,344 INFO Dataset 样本统计 [total=46000] present=46000 absent=0 swap=0
+2026-08-09 19:17:31,393 INFO Dataset 样本统计 [total=46000] present=46000 absent=0 swap=0
+2026-08-09 19:17:31,648 INFO step=5750/20000 total=-1.2847 si_sdr=2.44 si_sdri=4.68 lr=2.44e-04 |g|=9.031 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:17:32,843 INFO step=5775/20000 total=0.6754 si_sdr=0.50 si_sdri=2.74 lr=2.44e-04 |g|=7.797 mem=1.73GB 48ms/step data=1%
+2026-08-09 19:17:34,034 INFO step=5800/20000 total=-0.6016 si_sdr=1.76 si_sdri=4.01 lr=2.43e-04 |g|=35.398 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:17:35,223 INFO step=5825/20000 total=0.5347 si_sdr=1.00 si_sdri=3.24 lr=2.43e-04 |g|=12.388 mem=1.73GB 47ms/step data=1%
+2026-08-09 19:17:36,422 INFO step=5850/20000 total=0.2319 si_sdr=1.11 si_sdri=3.36 lr=2.42e-04 |g|=9.410 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:17:37,334 INFO Dataset 样本统计 [total=47000] present=47000 absent=0 swap=0
+2026-08-09 19:17:37,381 INFO Dataset 样本统计 [total=47000] present=47000 absent=0 swap=0
+2026-08-09 19:17:37,603 INFO step=5875/20000 total=-0.1724 si_sdr=1.35 si_sdri=3.60 lr=2.42e-04 |g|=18.499 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:17:38,800 INFO step=5900/20000 total=-3.6187 si_sdr=4.83 si_sdri=7.08 lr=2.41e-04 |g|=71.627 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:17:39,998 INFO step=5925/20000 total=-9.4946 si_sdr=10.73 si_sdri=12.97 lr=2.41e-04 |g|=142.282 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:17:41,188 INFO step=5950/20000 total=-0.1857 si_sdr=1.43 si_sdri=3.68 lr=2.40e-04 |g|=6.747 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:17:42,395 INFO step=5975/20000 total=-5.2035 si_sdr=6.43 si_sdri=8.67 lr=2.40e-04 |g|=71.200 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:17:43,275 INFO Dataset 样本统计 [total=48000] present=48000 absent=0 swap=0
+2026-08-09 19:17:43,323 INFO Dataset 样本统计 [total=48000] present=48000 absent=0 swap=0
+2026-08-09 19:17:43,578 INFO step=6000/20000 total=-9.9144 si_sdr=10.95 si_sdri=13.20 lr=2.40e-04 |g|=121.178 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:17:43,642 INFO 存 checkpoint: checkpoint_step6000.pt
+2026-08-09 19:17:46,653 INFO Dataset 样本统计 [total=111000] present=111000 absent=0 swap=0
+2026-08-09 19:17:49,689 INFO Dataset 样本统计 [total=112000] present=112000 absent=0 swap=0
+2026-08-09 19:17:52,780 INFO Dataset 样本统计 [total=113000] present=113000 absent=0 swap=0
+2026-08-09 19:17:55,938 INFO Dataset 样本统计 [total=114000] present=114000 absent=0 swap=0
+2026-08-09 19:17:59,233 INFO Dataset 样本统计 [total=115000] present=115000 absent=0 swap=0
+2026-08-09 19:18:02,515 INFO Dataset 样本统计 [total=116000] present=116000 absent=0 swap=0
+2026-08-09 19:18:05,884 INFO Dataset 样本统计 [total=117000] present=117000 absent=0 swap=0
+2026-08-09 19:18:09,133 INFO Dataset 样本统计 [total=118000] present=118000 absent=0 swap=0
+2026-08-09 19:18:12,378 INFO Dataset 样本统计 [total=119000] present=119000 absent=0 swap=0
+2026-08-09 19:18:15,651 INFO Dataset 样本统计 [total=120000] present=120000 absent=0 swap=0
+2026-08-09 19:18:15,678 INFO   dev_loss=-3.2449 dev_sisdr=4.46 dB
+2026-08-09 19:18:16,891 INFO step=6025/20000 total=0.4201 si_sdr=0.77 si_sdri=3.02 lr=2.39e-04 |g|=6.922 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:18:18,089 INFO step=6050/20000 total=-7.1814 si_sdr=8.20 si_sdri=10.45 lr=2.39e-04 |g|=56.286 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:18:19,301 INFO step=6075/20000 total=-6.1014 si_sdr=7.17 si_sdri=9.41 lr=2.38e-04 |g|=35.387 mem=1.73GB 54ms/step data=0%
+2026-08-09 19:18:20,504 INFO step=6100/20000 total=-4.7616 si_sdr=5.89 si_sdri=8.13 lr=2.38e-04 |g|=26.554 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:18:21,423 INFO Dataset 样本统计 [total=49000] present=49000 absent=0 swap=0
+2026-08-09 19:18:21,473 INFO Dataset 样本统计 [total=49000] present=49000 absent=0 swap=0
+2026-08-09 19:18:21,699 INFO step=6125/20000 total=-0.6699 si_sdr=1.90 si_sdri=4.15 lr=2.37e-04 |g|=89.141 mem=1.73GB 52ms/step data=0%
+2026-08-09 19:18:22,880 INFO step=6150/20000 total=-7.0422 si_sdr=8.23 si_sdri=10.48 lr=2.37e-04 |g|=81.137 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:18:24,079 INFO step=6175/20000 total=-4.7164 si_sdr=5.91 si_sdri=8.16 lr=2.36e-04 |g|=117.554 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:18:25,254 INFO step=6200/20000 total=0.7029 si_sdr=0.55 si_sdri=2.80 lr=2.36e-04 |g|=9.111 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:18:26,464 INFO step=6225/20000 total=0.5139 si_sdr=0.89 si_sdri=3.14 lr=2.35e-04 |g|=7.889 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:18:27,362 INFO Dataset 样本统计 [total=50000] present=50000 absent=0 swap=0
+2026-08-09 19:18:27,409 INFO Dataset 样本统计 [total=50000] present=50000 absent=0 swap=0
+2026-08-09 19:18:28,098 INFO step=6250/20000 total=-0.9453 si_sdr=2.27 si_sdri=4.52 lr=2.35e-04 |g|=12.458 mem=1.73GB 481ms/step data=89%
+2026-08-09 19:18:29,291 INFO step=6275/20000 total=-8.5660 si_sdr=9.78 si_sdri=12.03 lr=2.34e-04 |g|=123.046 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:18:30,496 INFO step=6300/20000 total=-4.9234 si_sdr=6.05 si_sdri=8.29 lr=2.34e-04 |g|=44.119 mem=1.73GB 47ms/step data=1%
+2026-08-09 19:18:31,670 INFO step=6325/20000 total=-1.1983 si_sdr=2.49 si_sdri=4.73 lr=2.33e-04 |g|=8.918 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:18:32,857 INFO step=6350/20000 total=-2.7782 si_sdr=3.82 si_sdri=6.07 lr=2.33e-04 |g|=6.816 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:18:33,777 INFO Dataset 样本统计 [total=1000] present=1000 absent=0 swap=0
+2026-08-09 19:18:33,825 INFO Dataset 样本统计 [total=1000] present=1000 absent=0 swap=0
+2026-08-09 19:18:34,043 INFO step=6375/20000 total=-8.1392 si_sdr=9.39 si_sdri=11.63 lr=2.32e-04 |g|=46.672 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:18:35,232 INFO step=6400/20000 total=-5.1821 si_sdr=6.37 si_sdri=8.62 lr=2.32e-04 |g|=72.810 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:18:36,466 INFO step=6425/20000 total=-0.6045 si_sdr=1.90 si_sdri=4.15 lr=2.31e-04 |g|=13.999 mem=1.73GB 58ms/step data=1%
+2026-08-09 19:18:37,696 INFO step=6450/20000 total=-3.6092 si_sdr=4.84 si_sdri=7.09 lr=2.31e-04 |g|=114.751 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:18:38,902 INFO step=6475/20000 total=-0.3164 si_sdr=1.53 si_sdri=3.78 lr=2.30e-04 |g|=7.906 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:18:39,812 INFO Dataset 样本统计 [total=2000] present=2000 absent=0 swap=0
+2026-08-09 19:18:39,859 INFO Dataset 样本统计 [total=2000] present=2000 absent=0 swap=0
+2026-08-09 19:18:40,120 INFO step=6500/20000 total=-6.3070 si_sdr=7.43 si_sdri=9.67 lr=2.30e-04 |g|=103.316 mem=1.73GB 49ms/step data=1%
+2026-08-09 19:18:40,184 INFO 存 checkpoint: checkpoint_step6500.pt
+2026-08-09 19:18:43,376 INFO Dataset 样本统计 [total=121000] present=121000 absent=0 swap=0
+2026-08-09 19:18:46,461 INFO Dataset 样本统计 [total=122000] present=122000 absent=0 swap=0
+2026-08-09 19:18:49,565 INFO Dataset 样本统计 [total=123000] present=123000 absent=0 swap=0
+2026-08-09 19:18:52,740 INFO Dataset 样本统计 [total=124000] present=124000 absent=0 swap=0
+2026-08-09 19:18:55,976 INFO Dataset 样本统计 [total=125000] present=125000 absent=0 swap=0
+2026-08-09 19:18:59,184 INFO Dataset 样本统计 [total=126000] present=126000 absent=0 swap=0
+2026-08-09 19:19:02,437 INFO Dataset 样本统计 [total=127000] present=127000 absent=0 swap=0
+2026-08-09 19:19:05,644 INFO Dataset 样本统计 [total=128000] present=128000 absent=0 swap=0
+2026-08-09 19:19:08,913 INFO Dataset 样本统计 [total=129000] present=129000 absent=0 swap=0
+2026-08-09 19:19:12,273 INFO Dataset 样本统计 [total=130000] present=130000 absent=0 swap=0
+2026-08-09 19:19:12,298 INFO   dev_loss=-3.7624 dev_sisdr=4.97 dB
+2026-08-09 19:19:13,504 INFO step=6525/20000 total=-4.2288 si_sdr=5.41 si_sdri=7.66 lr=2.29e-04 |g|=79.156 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:19:14,682 INFO step=6550/20000 total=-8.0173 si_sdr=9.27 si_sdri=11.52 lr=2.29e-04 |g|=148.862 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:19:15,878 INFO step=6575/20000 total=-0.4470 si_sdr=1.60 si_sdri=3.84 lr=2.28e-04 |g|=9.288 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:19:17,081 INFO step=6600/20000 total=-2.8129 si_sdr=3.87 si_sdri=6.12 lr=2.28e-04 |g|=6.929 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:19:18,015 INFO Dataset 样本统计 [total=3000] present=3000 absent=0 swap=0
+2026-08-09 19:19:18,066 INFO Dataset 样本统计 [total=3000] present=3000 absent=0 swap=0
+2026-08-09 19:19:18,289 INFO step=6625/20000 total=-4.6358 si_sdr=5.90 si_sdri=8.15 lr=2.27e-04 |g|=82.552 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:19:19,474 INFO step=6650/20000 total=-0.4885 si_sdr=1.70 si_sdri=3.95 lr=2.27e-04 |g|=15.205 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:19:20,663 INFO step=6675/20000 total=-18.1855 si_sdr=19.33 si_sdri=21.58 lr=2.26e-04 |g|=322.398 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:19:21,847 INFO step=6700/20000 total=-4.4414 si_sdr=5.65 si_sdri=7.90 lr=2.26e-04 |g|=78.655 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:19:23,035 INFO step=6725/20000 total=-7.8129 si_sdr=9.04 si_sdri=11.29 lr=2.25e-04 |g|=112.553 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:19:23,936 INFO Dataset 样本统计 [total=4000] present=4000 absent=0 swap=0
+2026-08-09 19:19:23,976 INFO Dataset 样本统计 [total=4000] present=4000 absent=0 swap=0
+2026-08-09 19:19:24,231 INFO step=6750/20000 total=-0.0553 si_sdr=1.27 si_sdri=3.51 lr=2.25e-04 |g|=9.036 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:19:25,431 INFO step=6775/20000 total=-10.6098 si_sdr=11.68 si_sdri=13.93 lr=2.24e-04 |g|=118.254 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:19:26,627 INFO step=6800/20000 total=-4.9136 si_sdr=6.08 si_sdri=8.32 lr=2.24e-04 |g|=161.146 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:19:27,805 INFO step=6825/20000 total=-7.5229 si_sdr=8.85 si_sdri=11.10 lr=2.23e-04 |g|=164.182 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:19:29,001 INFO step=6850/20000 total=-8.8991 si_sdr=10.26 si_sdri=12.50 lr=2.23e-04 |g|=103.628 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:19:29,931 INFO Dataset 样本统计 [total=5000] present=5000 absent=0 swap=0
+2026-08-09 19:19:29,980 INFO Dataset 样本统计 [total=5000] present=5000 absent=0 swap=0
+2026-08-09 19:19:30,204 INFO step=6875/20000 total=-10.4872 si_sdr=11.65 si_sdri=13.90 lr=2.22e-04 |g|=127.650 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:19:31,407 INFO step=6900/20000 total=-0.3168 si_sdr=1.52 si_sdri=3.77 lr=2.22e-04 |g|=10.307 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:19:32,605 INFO step=6925/20000 total=-1.3509 si_sdr=2.48 si_sdri=4.72 lr=2.21e-04 |g|=11.341 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:19:33,801 INFO step=6950/20000 total=-0.6005 si_sdr=1.68 si_sdri=3.93 lr=2.21e-04 |g|=18.576 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:19:34,992 INFO step=6975/20000 total=-5.1847 si_sdr=6.25 si_sdri=8.50 lr=2.20e-04 |g|=61.173 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:19:35,879 INFO Dataset 样本统计 [total=6000] present=6000 absent=0 swap=0
+2026-08-09 19:19:35,927 INFO Dataset 样本统计 [total=6000] present=6000 absent=0 swap=0
+2026-08-09 19:19:36,180 INFO step=7000/20000 total=-4.7143 si_sdr=5.95 si_sdri=8.20 lr=2.19e-04 |g|=89.320 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:19:36,240 INFO 存 checkpoint: checkpoint_step7000.pt
+2026-08-09 19:19:39,451 INFO Dataset 样本统计 [total=131000] present=131000 absent=0 swap=0
+2026-08-09 19:19:42,742 INFO Dataset 样本统计 [total=132000] present=132000 absent=0 swap=0
+2026-08-09 19:19:45,822 INFO Dataset 样本统计 [total=133000] present=133000 absent=0 swap=0
+2026-08-09 19:19:49,046 INFO Dataset 样本统计 [total=134000] present=134000 absent=0 swap=0
+2026-08-09 19:19:52,301 INFO Dataset 样本统计 [total=135000] present=135000 absent=0 swap=0
+2026-08-09 19:19:55,462 INFO Dataset 样本统计 [total=136000] present=136000 absent=0 swap=0
+2026-08-09 19:19:58,716 INFO Dataset 样本统计 [total=137000] present=137000 absent=0 swap=0
+2026-08-09 19:20:01,949 INFO Dataset 样本统计 [total=138000] present=138000 absent=0 swap=0
+2026-08-09 19:20:05,240 INFO Dataset 样本统计 [total=139000] present=139000 absent=0 swap=0
+2026-08-09 19:20:08,526 INFO Dataset 样本统计 [total=140000] present=140000 absent=0 swap=0
+2026-08-09 19:20:08,552 INFO   dev_loss=-3.4239 dev_sisdr=4.61 dB
+2026-08-09 19:20:09,772 INFO step=7025/20000 total=-5.9804 si_sdr=7.05 si_sdri=9.30 lr=2.19e-04 |g|=88.410 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:20:10,973 INFO step=7050/20000 total=-4.3569 si_sdr=5.56 si_sdri=7.81 lr=2.18e-04 |g|=79.654 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:20:12,168 INFO step=7075/20000 total=-3.3020 si_sdr=4.75 si_sdri=7.00 lr=2.18e-04 |g|=72.099 mem=1.73GB 47ms/step data=1%
+2026-08-09 19:20:13,364 INFO step=7100/20000 total=0.1769 si_sdr=1.05 si_sdri=3.30 lr=2.17e-04 |g|=12.371 mem=1.73GB 45ms/step data=1%
+2026-08-09 19:20:14,289 INFO Dataset 样本统计 [total=7000] present=7000 absent=0 swap=0
+2026-08-09 19:20:14,338 INFO Dataset 样本统计 [total=7000] present=7000 absent=0 swap=0
+2026-08-09 19:20:14,567 INFO step=7125/20000 total=0.2338 si_sdr=1.11 si_sdri=3.36 lr=2.17e-04 |g|=11.311 mem=1.73GB 52ms/step data=0%
+2026-08-09 19:20:15,775 INFO step=7150/20000 total=-4.5094 si_sdr=5.71 si_sdri=7.96 lr=2.16e-04 |g|=96.147 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:20:16,970 INFO step=7175/20000 total=-4.1248 si_sdr=5.44 si_sdri=7.69 lr=2.16e-04 |g|=111.791 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:20:18,180 INFO step=7200/20000 total=-6.2903 si_sdr=7.42 si_sdri=9.67 lr=2.15e-04 |g|=31.698 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:20:19,420 INFO step=7225/20000 total=-5.6322 si_sdr=6.72 si_sdri=8.96 lr=2.15e-04 |g|=93.689 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:20:20,311 INFO Dataset 样本统计 [total=8000] present=8000 absent=0 swap=0
+2026-08-09 19:20:20,357 INFO Dataset 样本统计 [total=8000] present=8000 absent=0 swap=0
+2026-08-09 19:20:20,609 INFO step=7250/20000 total=-0.9655 si_sdr=2.12 si_sdri=4.36 lr=2.14e-04 |g|=13.524 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:20:21,799 INFO step=7275/20000 total=-1.0500 si_sdr=2.28 si_sdri=4.53 lr=2.14e-04 |g|=9.776 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:20:23,008 INFO step=7300/20000 total=-8.4463 si_sdr=9.65 si_sdri=11.89 lr=2.13e-04 |g|=78.105 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:20:24,228 INFO step=7325/20000 total=-0.8446 si_sdr=2.05 si_sdri=4.29 lr=2.13e-04 |g|=14.122 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:20:25,428 INFO step=7350/20000 total=-0.5190 si_sdr=1.75 si_sdri=4.00 lr=2.12e-04 |g|=10.099 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:20:26,364 INFO Dataset 样本统计 [total=9000] present=9000 absent=0 swap=0
+2026-08-09 19:20:26,410 INFO Dataset 样本统计 [total=9000] present=9000 absent=0 swap=0
+2026-08-09 19:20:26,636 INFO step=7375/20000 total=-1.2093 si_sdr=2.36 si_sdri=4.60 lr=2.11e-04 |g|=6.379 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:20:27,840 INFO step=7400/20000 total=-5.7543 si_sdr=6.92 si_sdri=9.17 lr=2.11e-04 |g|=138.588 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:20:29,054 INFO step=7425/20000 total=-2.7094 si_sdr=3.81 si_sdri=6.06 lr=2.10e-04 |g|=12.601 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:20:30,261 INFO step=7450/20000 total=-7.4703 si_sdr=8.47 si_sdri=10.71 lr=2.10e-04 |g|=136.543 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:20:31,505 INFO step=7475/20000 total=-14.1067 si_sdr=15.22 si_sdri=17.46 lr=2.09e-04 |g|=315.002 mem=1.73GB 52ms/step data=0%
+2026-08-09 19:20:32,407 INFO Dataset 样本统计 [total=10000] present=10000 absent=0 swap=0
+2026-08-09 19:20:32,456 INFO Dataset 样本统计 [total=10000] present=10000 absent=0 swap=0
+2026-08-09 19:20:32,711 INFO step=7500/20000 total=1.7434 si_sdr=-0.40 si_sdri=1.84 lr=2.09e-04 |g|=17.103 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:20:32,775 INFO 存 checkpoint: checkpoint_step7500.pt
+2026-08-09 19:20:35,871 INFO Dataset 样本统计 [total=141000] present=141000 absent=0 swap=0
+2026-08-09 19:20:38,947 INFO Dataset 样本统计 [total=142000] present=142000 absent=0 swap=0
+2026-08-09 19:20:42,107 INFO Dataset 样本统计 [total=143000] present=143000 absent=0 swap=0
+2026-08-09 19:20:45,256 INFO Dataset 样本统计 [total=144000] present=144000 absent=0 swap=0
+2026-08-09 19:20:48,516 INFO Dataset 样本统计 [total=145000] present=145000 absent=0 swap=0
+2026-08-09 19:20:51,778 INFO Dataset 样本统计 [total=146000] present=146000 absent=0 swap=0
+2026-08-09 19:20:55,251 INFO Dataset 样本统计 [total=147000] present=147000 absent=0 swap=0
+2026-08-09 19:20:58,460 INFO Dataset 样本统计 [total=148000] present=148000 absent=0 swap=0
+2026-08-09 19:21:01,705 INFO Dataset 样本统计 [total=149000] present=149000 absent=0 swap=0
+2026-08-09 19:21:05,027 INFO Dataset 样本统计 [total=150000] present=150000 absent=0 swap=0
+2026-08-09 19:21:05,052 INFO   dev_loss=-3.7788 dev_sisdr=4.97 dB
+2026-08-09 19:21:06,253 INFO step=7525/20000 total=-1.8353 si_sdr=2.99 si_sdri=5.23 lr=2.08e-04 |g|=15.719 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:21:07,465 INFO step=7550/20000 total=0.1007 si_sdr=1.12 si_sdri=3.37 lr=2.08e-04 |g|=7.749 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:21:08,685 INFO step=7575/20000 total=0.9643 si_sdr=0.32 si_sdri=2.57 lr=2.07e-04 |g|=11.949 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:21:09,897 INFO step=7600/20000 total=-13.6077 si_sdr=14.54 si_sdri=16.79 lr=2.07e-04 |g|=144.168 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:21:10,831 INFO Dataset 样本统计 [total=11000] present=11000 absent=0 swap=0
+2026-08-09 19:21:10,876 INFO Dataset 样本统计 [total=11000] present=11000 absent=0 swap=0
+2026-08-09 19:21:11,101 INFO step=7625/20000 total=-0.0402 si_sdr=1.21 si_sdri=3.46 lr=2.06e-04 |g|=6.725 mem=1.73GB 48ms/step data=1%
+2026-08-09 19:21:12,304 INFO step=7650/20000 total=-0.5124 si_sdr=1.68 si_sdri=3.92 lr=2.05e-04 |g|=8.676 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:21:13,509 INFO step=7675/20000 total=-1.8760 si_sdr=3.03 si_sdri=5.27 lr=2.05e-04 |g|=20.784 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:21:14,716 INFO step=7700/20000 total=-0.8112 si_sdr=2.01 si_sdri=4.26 lr=2.04e-04 |g|=10.005 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:21:15,910 INFO step=7725/20000 total=-6.9226 si_sdr=8.02 si_sdri=10.26 lr=2.04e-04 |g|=54.290 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:21:16,795 INFO Dataset 样本统计 [total=12000] present=12000 absent=0 swap=0
+2026-08-09 19:21:16,841 INFO Dataset 样本统计 [total=12000] present=12000 absent=0 swap=0
+2026-08-09 19:21:17,097 INFO step=7750/20000 total=-4.5012 si_sdr=5.67 si_sdri=7.92 lr=2.03e-04 |g|=109.979 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:21:18,291 INFO step=7775/20000 total=-9.4948 si_sdr=10.70 si_sdri=12.94 lr=2.03e-04 |g|=162.114 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:21:19,486 INFO step=7800/20000 total=-4.3547 si_sdr=5.56 si_sdri=7.81 lr=2.02e-04 |g|=121.786 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:21:20,657 INFO step=7825/20000 total=-0.4955 si_sdr=1.68 si_sdri=3.93 lr=2.02e-04 |g|=10.301 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:21:21,858 INFO step=7850/20000 total=-0.1903 si_sdr=1.39 si_sdri=3.64 lr=2.01e-04 |g|=19.720 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:21:22,788 INFO Dataset 样本统计 [total=13000] present=13000 absent=0 swap=0
+2026-08-09 19:21:22,834 INFO Dataset 样本统计 [total=13000] present=13000 absent=0 swap=0
+2026-08-09 19:21:23,052 INFO step=7875/20000 total=-4.3960 si_sdr=5.58 si_sdri=7.82 lr=2.00e-04 |g|=76.691 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:21:24,249 INFO step=7900/20000 total=-0.0994 si_sdr=1.32 si_sdri=3.57 lr=2.00e-04 |g|=13.541 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:21:25,441 INFO step=7925/20000 total=-1.4500 si_sdr=2.57 si_sdri=4.82 lr=1.99e-04 |g|=13.009 mem=1.73GB 45ms/step data=1%
+2026-08-09 19:21:26,630 INFO step=7950/20000 total=-1.9459 si_sdr=3.17 si_sdri=5.42 lr=1.99e-04 |g|=12.229 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:21:27,810 INFO step=7975/20000 total=0.0137 si_sdr=1.24 si_sdri=3.49 lr=1.98e-04 |g|=18.184 mem=1.73GB 47ms/step data=1%
+2026-08-09 19:21:28,753 INFO Dataset 样本统计 [total=14000] present=14000 absent=0 swap=0
+2026-08-09 19:21:28,806 INFO Dataset 样本统计 [total=14000] present=14000 absent=0 swap=0
+2026-08-09 19:21:29,059 INFO step=8000/20000 total=-1.8315 si_sdr=2.88 si_sdri=5.13 lr=1.98e-04 |g|=19.663 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:21:29,120 INFO 存 checkpoint: checkpoint_step8000.pt
+2026-08-09 19:21:32,134 INFO Dataset 样本统计 [total=151000] present=151000 absent=0 swap=0
+2026-08-09 19:21:35,143 INFO Dataset 样本统计 [total=152000] present=152000 absent=0 swap=0
+2026-08-09 19:21:38,239 INFO Dataset 样本统计 [total=153000] present=153000 absent=0 swap=0
+2026-08-09 19:21:41,314 INFO Dataset 样本统计 [total=154000] present=154000 absent=0 swap=0
+2026-08-09 19:21:44,498 INFO Dataset 样本统计 [total=155000] present=155000 absent=0 swap=0
+2026-08-09 19:21:47,674 INFO Dataset 样本统计 [total=156000] present=156000 absent=0 swap=0
+2026-08-09 19:21:50,824 INFO Dataset 样本统计 [total=157000] present=157000 absent=0 swap=0
+2026-08-09 19:21:53,929 INFO Dataset 样本统计 [total=158000] present=158000 absent=0 swap=0
+2026-08-09 19:21:57,073 INFO Dataset 样本统计 [total=159000] present=159000 absent=0 swap=0
+2026-08-09 19:22:00,202 INFO Dataset 样本统计 [total=160000] present=160000 absent=0 swap=0
+2026-08-09 19:22:00,227 INFO   dev_loss=-3.5410 dev_sisdr=4.72 dB
+2026-08-09 19:22:01,477 INFO step=8025/20000 total=-3.4243 si_sdr=4.60 si_sdri=6.85 lr=1.97e-04 |g|=108.317 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:22:02,744 INFO step=8050/20000 total=-4.0806 si_sdr=5.26 si_sdri=7.51 lr=1.97e-04 |g|=114.346 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:22:03,952 INFO step=8075/20000 total=-2.5343 si_sdr=3.59 si_sdri=5.84 lr=1.96e-04 |g|=19.539 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:22:05,153 INFO step=8100/20000 total=-7.1449 si_sdr=8.37 si_sdri=10.62 lr=1.95e-04 |g|=149.683 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:22:06,085 INFO Dataset 样本统计 [total=15000] present=15000 absent=0 swap=0
+2026-08-09 19:22:06,134 INFO Dataset 样本统计 [total=15000] present=15000 absent=0 swap=0
+2026-08-09 19:22:06,357 INFO step=8125/20000 total=0.6540 si_sdr=0.67 si_sdri=2.92 lr=1.95e-04 |g|=10.080 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:22:07,559 INFO step=8150/20000 total=-8.7021 si_sdr=9.89 si_sdri=12.13 lr=1.94e-04 |g|=212.155 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:22:08,759 INFO step=8175/20000 total=-4.7172 si_sdr=5.88 si_sdri=8.13 lr=1.94e-04 |g|=93.840 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:22:09,962 INFO step=8200/20000 total=-4.8640 si_sdr=6.11 si_sdri=8.36 lr=1.93e-04 |g|=96.452 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:22:11,165 INFO step=8225/20000 total=-1.1316 si_sdr=2.36 si_sdri=4.61 lr=1.93e-04 |g|=7.806 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:22:12,058 INFO Dataset 样本统计 [total=16000] present=16000 absent=0 swap=0
+2026-08-09 19:22:12,106 INFO Dataset 样本统计 [total=16000] present=16000 absent=0 swap=0
+2026-08-09 19:22:12,363 INFO step=8250/20000 total=-0.5488 si_sdr=1.71 si_sdri=3.96 lr=1.92e-04 |g|=9.253 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:22:13,564 INFO step=8275/20000 total=-1.1886 si_sdr=2.35 si_sdri=4.60 lr=1.91e-04 |g|=9.932 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:22:14,767 INFO step=8300/20000 total=-4.9881 si_sdr=6.24 si_sdri=8.48 lr=1.91e-04 |g|=219.792 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:22:15,969 INFO step=8325/20000 total=-6.3325 si_sdr=7.42 si_sdri=9.67 lr=1.90e-04 |g|=131.105 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:22:17,169 INFO step=8350/20000 total=-0.9270 si_sdr=2.14 si_sdri=4.39 lr=1.90e-04 |g|=16.025 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:22:18,098 INFO Dataset 样本统计 [total=17000] present=17000 absent=0 swap=0
+2026-08-09 19:22:18,146 INFO Dataset 样本统计 [total=17000] present=17000 absent=0 swap=0
+2026-08-09 19:22:18,371 INFO step=8375/20000 total=-0.3872 si_sdr=1.55 si_sdri=3.80 lr=1.89e-04 |g|=59.241 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:22:19,583 INFO step=8400/20000 total=-10.4651 si_sdr=11.62 si_sdri=13.87 lr=1.89e-04 |g|=268.675 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:22:20,790 INFO step=8425/20000 total=-7.5797 si_sdr=8.66 si_sdri=10.91 lr=1.88e-04 |g|=166.663 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:22:21,994 INFO step=8450/20000 total=-4.7899 si_sdr=6.00 si_sdri=8.25 lr=1.87e-04 |g|=287.331 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:22:23,198 INFO step=8475/20000 total=-5.4454 si_sdr=6.54 si_sdri=8.79 lr=1.87e-04 |g|=136.988 mem=1.73GB 50ms/step data=0%
+2026-08-09 19:22:24,099 INFO Dataset 样本统计 [total=18000] present=18000 absent=0 swap=0
+2026-08-09 19:22:24,148 INFO Dataset 样本统计 [total=18000] present=18000 absent=0 swap=0
+2026-08-09 19:22:24,403 INFO step=8500/20000 total=-2.8115 si_sdr=3.87 si_sdri=6.12 lr=1.86e-04 |g|=30.088 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:22:24,466 INFO 存 checkpoint: checkpoint_step8500.pt
+2026-08-09 19:22:27,438 INFO Dataset 样本统计 [total=161000] present=161000 absent=0 swap=0
+2026-08-09 19:22:30,371 INFO Dataset 样本统计 [total=162000] present=162000 absent=0 swap=0
+2026-08-09 19:22:33,335 INFO Dataset 样本统计 [total=163000] present=163000 absent=0 swap=0
+2026-08-09 19:22:36,476 INFO Dataset 样本统计 [total=164000] present=164000 absent=0 swap=0
+2026-08-09 19:22:39,628 INFO Dataset 样本统计 [total=165000] present=165000 absent=0 swap=0
+2026-08-09 19:22:42,872 INFO Dataset 样本统计 [total=166000] present=166000 absent=0 swap=0
+2026-08-09 19:22:46,233 INFO Dataset 样本统计 [total=167000] present=167000 absent=0 swap=0
+2026-08-09 19:22:49,485 INFO Dataset 样本统计 [total=168000] present=168000 absent=0 swap=0
+2026-08-09 19:22:52,734 INFO Dataset 样本统计 [total=169000] present=169000 absent=0 swap=0
+2026-08-09 19:22:56,064 INFO Dataset 样本统计 [total=170000] present=170000 absent=0 swap=0
+2026-08-09 19:22:56,089 INFO   dev_loss=-3.6001 dev_sisdr=4.77 dB
+2026-08-09 19:22:57,295 INFO step=8525/20000 total=-2.7912 si_sdr=3.94 si_sdri=6.19 lr=1.86e-04 |g|=9.118 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:22:58,488 INFO step=8550/20000 total=-2.5259 si_sdr=3.63 si_sdri=5.88 lr=1.85e-04 |g|=17.035 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:22:59,670 INFO step=8575/20000 total=-5.5995 si_sdr=6.78 si_sdri=9.02 lr=1.85e-04 |g|=118.960 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:23:00,835 INFO step=8600/20000 total=-2.1466 si_sdr=3.23 si_sdri=5.47 lr=1.84e-04 |g|=18.268 mem=1.73GB 53ms/step data=0%
+2026-08-09 19:23:01,754 INFO Dataset 样本统计 [total=19000] present=19000 absent=0 swap=0
+2026-08-09 19:23:01,801 INFO Dataset 样本统计 [total=19000] present=19000 absent=0 swap=0
+2026-08-09 19:23:02,021 INFO step=8625/20000 total=-4.9941 si_sdr=6.15 si_sdri=8.40 lr=1.83e-04 |g|=116.240 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:23:03,196 INFO step=8650/20000 total=-6.8588 si_sdr=7.92 si_sdri=10.17 lr=1.83e-04 |g|=79.610 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:23:04,385 INFO step=8675/20000 total=-5.8721 si_sdr=6.88 si_sdri=9.13 lr=1.82e-04 |g|=18.776 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:23:05,572 INFO step=8700/20000 total=-1.6501 si_sdr=2.84 si_sdri=5.09 lr=1.82e-04 |g|=10.115 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:23:06,767 INFO step=8725/20000 total=-3.2150 si_sdr=4.21 si_sdri=6.45 lr=1.81e-04 |g|=11.642 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:23:07,656 INFO Dataset 样本统计 [total=20000] present=20000 absent=0 swap=0
+2026-08-09 19:23:07,706 INFO Dataset 样本统计 [total=20000] present=20000 absent=0 swap=0
+2026-08-09 19:23:07,955 INFO step=8750/20000 total=-1.8577 si_sdr=3.06 si_sdri=5.31 lr=1.81e-04 |g|=14.285 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:23:09,150 INFO step=8775/20000 total=-0.7861 si_sdr=1.88 si_sdri=4.12 lr=1.80e-04 |g|=6.247 mem=1.73GB 47ms/step data=1%
+2026-08-09 19:23:10,365 INFO step=8800/20000 total=0.2843 si_sdr=0.91 si_sdri=3.15 lr=1.79e-04 |g|=9.776 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:23:11,668 INFO step=8825/20000 total=-0.5648 si_sdr=1.76 si_sdri=4.00 lr=1.79e-04 |g|=14.572 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:23:12,863 INFO step=8850/20000 total=-4.7964 si_sdr=5.94 si_sdri=8.19 lr=1.78e-04 |g|=40.976 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:23:13,790 INFO Dataset 样本统计 [total=21000] present=21000 absent=0 swap=0
+2026-08-09 19:23:13,838 INFO Dataset 样本统计 [total=21000] present=21000 absent=0 swap=0
+2026-08-09 19:23:14,060 INFO step=8875/20000 total=-1.9015 si_sdr=3.03 si_sdri=5.27 lr=1.78e-04 |g|=20.592 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:23:15,265 INFO step=8900/20000 total=-4.8142 si_sdr=6.00 si_sdri=8.25 lr=1.77e-04 |g|=140.807 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:23:16,464 INFO step=8925/20000 total=-0.3193 si_sdr=1.50 si_sdri=3.75 lr=1.77e-04 |g|=11.168 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:23:17,660 INFO step=8950/20000 total=-2.1772 si_sdr=3.36 si_sdri=5.61 lr=1.76e-04 |g|=14.529 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:23:18,869 INFO step=8975/20000 total=-1.4978 si_sdr=2.66 si_sdri=4.90 lr=1.75e-04 |g|=8.580 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:23:19,752 INFO Dataset 样本统计 [total=22000] present=22000 absent=0 swap=0
+2026-08-09 19:23:19,798 INFO Dataset 样本统计 [total=22000] present=22000 absent=0 swap=0
+2026-08-09 19:23:20,052 INFO step=9000/20000 total=-16.1734 si_sdr=17.17 si_sdri=19.42 lr=1.75e-04 |g|=194.600 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:23:20,120 INFO 存 checkpoint: checkpoint_step9000.pt
+2026-08-09 19:23:23,265 INFO Dataset 样本统计 [total=171000] present=171000 absent=0 swap=0
+2026-08-09 19:23:26,386 INFO Dataset 样本统计 [total=172000] present=172000 absent=0 swap=0
+2026-08-09 19:23:29,488 INFO Dataset 样本统计 [total=173000] present=173000 absent=0 swap=0
+2026-08-09 19:23:32,570 INFO Dataset 样本统计 [total=174000] present=174000 absent=0 swap=0
+2026-08-09 19:23:35,748 INFO Dataset 样本统计 [total=175000] present=175000 absent=0 swap=0
+2026-08-09 19:23:38,907 INFO Dataset 样本统计 [total=176000] present=176000 absent=0 swap=0
+2026-08-09 19:23:42,109 INFO Dataset 样本统计 [total=177000] present=177000 absent=0 swap=0
+2026-08-09 19:23:45,311 INFO Dataset 样本统计 [total=178000] present=178000 absent=0 swap=0
+2026-08-09 19:23:48,658 INFO Dataset 样本统计 [total=179000] present=179000 absent=0 swap=0
+2026-08-09 19:23:51,839 INFO Dataset 样本统计 [total=180000] present=180000 absent=0 swap=0
+2026-08-09 19:23:51,865 INFO   dev_loss=-3.4006 dev_sisdr=4.57 dB
+2026-08-09 19:23:53,058 INFO step=9025/20000 total=-3.7764 si_sdr=4.84 si_sdri=7.09 lr=1.74e-04 |g|=19.751 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:23:54,240 INFO step=9050/20000 total=-2.1425 si_sdr=3.36 si_sdri=5.60 lr=1.74e-04 |g|=10.043 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:23:55,438 INFO step=9075/20000 total=-0.6695 si_sdr=1.93 si_sdri=4.18 lr=1.73e-04 |g|=10.594 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:23:56,747 INFO step=9100/20000 total=-2.7053 si_sdr=3.74 si_sdri=5.99 lr=1.72e-04 |g|=12.072 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:23:57,676 INFO Dataset 样本统计 [total=23000] present=23000 absent=0 swap=0
+2026-08-09 19:23:57,726 INFO Dataset 样本统计 [total=23000] present=23000 absent=0 swap=0
+2026-08-09 19:23:57,949 INFO step=9125/20000 total=-2.6843 si_sdr=3.79 si_sdri=6.04 lr=1.72e-04 |g|=13.764 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:23:59,152 INFO step=9150/20000 total=0.1291 si_sdr=1.05 si_sdri=3.29 lr=1.71e-04 |g|=7.985 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:24:00,353 INFO step=9175/20000 total=-0.3313 si_sdr=1.60 si_sdri=3.84 lr=1.71e-04 |g|=10.493 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:24:01,551 INFO step=9200/20000 total=-13.2979 si_sdr=14.35 si_sdri=16.59 lr=1.70e-04 |g|=230.521 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:24:02,727 INFO step=9225/20000 total=-10.8592 si_sdr=11.92 si_sdri=14.16 lr=1.69e-04 |g|=255.203 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:24:03,627 INFO Dataset 样本统计 [total=24000] present=24000 absent=0 swap=0
+2026-08-09 19:24:03,675 INFO Dataset 样本统计 [total=24000] present=24000 absent=0 swap=0
+2026-08-09 19:24:03,934 INFO step=9250/20000 total=-4.3467 si_sdr=5.32 si_sdri=7.56 lr=1.69e-04 |g|=12.174 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:24:05,113 INFO step=9275/20000 total=-5.1995 si_sdr=6.40 si_sdri=8.65 lr=1.68e-04 |g|=89.388 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:24:06,320 INFO step=9300/20000 total=-2.2947 si_sdr=3.42 si_sdri=5.67 lr=1.68e-04 |g|=11.395 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:24:07,527 INFO step=9325/20000 total=-6.5707 si_sdr=7.68 si_sdri=9.93 lr=1.67e-04 |g|=262.041 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:24:08,739 INFO step=9350/20000 total=0.7813 si_sdr=0.55 si_sdri=2.80 lr=1.67e-04 |g|=5.518 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:24:09,671 INFO Dataset 样本统计 [total=25000] present=25000 absent=0 swap=0
+2026-08-09 19:24:09,718 INFO Dataset 样本统计 [total=25000] present=25000 absent=0 swap=0
+2026-08-09 19:24:09,942 INFO step=9375/20000 total=-0.0426 si_sdr=1.27 si_sdri=3.52 lr=1.66e-04 |g|=6.568 mem=1.73GB 50ms/step data=0%
+2026-08-09 19:24:11,139 INFO step=9400/20000 total=-0.8061 si_sdr=1.97 si_sdri=4.21 lr=1.65e-04 |g|=10.467 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:24:12,353 INFO step=9425/20000 total=-6.6041 si_sdr=7.74 si_sdri=9.99 lr=1.65e-04 |g|=43.344 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:24:13,552 INFO step=9450/20000 total=-9.8653 si_sdr=10.97 si_sdri=13.22 lr=1.64e-04 |g|=196.199 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:24:14,733 INFO step=9475/20000 total=-0.6340 si_sdr=1.89 si_sdri=4.13 lr=1.64e-04 |g|=10.547 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:24:15,629 INFO Dataset 样本统计 [total=26000] present=26000 absent=0 swap=0
+2026-08-09 19:24:15,676 INFO Dataset 样本统计 [total=26000] present=26000 absent=0 swap=0
+2026-08-09 19:24:15,931 INFO step=9500/20000 total=-3.1892 si_sdr=4.14 si_sdri=6.38 lr=1.63e-04 |g|=24.026 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:24:15,994 INFO 存 checkpoint: checkpoint_step9500.pt
+2026-08-09 19:24:18,985 INFO Dataset 样本统计 [total=181000] present=181000 absent=0 swap=0
+2026-08-09 19:24:22,059 INFO Dataset 样本统计 [total=182000] present=182000 absent=0 swap=0
+2026-08-09 19:24:25,060 INFO Dataset 样本统计 [total=183000] present=183000 absent=0 swap=0
+2026-08-09 19:24:28,110 INFO Dataset 样本统计 [total=184000] present=184000 absent=0 swap=0
+2026-08-09 19:24:31,351 INFO Dataset 样本统计 [total=185000] present=185000 absent=0 swap=0
+2026-08-09 19:24:34,476 INFO Dataset 样本统计 [total=186000] present=186000 absent=0 swap=0
+2026-08-09 19:24:37,635 INFO Dataset 样本统计 [total=187000] present=187000 absent=0 swap=0
+2026-08-09 19:24:40,742 INFO Dataset 样本统计 [total=188000] present=188000 absent=0 swap=0
+2026-08-09 19:24:43,887 INFO Dataset 样本统计 [total=189000] present=189000 absent=0 swap=0
+2026-08-09 19:24:47,033 INFO Dataset 样本统计 [total=190000] present=190000 absent=0 swap=0
+2026-08-09 19:24:47,058 INFO   dev_loss=-3.0787 dev_sisdr=4.22 dB
+2026-08-09 19:24:48,245 INFO step=9525/20000 total=-3.2034 si_sdr=4.21 si_sdri=6.45 lr=1.62e-04 |g|=5.752 mem=1.73GB 47ms/step data=1%
+2026-08-09 19:24:49,430 INFO step=9550/20000 total=-3.5871 si_sdr=4.79 si_sdri=7.04 lr=1.62e-04 |g|=74.773 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:24:50,619 INFO step=9575/20000 total=-0.2644 si_sdr=1.42 si_sdri=3.67 lr=1.61e-04 |g|=7.636 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:24:51,816 INFO step=9600/20000 total=-9.8134 si_sdr=10.93 si_sdri=13.18 lr=1.61e-04 |g|=189.506 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:24:52,737 INFO Dataset 样本统计 [total=27000] present=27000 absent=0 swap=0
+2026-08-09 19:24:52,783 INFO Dataset 样本统计 [total=27000] present=27000 absent=0 swap=0
+2026-08-09 19:24:53,002 INFO step=9625/20000 total=-0.2465 si_sdr=1.55 si_sdri=3.79 lr=1.60e-04 |g|=10.013 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:24:54,208 INFO step=9650/20000 total=-4.0733 si_sdr=5.24 si_sdri=7.49 lr=1.59e-04 |g|=41.728 mem=1.73GB 54ms/step data=0%
+2026-08-09 19:24:55,436 INFO step=9675/20000 total=-8.1103 si_sdr=9.11 si_sdri=11.36 lr=1.59e-04 |g|=342.852 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:24:56,636 INFO step=9700/20000 total=-10.2215 si_sdr=11.34 si_sdri=13.59 lr=1.58e-04 |g|=273.860 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:24:57,817 INFO step=9725/20000 total=-9.1820 si_sdr=10.31 si_sdri=12.56 lr=1.58e-04 |g|=130.428 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:24:58,708 INFO Dataset 样本统计 [total=28000] present=28000 absent=0 swap=0
+2026-08-09 19:24:58,757 INFO Dataset 样本统计 [total=28000] present=28000 absent=0 swap=0
+2026-08-09 19:24:59,011 INFO step=9750/20000 total=-3.5854 si_sdr=4.63 si_sdri=6.88 lr=1.57e-04 |g|=9.950 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:25:00,208 INFO step=9775/20000 total=-8.9803 si_sdr=9.99 si_sdri=12.24 lr=1.57e-04 |g|=265.144 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:25:01,406 INFO step=9800/20000 total=-4.8510 si_sdr=5.97 si_sdri=8.22 lr=1.56e-04 |g|=245.038 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:25:02,563 INFO step=9825/20000 total=-1.3646 si_sdr=2.61 si_sdri=4.85 lr=1.55e-04 |g|=11.090 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:25:03,748 INFO step=9850/20000 total=-1.1477 si_sdr=2.35 si_sdri=4.60 lr=1.55e-04 |g|=19.008 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:25:04,682 INFO Dataset 样本统计 [total=29000] present=29000 absent=0 swap=0
+2026-08-09 19:25:04,732 INFO Dataset 样本统计 [total=29000] present=29000 absent=0 swap=0
+2026-08-09 19:25:04,948 INFO step=9875/20000 total=-5.5867 si_sdr=6.92 si_sdri=9.17 lr=1.54e-04 |g|=185.775 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:25:06,110 INFO step=9900/20000 total=-4.6496 si_sdr=5.86 si_sdri=8.11 lr=1.54e-04 |g|=145.858 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:25:07,278 INFO step=9925/20000 total=-10.3191 si_sdr=11.50 si_sdri=13.75 lr=1.53e-04 |g|=302.688 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:25:08,459 INFO step=9950/20000 total=-1.6275 si_sdr=2.73 si_sdri=4.97 lr=1.52e-04 |g|=7.840 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:25:09,626 INFO step=9975/20000 total=1.1515 si_sdr=0.10 si_sdri=2.35 lr=1.52e-04 |g|=10.545 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:25:10,491 INFO Dataset 样本统计 [total=30000] present=30000 absent=0 swap=0
+2026-08-09 19:25:10,536 INFO Dataset 样本统计 [total=30000] present=30000 absent=0 swap=0
+2026-08-09 19:25:10,783 INFO step=10000/20000 total=-10.0212 si_sdr=10.97 si_sdri=13.22 lr=1.51e-04 |g|=113.599 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:25:10,851 INFO 存 checkpoint: checkpoint_step10000.pt
+2026-08-09 19:25:14,001 INFO Dataset 样本统计 [total=191000] present=191000 absent=0 swap=0
+2026-08-09 19:25:17,188 INFO Dataset 样本统计 [total=192000] present=192000 absent=0 swap=0
+2026-08-09 19:25:20,387 INFO Dataset 样本统计 [total=193000] present=193000 absent=0 swap=0
+2026-08-09 19:25:23,521 INFO Dataset 样本统计 [total=194000] present=194000 absent=0 swap=0
+2026-08-09 19:25:26,810 INFO Dataset 样本统计 [total=195000] present=195000 absent=0 swap=0
+2026-08-09 19:25:30,049 INFO Dataset 样本统计 [total=196000] present=196000 absent=0 swap=0
+2026-08-09 19:25:33,520 INFO Dataset 样本统计 [total=197000] present=197000 absent=0 swap=0
+2026-08-09 19:25:36,718 INFO Dataset 样本统计 [total=198000] present=198000 absent=0 swap=0
+2026-08-09 19:25:40,041 INFO Dataset 样本统计 [total=199000] present=199000 absent=0 swap=0
+2026-08-09 19:25:43,241 INFO Dataset 样本统计 [total=200000] present=200000 absent=0 swap=0
+2026-08-09 19:25:43,267 INFO   dev_loss=-2.9727 dev_sisdr=4.12 dB
+2026-08-09 19:25:44,494 INFO step=10025/20000 total=-6.5102 si_sdr=7.60 si_sdri=9.85 lr=1.51e-04 |g|=152.220 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:25:45,694 INFO step=10050/20000 total=-5.2245 si_sdr=6.42 si_sdri=8.67 lr=1.50e-04 |g|=98.567 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:25:46,871 INFO step=10075/20000 total=-0.3798 si_sdr=1.67 si_sdri=3.92 lr=1.49e-04 |g|=5.731 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:25:48,071 INFO step=10100/20000 total=-3.2377 si_sdr=4.40 si_sdri=6.65 lr=1.49e-04 |g|=48.244 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:25:49,002 INFO Dataset 样本统计 [total=31000] present=31000 absent=0 swap=0
+2026-08-09 19:25:49,050 INFO Dataset 样本统计 [total=31000] present=31000 absent=0 swap=0
+2026-08-09 19:25:49,274 INFO step=10125/20000 total=-0.4275 si_sdr=1.62 si_sdri=3.87 lr=1.48e-04 |g|=19.238 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:25:50,454 INFO step=10150/20000 total=-0.5386 si_sdr=1.67 si_sdri=3.92 lr=1.48e-04 |g|=14.939 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:25:51,668 INFO step=10175/20000 total=-6.8076 si_sdr=7.95 si_sdri=10.19 lr=1.47e-04 |g|=185.290 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:25:52,879 INFO step=10200/20000 total=-9.7162 si_sdr=10.91 si_sdri=13.16 lr=1.46e-04 |g|=252.894 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:25:54,089 INFO step=10225/20000 total=-7.3133 si_sdr=8.40 si_sdri=10.65 lr=1.46e-04 |g|=137.838 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:25:54,989 INFO Dataset 样本统计 [total=32000] present=32000 absent=0 swap=0
+2026-08-09 19:25:55,036 INFO Dataset 样本统计 [total=32000] present=32000 absent=0 swap=0
+2026-08-09 19:25:55,288 INFO step=10250/20000 total=-5.8459 si_sdr=6.96 si_sdri=9.21 lr=1.45e-04 |g|=145.813 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:25:56,484 INFO step=10275/20000 total=-5.4711 si_sdr=6.65 si_sdri=8.90 lr=1.45e-04 |g|=156.362 mem=1.73GB 50ms/step data=0%
+2026-08-09 19:25:57,686 INFO step=10300/20000 total=-5.6340 si_sdr=6.77 si_sdri=9.02 lr=1.44e-04 |g|=273.451 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:25:58,887 INFO step=10325/20000 total=-6.5635 si_sdr=7.72 si_sdri=9.96 lr=1.43e-04 |g|=237.778 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:26:00,110 INFO step=10350/20000 total=-4.9259 si_sdr=6.05 si_sdri=8.30 lr=1.43e-04 |g|=141.605 mem=1.73GB 51ms/step data=0%
+2026-08-09 19:26:01,043 INFO Dataset 样本统计 [total=33000] present=33000 absent=0 swap=0
+2026-08-09 19:26:01,090 INFO Dataset 样本统计 [total=33000] present=33000 absent=0 swap=0
+2026-08-09 19:26:01,315 INFO step=10375/20000 total=-0.8902 si_sdr=2.24 si_sdri=4.48 lr=1.42e-04 |g|=11.660 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:26:02,528 INFO step=10400/20000 total=-2.8636 si_sdr=3.87 si_sdri=6.12 lr=1.42e-04 |g|=13.162 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:26:03,745 INFO step=10425/20000 total=-3.9305 si_sdr=5.17 si_sdri=7.42 lr=1.41e-04 |g|=159.795 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:26:04,989 INFO step=10450/20000 total=-1.6566 si_sdr=2.77 si_sdri=5.02 lr=1.41e-04 |g|=10.436 mem=1.73GB 62ms/step data=1%
+2026-08-09 19:26:06,236 INFO step=10475/20000 total=-8.0523 si_sdr=9.13 si_sdri=11.38 lr=1.40e-04 |g|=155.850 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:26:07,121 INFO Dataset 样本统计 [total=34000] present=34000 absent=0 swap=0
+2026-08-09 19:26:07,167 INFO Dataset 样本统计 [total=34000] present=34000 absent=0 swap=0
+2026-08-09 19:26:07,420 INFO step=10500/20000 total=-1.8983 si_sdr=3.00 si_sdri=5.25 lr=1.39e-04 |g|=9.806 mem=1.73GB 48ms/step data=1%
+2026-08-09 19:26:07,485 INFO 存 checkpoint: checkpoint_step10500.pt
+2026-08-09 19:26:10,496 INFO Dataset 样本统计 [total=201000] present=201000 absent=0 swap=0
+2026-08-09 19:26:13,481 INFO Dataset 样本统计 [total=202000] present=202000 absent=0 swap=0
+2026-08-09 19:26:16,580 INFO Dataset 样本统计 [total=203000] present=203000 absent=0 swap=0
+2026-08-09 19:26:19,655 INFO Dataset 样本统计 [total=204000] present=204000 absent=0 swap=0
+2026-08-09 19:26:22,871 INFO Dataset 样本统计 [total=205000] present=205000 absent=0 swap=0
+2026-08-09 19:26:26,065 INFO Dataset 样本统计 [total=206000] present=206000 absent=0 swap=0
+2026-08-09 19:26:29,238 INFO Dataset 样本统计 [total=207000] present=207000 absent=0 swap=0
+2026-08-09 19:26:32,447 INFO Dataset 样本统计 [total=208000] present=208000 absent=0 swap=0
+2026-08-09 19:26:35,687 INFO Dataset 样本统计 [total=209000] present=209000 absent=0 swap=0
+2026-08-09 19:26:38,891 INFO Dataset 样本统计 [total=210000] present=210000 absent=0 swap=0
+2026-08-09 19:26:38,917 INFO   dev_loss=-4.1666 dev_sisdr=5.32 dB
+2026-08-09 19:26:40,128 INFO step=10525/20000 total=-1.3356 si_sdr=2.51 si_sdri=4.75 lr=1.39e-04 |g|=9.775 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:26:41,323 INFO step=10550/20000 total=-9.0334 si_sdr=10.31 si_sdri=12.55 lr=1.38e-04 |g|=135.095 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:26:42,492 INFO step=10575/20000 total=-2.4105 si_sdr=3.59 si_sdri=5.84 lr=1.38e-04 |g|=12.007 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:26:43,674 INFO step=10600/20000 total=-1.4756 si_sdr=2.58 si_sdri=4.83 lr=1.37e-04 |g|=8.624 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:26:44,669 INFO Dataset 样本统计 [total=35000] present=35000 absent=0 swap=0
+2026-08-09 19:26:44,721 INFO Dataset 样本统计 [total=35000] present=35000 absent=0 swap=0
+2026-08-09 19:26:44,948 INFO step=10625/20000 total=-0.9614 si_sdr=2.14 si_sdri=4.39 lr=1.36e-04 |g|=109.027 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:26:46,163 INFO step=10650/20000 total=-5.1408 si_sdr=6.11 si_sdri=8.35 lr=1.36e-04 |g|=14.674 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:26:47,358 INFO step=10675/20000 total=0.1191 si_sdr=1.05 si_sdri=3.30 lr=1.35e-04 |g|=7.141 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:26:48,540 INFO step=10700/20000 total=-2.1110 si_sdr=3.32 si_sdri=5.57 lr=1.35e-04 |g|=17.871 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:26:49,716 INFO step=10725/20000 total=0.6125 si_sdr=0.72 si_sdri=2.97 lr=1.34e-04 |g|=9.923 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:26:50,600 INFO Dataset 样本统计 [total=36000] present=36000 absent=0 swap=0
+2026-08-09 19:26:50,647 INFO Dataset 样本统计 [total=36000] present=36000 absent=0 swap=0
+2026-08-09 19:26:50,897 INFO step=10750/20000 total=-3.9597 si_sdr=4.97 si_sdri=7.21 lr=1.33e-04 |g|=11.216 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:26:52,060 INFO step=10775/20000 total=-1.5240 si_sdr=2.72 si_sdri=4.97 lr=1.33e-04 |g|=12.229 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:26:53,236 INFO step=10800/20000 total=-1.7311 si_sdr=2.90 si_sdri=5.15 lr=1.32e-04 |g|=10.690 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:26:54,418 INFO step=10825/20000 total=-3.5216 si_sdr=4.57 si_sdri=6.82 lr=1.32e-04 |g|=13.553 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:26:55,589 INFO step=10850/20000 total=-2.6137 si_sdr=3.77 si_sdri=6.02 lr=1.31e-04 |g|=13.037 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:26:56,512 INFO Dataset 样本统计 [total=37000] present=37000 absent=0 swap=0
+2026-08-09 19:26:56,558 INFO Dataset 样本统计 [total=37000] present=37000 absent=0 swap=0
+2026-08-09 19:26:56,776 INFO step=10875/20000 total=-1.2777 si_sdr=2.48 si_sdri=4.72 lr=1.31e-04 |g|=11.249 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:26:57,933 INFO step=10900/20000 total=-10.7885 si_sdr=11.88 si_sdri=14.13 lr=1.30e-04 |g|=160.206 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:26:59,651 INFO step=10925/20000 total=-1.0547 si_sdr=2.19 si_sdri=4.44 lr=1.29e-04 |g|=14.842 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:27:00,822 INFO step=10950/20000 total=-1.6015 si_sdr=2.71 si_sdri=4.95 lr=1.29e-04 |g|=10.930 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:27:02,019 INFO step=10975/20000 total=-10.7126 si_sdr=11.84 si_sdri=14.08 lr=1.28e-04 |g|=406.779 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:27:02,892 INFO Dataset 样本统计 [total=38000] present=38000 absent=0 swap=0
+2026-08-09 19:27:02,938 INFO Dataset 样本统计 [total=38000] present=38000 absent=0 swap=0
+2026-08-09 19:27:03,194 INFO step=11000/20000 total=-3.4795 si_sdr=4.56 si_sdri=6.80 lr=1.28e-04 |g|=9.327 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:27:03,258 INFO 存 checkpoint: checkpoint_step11000.pt
+2026-08-09 19:27:06,256 INFO Dataset 样本统计 [total=211000] present=211000 absent=0 swap=0
+2026-08-09 19:27:09,237 INFO Dataset 样本统计 [total=212000] present=212000 absent=0 swap=0
+2026-08-09 19:27:12,242 INFO Dataset 样本统计 [total=213000] present=213000 absent=0 swap=0
+2026-08-09 19:27:15,332 INFO Dataset 样本统计 [total=214000] present=214000 absent=0 swap=0
+2026-08-09 19:27:18,480 INFO Dataset 样本统计 [total=215000] present=215000 absent=0 swap=0
+2026-08-09 19:27:21,734 INFO Dataset 样本统计 [total=216000] present=216000 absent=0 swap=0
+2026-08-09 19:27:24,902 INFO Dataset 样本统计 [total=217000] present=217000 absent=0 swap=0
+2026-08-09 19:27:28,046 INFO Dataset 样本统计 [total=218000] present=218000 absent=0 swap=0
+2026-08-09 19:27:31,187 INFO Dataset 样本统计 [total=219000] present=219000 absent=0 swap=0
+2026-08-09 19:27:34,335 INFO Dataset 样本统计 [total=220000] present=220000 absent=0 swap=0
+2026-08-09 19:27:34,360 INFO   dev_loss=-3.0805 dev_sisdr=4.22 dB
+2026-08-09 19:27:35,543 INFO step=11025/20000 total=-5.5008 si_sdr=6.65 si_sdri=8.90 lr=1.27e-04 |g|=17.220 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:27:36,752 INFO step=11050/20000 total=-0.7607 si_sdr=1.80 si_sdri=4.05 lr=1.26e-04 |g|=11.659 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:27:37,963 INFO step=11075/20000 total=-2.9971 si_sdr=3.96 si_sdri=6.21 lr=1.26e-04 |g|=11.222 mem=1.73GB 50ms/step data=0%
+2026-08-09 19:27:39,163 INFO step=11100/20000 total=-7.8417 si_sdr=8.89 si_sdri=11.14 lr=1.25e-04 |g|=146.435 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:27:40,082 INFO Dataset 样本统计 [total=39000] present=39000 absent=0 swap=0
+2026-08-09 19:27:40,130 INFO Dataset 样本统计 [total=39000] present=39000 absent=0 swap=0
+2026-08-09 19:27:40,352 INFO step=11125/20000 total=-6.8492 si_sdr=7.88 si_sdri=10.13 lr=1.25e-04 |g|=276.349 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:27:41,562 INFO step=11150/20000 total=-4.1659 si_sdr=5.30 si_sdri=7.54 lr=1.24e-04 |g|=22.773 mem=1.73GB 50ms/step data=0%
+2026-08-09 19:27:42,767 INFO step=11175/20000 total=-5.1468 si_sdr=6.15 si_sdri=8.40 lr=1.23e-04 |g|=27.451 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:27:43,950 INFO step=11200/20000 total=-8.8893 si_sdr=10.10 si_sdri=12.35 lr=1.23e-04 |g|=264.624 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:27:45,154 INFO step=11225/20000 total=-0.6459 si_sdr=1.83 si_sdri=4.08 lr=1.22e-04 |g|=9.433 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:27:46,067 INFO Dataset 样本统计 [total=40000] present=40000 absent=0 swap=0
+2026-08-09 19:27:46,105 INFO Dataset 样本统计 [total=40000] present=40000 absent=0 swap=0
+2026-08-09 19:27:46,360 INFO step=11250/20000 total=-2.7492 si_sdr=3.78 si_sdri=6.03 lr=1.22e-04 |g|=11.418 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:27:47,527 INFO step=11275/20000 total=-3.2489 si_sdr=4.33 si_sdri=6.57 lr=1.21e-04 |g|=34.533 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:27:48,720 INFO step=11300/20000 total=-1.4091 si_sdr=2.53 si_sdri=4.78 lr=1.21e-04 |g|=11.188 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:27:49,915 INFO step=11325/20000 total=-3.0912 si_sdr=4.12 si_sdri=6.37 lr=1.20e-04 |g|=14.187 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:27:51,118 INFO step=11350/20000 total=-2.9968 si_sdr=4.09 si_sdri=6.34 lr=1.19e-04 |g|=11.494 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:27:52,029 INFO Dataset 样本统计 [total=41000] present=41000 absent=0 swap=0
+2026-08-09 19:27:52,077 INFO Dataset 样本统计 [total=41000] present=41000 absent=0 swap=0
+2026-08-09 19:27:52,302 INFO step=11375/20000 total=-2.3807 si_sdr=3.41 si_sdri=5.65 lr=1.19e-04 |g|=50.597 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:27:53,484 INFO step=11400/20000 total=-5.3588 si_sdr=6.46 si_sdri=8.71 lr=1.18e-04 |g|=119.427 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:27:54,715 INFO step=11425/20000 total=-7.3799 si_sdr=8.44 si_sdri=10.69 lr=1.18e-04 |g|=77.411 mem=1.73GB 47ms/step data=1%
+2026-08-09 19:27:55,897 INFO step=11450/20000 total=-4.3227 si_sdr=5.33 si_sdri=7.58 lr=1.17e-04 |g|=11.710 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:27:57,150 INFO step=11475/20000 total=-7.6214 si_sdr=8.76 si_sdri=11.00 lr=1.17e-04 |g|=230.582 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:27:58,041 INFO Dataset 样本统计 [total=42000] present=42000 absent=0 swap=0
+2026-08-09 19:27:58,091 INFO Dataset 样本统计 [total=42000] present=42000 absent=0 swap=0
+2026-08-09 19:27:58,346 INFO step=11500/20000 total=-2.2364 si_sdr=3.28 si_sdri=5.53 lr=1.16e-04 |g|=14.559 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:27:58,408 INFO 存 checkpoint: checkpoint_step11500.pt
+2026-08-09 19:28:01,408 INFO Dataset 样本统计 [total=221000] present=221000 absent=0 swap=0
+2026-08-09 19:28:04,382 INFO Dataset 样本统计 [total=222000] present=222000 absent=0 swap=0
+2026-08-09 19:28:07,405 INFO Dataset 样本统计 [total=223000] present=223000 absent=0 swap=0
+2026-08-09 19:28:10,493 INFO Dataset 样本统计 [total=224000] present=224000 absent=0 swap=0
+2026-08-09 19:28:13,677 INFO Dataset 样本统计 [total=225000] present=225000 absent=0 swap=0
+2026-08-09 19:28:16,900 INFO Dataset 样本统计 [total=226000] present=226000 absent=0 swap=0
+2026-08-09 19:28:20,087 INFO Dataset 样本统计 [total=227000] present=227000 absent=0 swap=0
+2026-08-09 19:28:23,266 INFO Dataset 样本统计 [total=228000] present=228000 absent=0 swap=0
+2026-08-09 19:28:26,473 INFO Dataset 样本统计 [total=229000] present=229000 absent=0 swap=0
+2026-08-09 19:28:29,766 INFO Dataset 样本统计 [total=230000] present=230000 absent=0 swap=0
+2026-08-09 19:28:29,792 INFO   dev_loss=-3.4379 dev_sisdr=4.57 dB
+2026-08-09 19:28:30,981 INFO step=11525/20000 total=-0.8419 si_sdr=1.93 si_sdri=4.18 lr=1.15e-04 |g|=9.119 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:28:32,171 INFO step=11550/20000 total=-1.9513 si_sdr=3.14 si_sdri=5.39 lr=1.15e-04 |g|=17.075 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:28:33,367 INFO step=11575/20000 total=-0.8505 si_sdr=2.02 si_sdri=4.27 lr=1.14e-04 |g|=13.374 mem=1.73GB 48ms/step data=1%
+2026-08-09 19:28:34,690 INFO step=11600/20000 total=-2.7125 si_sdr=3.78 si_sdri=6.03 lr=1.14e-04 |g|=16.674 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:28:35,616 INFO Dataset 样本统计 [total=43000] present=43000 absent=0 swap=0
+2026-08-09 19:28:35,664 INFO Dataset 样本统计 [total=43000] present=43000 absent=0 swap=0
+2026-08-09 19:28:35,888 INFO step=11625/20000 total=-1.2036 si_sdr=2.35 si_sdri=4.60 lr=1.13e-04 |g|=10.122 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:28:37,089 INFO step=11650/20000 total=-0.8107 si_sdr=1.95 si_sdri=4.20 lr=1.13e-04 |g|=9.191 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:28:38,301 INFO step=11675/20000 total=-0.7626 si_sdr=1.99 si_sdri=4.24 lr=1.12e-04 |g|=12.885 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:28:39,494 INFO step=11700/20000 total=-2.4782 si_sdr=3.67 si_sdri=5.91 lr=1.11e-04 |g|=11.058 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:28:40,705 INFO step=11725/20000 total=-4.9553 si_sdr=6.06 si_sdri=8.30 lr=1.11e-04 |g|=28.251 mem=1.73GB 60ms/step data=0%
+2026-08-09 19:28:41,694 INFO Dataset 样本统计 [total=44000] present=44000 absent=0 swap=0
+2026-08-09 19:28:41,741 INFO Dataset 样本统计 [total=44000] present=44000 absent=0 swap=0
+2026-08-09 19:28:41,996 INFO step=11750/20000 total=-3.7712 si_sdr=4.80 si_sdri=7.04 lr=1.10e-04 |g|=14.337 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:28:43,310 INFO step=11775/20000 total=-4.0399 si_sdr=5.29 si_sdri=7.54 lr=1.10e-04 |g|=179.078 mem=1.73GB 57ms/step data=0%
+2026-08-09 19:28:44,552 INFO step=11800/20000 total=-3.5320 si_sdr=4.49 si_sdri=6.73 lr=1.09e-04 |g|=12.757 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:28:45,767 INFO step=11825/20000 total=-4.8452 si_sdr=5.88 si_sdri=8.13 lr=1.09e-04 |g|=26.853 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:28:46,977 INFO step=11850/20000 total=-2.5066 si_sdr=3.62 si_sdri=5.87 lr=1.08e-04 |g|=13.388 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:28:47,909 INFO Dataset 样本统计 [total=45000] present=45000 absent=0 swap=0
+2026-08-09 19:28:47,958 INFO Dataset 样本统计 [total=45000] present=45000 absent=0 swap=0
+2026-08-09 19:28:48,182 INFO step=11875/20000 total=-7.1652 si_sdr=8.07 si_sdri=10.32 lr=1.07e-04 |g|=16.257 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:28:49,431 INFO step=11900/20000 total=-1.2389 si_sdr=2.40 si_sdri=4.64 lr=1.07e-04 |g|=9.131 mem=1.73GB 50ms/step data=0%
+2026-08-09 19:28:50,655 INFO step=11925/20000 total=-4.4824 si_sdr=5.62 si_sdri=7.87 lr=1.06e-04 |g|=189.376 mem=1.73GB 50ms/step data=0%
+2026-08-09 19:28:51,898 INFO step=11950/20000 total=-3.0995 si_sdr=4.16 si_sdri=6.41 lr=1.06e-04 |g|=13.457 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:28:53,112 INFO step=11975/20000 total=-0.8828 si_sdr=2.04 si_sdri=4.29 lr=1.05e-04 |g|=12.175 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:28:54,019 INFO Dataset 样本统计 [total=46000] present=46000 absent=0 swap=0
+2026-08-09 19:28:54,066 INFO Dataset 样本统计 [total=46000] present=46000 absent=0 swap=0
+2026-08-09 19:28:54,332 INFO step=12000/20000 total=-1.3415 si_sdr=2.47 si_sdri=4.72 lr=1.05e-04 |g|=11.055 mem=1.73GB 51ms/step data=0%
+2026-08-09 19:28:54,397 INFO 存 checkpoint: checkpoint_step12000.pt
+2026-08-09 19:28:57,413 INFO Dataset 样本统计 [total=231000] present=231000 absent=0 swap=0
+2026-08-09 19:29:00,421 INFO Dataset 样本统计 [total=232000] present=232000 absent=0 swap=0
+2026-08-09 19:29:03,508 INFO Dataset 样本统计 [total=233000] present=233000 absent=0 swap=0
+2026-08-09 19:29:06,654 INFO Dataset 样本统计 [total=234000] present=234000 absent=0 swap=0
+2026-08-09 19:29:09,835 INFO Dataset 样本统计 [total=235000] present=235000 absent=0 swap=0
+2026-08-09 19:29:12,991 INFO Dataset 样本统计 [total=236000] present=236000 absent=0 swap=0
+2026-08-09 19:29:16,190 INFO Dataset 样本统计 [total=237000] present=237000 absent=0 swap=0
+2026-08-09 19:29:19,396 INFO Dataset 样本统计 [total=238000] present=238000 absent=0 swap=0
+2026-08-09 19:29:22,630 INFO Dataset 样本统计 [total=239000] present=239000 absent=0 swap=0
+2026-08-09 19:29:25,837 INFO Dataset 样本统计 [total=240000] present=240000 absent=0 swap=0
+2026-08-09 19:29:25,862 INFO   dev_loss=-3.8474 dev_sisdr=4.97 dB
+2026-08-09 19:29:27,075 INFO step=12025/20000 total=-1.8825 si_sdr=2.93 si_sdri=5.18 lr=1.04e-04 |g|=8.441 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:29:28,245 INFO step=12050/20000 total=0.6128 si_sdr=0.73 si_sdri=2.98 lr=1.03e-04 |g|=13.473 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:29:29,516 INFO step=12075/20000 total=-0.9587 si_sdr=2.13 si_sdri=4.38 lr=1.03e-04 |g|=11.605 mem=1.73GB 55ms/step data=0%
+2026-08-09 19:29:30,721 INFO step=12100/20000 total=-0.1633 si_sdr=1.26 si_sdri=3.51 lr=1.02e-04 |g|=15.489 mem=1.73GB 50ms/step data=0%
+2026-08-09 19:29:31,633 INFO Dataset 样本统计 [total=47000] present=47000 absent=0 swap=0
+2026-08-09 19:29:31,689 INFO Dataset 样本统计 [total=47000] present=47000 absent=0 swap=0
+2026-08-09 19:29:31,972 INFO step=12125/20000 total=-2.1420 si_sdr=3.30 si_sdri=5.55 lr=1.02e-04 |g|=10.385 mem=1.73GB 58ms/step data=0%
+2026-08-09 19:29:33,226 INFO step=12150/20000 total=-13.5857 si_sdr=14.59 si_sdri=16.84 lr=1.01e-04 |g|=221.956 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:29:34,383 INFO step=12175/20000 total=-2.5724 si_sdr=3.66 si_sdri=5.91 lr=1.01e-04 |g|=13.577 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:29:35,558 INFO step=12200/20000 total=-3.0442 si_sdr=4.29 si_sdri=6.54 lr=1.00e-04 |g|=13.465 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:29:36,759 INFO step=12225/20000 total=-1.1592 si_sdr=2.31 si_sdri=4.55 lr=9.95e-05 |g|=9.950 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:29:37,657 INFO Dataset 样本统计 [total=48000] present=48000 absent=0 swap=0
+2026-08-09 19:29:37,704 INFO Dataset 样本统计 [total=48000] present=48000 absent=0 swap=0
+2026-08-09 19:29:37,961 INFO step=12250/20000 total=-6.4021 si_sdr=7.42 si_sdri=9.66 lr=9.89e-05 |g|=89.784 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:29:39,182 INFO step=12275/20000 total=-2.3795 si_sdr=3.47 si_sdri=5.72 lr=9.84e-05 |g|=9.552 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:29:40,353 INFO step=12300/20000 total=-2.0888 si_sdr=3.20 si_sdri=5.45 lr=9.78e-05 |g|=12.046 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:29:41,555 INFO step=12325/20000 total=-6.6831 si_sdr=7.75 si_sdri=9.99 lr=9.73e-05 |g|=60.581 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:29:42,752 INFO step=12350/20000 total=-4.2034 si_sdr=5.23 si_sdri=7.48 lr=9.67e-05 |g|=11.726 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:29:43,667 INFO Dataset 样本统计 [total=49000] present=49000 absent=0 swap=0
+2026-08-09 19:29:43,713 INFO Dataset 样本统计 [total=49000] present=49000 absent=0 swap=0
+2026-08-09 19:29:43,931 INFO step=12375/20000 total=-1.1721 si_sdr=2.25 si_sdri=4.49 lr=9.62e-05 |g|=11.050 mem=1.73GB 51ms/step data=0%
+2026-08-09 19:29:45,136 INFO step=12400/20000 total=-1.5821 si_sdr=2.66 si_sdri=4.90 lr=9.56e-05 |g|=8.724 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:29:46,353 INFO step=12425/20000 total=-15.4420 si_sdr=16.51 si_sdri=18.75 lr=9.51e-05 |g|=344.092 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:29:47,560 INFO step=12450/20000 total=-6.7294 si_sdr=7.80 si_sdri=10.04 lr=9.45e-05 |g|=148.971 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:29:48,802 INFO step=12475/20000 total=-9.9093 si_sdr=11.03 si_sdri=13.28 lr=9.40e-05 |g|=196.355 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:29:49,714 INFO Dataset 样本统计 [total=50000] present=50000 absent=0 swap=0
+2026-08-09 19:29:49,761 INFO Dataset 样本统计 [total=50000] present=50000 absent=0 swap=0
+2026-08-09 19:29:50,635 INFO step=12500/20000 total=-1.2668 si_sdr=2.47 si_sdri=4.72 lr=9.34e-05 |g|=14.720 mem=1.73GB 661ms/step data=92%
+2026-08-09 19:29:50,699 INFO 存 checkpoint: checkpoint_step12500.pt
+2026-08-09 19:29:53,755 INFO Dataset 样本统计 [total=241000] present=241000 absent=0 swap=0
+2026-08-09 19:29:56,839 INFO Dataset 样本统计 [total=242000] present=242000 absent=0 swap=0
+2026-08-09 19:29:59,833 INFO Dataset 样本统计 [total=243000] present=243000 absent=0 swap=0
+2026-08-09 19:30:02,896 INFO Dataset 样本统计 [total=244000] present=244000 absent=0 swap=0
+2026-08-09 19:30:06,073 INFO Dataset 样本统计 [total=245000] present=245000 absent=0 swap=0
+2026-08-09 19:30:09,222 INFO Dataset 样本统计 [total=246000] present=246000 absent=0 swap=0
+2026-08-09 19:30:12,404 INFO Dataset 样本统计 [total=247000] present=247000 absent=0 swap=0
+2026-08-09 19:30:15,669 INFO Dataset 样本统计 [total=248000] present=248000 absent=0 swap=0
+2026-08-09 19:30:18,880 INFO Dataset 样本统计 [total=249000] present=249000 absent=0 swap=0
+2026-08-09 19:30:22,053 INFO Dataset 样本统计 [total=250000] present=250000 absent=0 swap=0
+2026-08-09 19:30:22,079 INFO   dev_loss=-4.0884 dev_sisdr=5.22 dB
+2026-08-09 19:30:23,254 INFO step=12525/20000 total=-2.7224 si_sdr=3.87 si_sdri=6.11 lr=9.29e-05 |g|=18.533 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:30:24,429 INFO step=12550/20000 total=-1.5754 si_sdr=2.69 si_sdri=4.94 lr=9.23e-05 |g|=13.361 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:30:25,598 INFO step=12575/20000 total=-1.5690 si_sdr=2.69 si_sdri=4.94 lr=9.18e-05 |g|=9.795 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:30:26,774 INFO step=12600/20000 total=-3.9705 si_sdr=4.96 si_sdri=7.21 lr=9.12e-05 |g|=9.501 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:30:27,696 INFO Dataset 样本统计 [total=1000] present=1000 absent=0 swap=0
+2026-08-09 19:30:27,743 INFO Dataset 样本统计 [total=1000] present=1000 absent=0 swap=0
+2026-08-09 19:30:27,968 INFO step=12625/20000 total=-7.3620 si_sdr=8.46 si_sdri=10.71 lr=9.07e-05 |g|=372.363 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:30:29,164 INFO step=12650/20000 total=-10.1721 si_sdr=11.36 si_sdri=13.61 lr=9.01e-05 |g|=567.222 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:30:30,380 INFO step=12675/20000 total=-0.9753 si_sdr=2.25 si_sdri=4.50 lr=8.96e-05 |g|=10.753 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:30:31,568 INFO step=12700/20000 total=-4.7573 si_sdr=5.94 si_sdri=8.19 lr=8.91e-05 |g|=307.976 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:30:32,767 INFO step=12725/20000 total=-6.6538 si_sdr=7.82 si_sdri=10.07 lr=8.85e-05 |g|=82.814 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:30:33,650 INFO Dataset 样本统计 [total=2000] present=2000 absent=0 swap=0
+2026-08-09 19:30:33,696 INFO Dataset 样本统计 [total=2000] present=2000 absent=0 swap=0
+2026-08-09 19:30:33,951 INFO step=12750/20000 total=0.4273 si_sdr=0.73 si_sdri=2.97 lr=8.80e-05 |g|=9.711 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:30:35,140 INFO step=12775/20000 total=-8.8738 si_sdr=9.88 si_sdri=12.13 lr=8.74e-05 |g|=203.133 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:30:36,338 INFO step=12800/20000 total=-5.8699 si_sdr=6.86 si_sdri=9.10 lr=8.69e-05 |g|=17.176 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:30:37,538 INFO step=12825/20000 total=-7.6130 si_sdr=8.67 si_sdri=10.91 lr=8.64e-05 |g|=183.656 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:30:38,726 INFO step=12850/20000 total=-1.8622 si_sdr=3.01 si_sdri=5.26 lr=8.58e-05 |g|=12.920 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:30:39,653 INFO Dataset 样本统计 [total=3000] present=3000 absent=0 swap=0
+2026-08-09 19:30:39,702 INFO Dataset 样本统计 [total=3000] present=3000 absent=0 swap=0
+2026-08-09 19:30:39,922 INFO step=12875/20000 total=-8.9070 si_sdr=9.85 si_sdri=12.10 lr=8.53e-05 |g|=14.212 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:30:41,133 INFO step=12900/20000 total=-6.4752 si_sdr=7.45 si_sdri=9.69 lr=8.48e-05 |g|=25.236 mem=1.73GB 48ms/step data=1%
+2026-08-09 19:30:42,343 INFO step=12925/20000 total=-2.4016 si_sdr=3.62 si_sdri=5.86 lr=8.42e-05 |g|=12.902 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:30:43,545 INFO step=12950/20000 total=-2.2007 si_sdr=3.31 si_sdri=5.56 lr=8.37e-05 |g|=9.985 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:30:44,737 INFO step=12975/20000 total=-5.3422 si_sdr=6.32 si_sdri=8.57 lr=8.32e-05 |g|=18.275 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:30:45,642 INFO Dataset 样本统计 [total=4000] present=4000 absent=0 swap=0
+2026-08-09 19:30:45,689 INFO Dataset 样本统计 [total=4000] present=4000 absent=0 swap=0
+2026-08-09 19:30:45,950 INFO step=13000/20000 total=-6.4215 si_sdr=7.45 si_sdri=9.69 lr=8.26e-05 |g|=297.590 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:30:46,020 INFO 存 checkpoint: checkpoint_step13000.pt
+2026-08-09 19:30:49,189 INFO Dataset 样本统计 [total=251000] present=251000 absent=0 swap=0
+2026-08-09 19:30:52,227 INFO Dataset 样本统计 [total=252000] present=252000 absent=0 swap=0
+2026-08-09 19:30:55,466 INFO Dataset 样本统计 [total=253000] present=253000 absent=0 swap=0
+2026-08-09 19:30:58,612 INFO Dataset 样本统计 [total=254000] present=254000 absent=0 swap=0
+2026-08-09 19:31:01,948 INFO Dataset 样本统计 [total=255000] present=255000 absent=0 swap=0
+2026-08-09 19:31:05,220 INFO Dataset 样本统计 [total=256000] present=256000 absent=0 swap=0
+2026-08-09 19:31:08,542 INFO Dataset 样本统计 [total=257000] present=257000 absent=0 swap=0
+2026-08-09 19:31:11,915 INFO Dataset 样本统计 [total=258000] present=258000 absent=0 swap=0
+2026-08-09 19:31:15,260 INFO Dataset 样本统计 [total=259000] present=259000 absent=0 swap=0
+2026-08-09 19:31:18,541 INFO Dataset 样本统计 [total=260000] present=260000 absent=0 swap=0
+2026-08-09 19:31:18,569 INFO   dev_loss=-3.3106 dev_sisdr=4.42 dB
+2026-08-09 19:31:19,796 INFO step=13025/20000 total=-3.2907 si_sdr=4.36 si_sdri=6.60 lr=8.21e-05 |g|=12.152 mem=1.73GB 50ms/step data=0%
+2026-08-09 19:31:21,005 INFO step=13050/20000 total=-7.1148 si_sdr=8.11 si_sdri=10.36 lr=8.16e-05 |g|=78.539 mem=1.73GB 50ms/step data=0%
+2026-08-09 19:31:22,198 INFO step=13075/20000 total=-0.8907 si_sdr=2.09 si_sdri=4.33 lr=8.11e-05 |g|=13.442 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:31:23,443 INFO step=13100/20000 total=-3.5483 si_sdr=4.59 si_sdri=6.84 lr=8.05e-05 |g|=9.692 mem=1.73GB 51ms/step data=0%
+2026-08-09 19:31:24,392 INFO Dataset 样本统计 [total=5000] present=5000 absent=0 swap=0
+2026-08-09 19:31:24,438 INFO Dataset 样本统计 [total=5000] present=5000 absent=0 swap=0
+2026-08-09 19:31:24,656 INFO step=13125/20000 total=-1.3443 si_sdr=2.44 si_sdri=4.69 lr=8.00e-05 |g|=12.580 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:31:25,835 INFO step=13150/20000 total=-2.1239 si_sdr=3.28 si_sdri=5.52 lr=7.95e-05 |g|=29.819 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:31:27,028 INFO step=13175/20000 total=-3.4222 si_sdr=4.45 si_sdri=6.69 lr=7.90e-05 |g|=23.385 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:31:28,223 INFO step=13200/20000 total=-7.3048 si_sdr=8.50 si_sdri=10.75 lr=7.84e-05 |g|=23.300 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:31:29,419 INFO step=13225/20000 total=-1.5154 si_sdr=2.61 si_sdri=4.86 lr=7.79e-05 |g|=12.906 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:31:30,311 INFO Dataset 样本统计 [total=6000] present=6000 absent=0 swap=0
+2026-08-09 19:31:30,358 INFO Dataset 样本统计 [total=6000] present=6000 absent=0 swap=0
+2026-08-09 19:31:30,623 INFO step=13250/20000 total=-3.8142 si_sdr=4.86 si_sdri=7.10 lr=7.74e-05 |g|=12.672 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:31:31,801 INFO step=13275/20000 total=-1.4517 si_sdr=2.58 si_sdri=4.83 lr=7.69e-05 |g|=16.218 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:31:33,000 INFO step=13300/20000 total=-3.9603 si_sdr=5.12 si_sdri=7.36 lr=7.64e-05 |g|=17.197 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:31:34,179 INFO step=13325/20000 total=-5.5877 si_sdr=6.73 si_sdri=8.98 lr=7.59e-05 |g|=33.524 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:31:35,356 INFO step=13350/20000 total=-2.5253 si_sdr=3.65 si_sdri=5.90 lr=7.53e-05 |g|=12.544 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:31:36,285 INFO Dataset 样本统计 [total=7000] present=7000 absent=0 swap=0
+2026-08-09 19:31:36,331 INFO Dataset 样本统计 [total=7000] present=7000 absent=0 swap=0
+2026-08-09 19:31:36,556 INFO step=13375/20000 total=-7.4868 si_sdr=8.56 si_sdri=10.81 lr=7.48e-05 |g|=503.679 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:31:37,750 INFO step=13400/20000 total=-4.9115 si_sdr=6.16 si_sdri=8.40 lr=7.43e-05 |g|=15.791 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:31:38,947 INFO step=13425/20000 total=-1.4773 si_sdr=2.59 si_sdri=4.84 lr=7.38e-05 |g|=14.754 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:31:40,132 INFO step=13450/20000 total=-6.6980 si_sdr=7.82 si_sdri=10.07 lr=7.33e-05 |g|=24.293 mem=1.73GB 48ms/step data=1%
+2026-08-09 19:31:41,343 INFO step=13475/20000 total=-1.2928 si_sdr=2.39 si_sdri=4.64 lr=7.28e-05 |g|=17.178 mem=1.73GB 50ms/step data=0%
+2026-08-09 19:31:42,246 INFO Dataset 样本统计 [total=8000] present=8000 absent=0 swap=0
+2026-08-09 19:31:42,294 INFO Dataset 样本统计 [total=8000] present=8000 absent=0 swap=0
+2026-08-09 19:31:42,555 INFO step=13500/20000 total=-5.2241 si_sdr=6.30 si_sdri=8.55 lr=7.23e-05 |g|=21.913 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:31:42,619 INFO 存 checkpoint: checkpoint_step13500.pt
+2026-08-09 19:31:45,690 INFO Dataset 样本统计 [total=261000] present=261000 absent=0 swap=0
+2026-08-09 19:31:48,783 INFO Dataset 样本统计 [total=262000] present=262000 absent=0 swap=0
+2026-08-09 19:31:51,921 INFO Dataset 样本统计 [total=263000] present=263000 absent=0 swap=0
+2026-08-09 19:31:55,018 INFO Dataset 样本统计 [total=264000] present=264000 absent=0 swap=0
+2026-08-09 19:31:58,441 INFO Dataset 样本统计 [total=265000] present=265000 absent=0 swap=0
+2026-08-09 19:32:01,697 INFO Dataset 样本统计 [total=266000] present=266000 absent=0 swap=0
+2026-08-09 19:32:04,958 INFO Dataset 样本统计 [total=267000] present=267000 absent=0 swap=0
+2026-08-09 19:32:08,141 INFO Dataset 样本统计 [total=268000] present=268000 absent=0 swap=0
+2026-08-09 19:32:11,405 INFO Dataset 样本统计 [total=269000] present=269000 absent=0 swap=0
+2026-08-09 19:32:14,612 INFO Dataset 样本统计 [total=270000] present=270000 absent=0 swap=0
+2026-08-09 19:32:14,638 INFO   dev_loss=-3.2433 dev_sisdr=4.34 dB
+2026-08-09 19:32:15,854 INFO step=13525/20000 total=1.0928 si_sdr=0.14 si_sdri=2.38 lr=7.18e-05 |g|=8.332 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:32:17,051 INFO step=13550/20000 total=-5.0627 si_sdr=6.02 si_sdri=8.27 lr=7.13e-05 |g|=21.580 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:32:18,244 INFO step=13575/20000 total=-4.2847 si_sdr=5.24 si_sdri=7.49 lr=7.08e-05 |g|=10.721 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:32:19,446 INFO step=13600/20000 total=-5.5325 si_sdr=6.55 si_sdri=8.80 lr=7.03e-05 |g|=21.925 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:32:20,378 INFO Dataset 样本统计 [total=9000] present=9000 absent=0 swap=0
+2026-08-09 19:32:20,427 INFO Dataset 样本统计 [total=9000] present=9000 absent=0 swap=0
+2026-08-09 19:32:20,652 INFO step=13625/20000 total=-4.1022 si_sdr=5.18 si_sdri=7.43 lr=6.98e-05 |g|=11.563 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:32:21,855 INFO step=13650/20000 total=-7.3897 si_sdr=8.40 si_sdri=10.65 lr=6.93e-05 |g|=23.986 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:32:23,033 INFO step=13675/20000 total=-6.4520 si_sdr=7.41 si_sdri=9.65 lr=6.88e-05 |g|=17.593 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:32:24,228 INFO step=13700/20000 total=-2.0127 si_sdr=3.08 si_sdri=5.33 lr=6.83e-05 |g|=15.036 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:32:25,425 INFO step=13725/20000 total=-4.9655 si_sdr=5.97 si_sdri=8.22 lr=6.78e-05 |g|=24.110 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:32:26,307 INFO Dataset 样本统计 [total=10000] present=10000 absent=0 swap=0
+2026-08-09 19:32:26,354 INFO Dataset 样本统计 [total=10000] present=10000 absent=0 swap=0
+2026-08-09 19:32:26,611 INFO step=13750/20000 total=-3.0364 si_sdr=4.06 si_sdri=6.31 lr=6.73e-05 |g|=13.323 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:32:27,827 INFO step=13775/20000 total=-1.9311 si_sdr=3.04 si_sdri=5.29 lr=6.68e-05 |g|=10.948 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:32:29,030 INFO step=13800/20000 total=-2.6841 si_sdr=3.80 si_sdri=6.04 lr=6.63e-05 |g|=22.335 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:32:30,240 INFO step=13825/20000 total=-2.1976 si_sdr=3.22 si_sdri=5.47 lr=6.58e-05 |g|=13.228 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:32:31,435 INFO step=13850/20000 total=-3.1381 si_sdr=4.20 si_sdri=6.45 lr=6.53e-05 |g|=26.830 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:32:32,392 INFO Dataset 样本统计 [total=11000] present=11000 absent=0 swap=0
+2026-08-09 19:32:32,439 INFO Dataset 样本统计 [total=11000] present=11000 absent=0 swap=0
+2026-08-09 19:32:32,684 INFO step=13875/20000 total=-0.0409 si_sdr=1.35 si_sdri=3.60 lr=6.48e-05 |g|=10.166 mem=1.73GB 55ms/step data=0%
+2026-08-09 19:32:33,891 INFO step=13900/20000 total=-2.2817 si_sdr=3.36 si_sdri=5.60 lr=6.43e-05 |g|=10.855 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:32:35,085 INFO step=13925/20000 total=-9.1835 si_sdr=10.15 si_sdri=12.40 lr=6.39e-05 |g|=54.253 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:32:36,270 INFO step=13950/20000 total=-3.0302 si_sdr=3.99 si_sdri=6.24 lr=6.34e-05 |g|=17.057 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:32:37,461 INFO step=13975/20000 total=-1.7265 si_sdr=2.88 si_sdri=5.13 lr=6.29e-05 |g|=9.098 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:32:38,355 INFO Dataset 样本统计 [total=12000] present=12000 absent=0 swap=0
+2026-08-09 19:32:38,402 INFO Dataset 样本统计 [total=12000] present=12000 absent=0 swap=0
+2026-08-09 19:32:38,655 INFO step=14000/20000 total=-2.1148 si_sdr=3.24 si_sdri=5.49 lr=6.24e-05 |g|=13.411 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:32:38,718 INFO 存 checkpoint: checkpoint_step14000.pt
+2026-08-09 19:32:41,806 INFO Dataset 样本统计 [total=271000] present=271000 absent=0 swap=0
+2026-08-09 19:32:44,904 INFO Dataset 样本统计 [total=272000] present=272000 absent=0 swap=0
+2026-08-09 19:32:48,012 INFO Dataset 样本统计 [total=273000] present=273000 absent=0 swap=0
+2026-08-09 19:32:51,117 INFO Dataset 样本统计 [total=274000] present=274000 absent=0 swap=0
+2026-08-09 19:32:54,353 INFO Dataset 样本统计 [total=275000] present=275000 absent=0 swap=0
+2026-08-09 19:32:57,593 INFO Dataset 样本统计 [total=276000] present=276000 absent=0 swap=0
+2026-08-09 19:33:00,746 INFO Dataset 样本统计 [total=277000] present=277000 absent=0 swap=0
+2026-08-09 19:33:03,879 INFO Dataset 样本统计 [total=278000] present=278000 absent=0 swap=0
+2026-08-09 19:33:07,148 INFO Dataset 样本统计 [total=279000] present=279000 absent=0 swap=0
+2026-08-09 19:33:10,411 INFO Dataset 样本统计 [total=280000] present=280000 absent=0 swap=0
+2026-08-09 19:33:10,436 INFO   dev_loss=-3.3700 dev_sisdr=4.47 dB
+2026-08-09 19:33:11,665 INFO step=14025/20000 total=-5.1945 si_sdr=6.26 si_sdri=8.50 lr=6.19e-05 |g|=19.031 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:33:12,857 INFO step=14050/20000 total=-7.1714 si_sdr=8.32 si_sdri=10.57 lr=6.14e-05 |g|=49.749 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:33:14,048 INFO step=14075/20000 total=-5.8461 si_sdr=6.84 si_sdri=9.09 lr=6.10e-05 |g|=40.113 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:33:15,251 INFO step=14100/20000 total=-7.0536 si_sdr=8.08 si_sdri=10.33 lr=6.05e-05 |g|=33.055 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:33:16,187 INFO Dataset 样本统计 [total=13000] present=13000 absent=0 swap=0
+2026-08-09 19:33:16,235 INFO Dataset 样本统计 [total=13000] present=13000 absent=0 swap=0
+2026-08-09 19:33:16,462 INFO step=14125/20000 total=-1.3361 si_sdr=2.49 si_sdri=4.74 lr=6.00e-05 |g|=9.758 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:33:17,665 INFO step=14150/20000 total=-1.6428 si_sdr=2.93 si_sdri=5.18 lr=5.95e-05 |g|=10.572 mem=1.73GB 50ms/step data=0%
+2026-08-09 19:33:18,863 INFO step=14175/20000 total=-3.0717 si_sdr=4.32 si_sdri=6.57 lr=5.91e-05 |g|=20.648 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:33:20,072 INFO step=14200/20000 total=-1.9115 si_sdr=3.11 si_sdri=5.36 lr=5.86e-05 |g|=15.176 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:33:21,300 INFO step=14225/20000 total=-1.8182 si_sdr=2.99 si_sdri=5.24 lr=5.81e-05 |g|=18.734 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:33:22,186 INFO Dataset 样本统计 [total=14000] present=14000 absent=0 swap=0
+2026-08-09 19:33:22,237 INFO Dataset 样本统计 [total=14000] present=14000 absent=0 swap=0
+2026-08-09 19:33:22,487 INFO step=14250/20000 total=-4.3764 si_sdr=5.37 si_sdri=7.62 lr=5.77e-05 |g|=17.017 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:33:23,700 INFO step=14275/20000 total=-4.4069 si_sdr=5.47 si_sdri=7.72 lr=5.72e-05 |g|=18.928 mem=1.73GB 50ms/step data=0%
+2026-08-09 19:33:24,906 INFO step=14300/20000 total=-4.9527 si_sdr=5.97 si_sdri=8.21 lr=5.67e-05 |g|=35.970 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:33:26,113 INFO step=14325/20000 total=-8.1486 si_sdr=9.14 si_sdri=11.39 lr=5.63e-05 |g|=20.003 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:33:27,301 INFO step=14350/20000 total=-4.9396 si_sdr=5.93 si_sdri=8.17 lr=5.58e-05 |g|=12.743 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:33:28,212 INFO Dataset 样本统计 [total=15000] present=15000 absent=0 swap=0
+2026-08-09 19:33:28,261 INFO Dataset 样本统计 [total=15000] present=15000 absent=0 swap=0
+2026-08-09 19:33:28,480 INFO step=14375/20000 total=-2.4362 si_sdr=3.54 si_sdri=5.79 lr=5.54e-05 |g|=11.354 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:33:29,644 INFO step=14400/20000 total=-3.6089 si_sdr=4.74 si_sdri=6.99 lr=5.49e-05 |g|=43.878 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:33:30,817 INFO step=14425/20000 total=-4.3389 si_sdr=5.42 si_sdri=7.66 lr=5.44e-05 |g|=17.310 mem=1.73GB 45ms/step data=1%
+2026-08-09 19:33:32,006 INFO step=14450/20000 total=-1.6041 si_sdr=2.78 si_sdri=5.03 lr=5.40e-05 |g|=10.228 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:33:33,197 INFO step=14475/20000 total=-1.8474 si_sdr=2.92 si_sdri=5.17 lr=5.35e-05 |g|=17.512 mem=1.73GB 50ms/step data=0%
+2026-08-09 19:33:34,090 INFO Dataset 样本统计 [total=16000] present=16000 absent=0 swap=0
+2026-08-09 19:33:34,137 INFO Dataset 样本统计 [total=16000] present=16000 absent=0 swap=0
+2026-08-09 19:33:34,389 INFO step=14500/20000 total=-1.8538 si_sdr=3.00 si_sdri=5.25 lr=5.31e-05 |g|=11.638 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:33:34,452 INFO 存 checkpoint: checkpoint_step14500.pt
+2026-08-09 19:33:37,478 INFO Dataset 样本统计 [total=281000] present=281000 absent=0 swap=0
+2026-08-09 19:33:40,507 INFO Dataset 样本统计 [total=282000] present=282000 absent=0 swap=0
+2026-08-09 19:33:43,631 INFO Dataset 样本统计 [total=283000] present=283000 absent=0 swap=0
+2026-08-09 19:33:46,702 INFO Dataset 样本统计 [total=284000] present=284000 absent=0 swap=0
+2026-08-09 19:33:49,965 INFO Dataset 样本统计 [total=285000] present=285000 absent=0 swap=0
+2026-08-09 19:33:53,115 INFO Dataset 样本统计 [total=286000] present=286000 absent=0 swap=0
+2026-08-09 19:33:56,300 INFO Dataset 样本统计 [total=287000] present=287000 absent=0 swap=0
+2026-08-09 19:33:59,495 INFO Dataset 样本统计 [total=288000] present=288000 absent=0 swap=0
+2026-08-09 19:34:02,747 INFO Dataset 样本统计 [total=289000] present=289000 absent=0 swap=0
+2026-08-09 19:34:05,962 INFO Dataset 样本统计 [total=290000] present=290000 absent=0 swap=0
+2026-08-09 19:34:05,987 INFO   dev_loss=-3.5569 dev_sisdr=4.65 dB
+2026-08-09 19:34:07,182 INFO step=14525/20000 total=-1.9242 si_sdr=2.99 si_sdri=5.24 lr=5.26e-05 |g|=9.602 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:34:08,366 INFO step=14550/20000 total=0.3629 si_sdr=0.85 si_sdri=3.10 lr=5.22e-05 |g|=58.945 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:34:09,542 INFO step=14575/20000 total=-3.5298 si_sdr=4.65 si_sdri=6.89 lr=5.17e-05 |g|=13.130 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:34:10,748 INFO step=14600/20000 total=-7.6111 si_sdr=8.67 si_sdri=10.92 lr=5.13e-05 |g|=45.864 mem=1.73GB 56ms/step data=0%
+2026-08-09 19:34:11,669 INFO Dataset 样本统计 [total=17000] present=17000 absent=0 swap=0
+2026-08-09 19:34:11,716 INFO Dataset 样本统计 [total=17000] present=17000 absent=0 swap=0
+2026-08-09 19:34:11,938 INFO step=14625/20000 total=-3.0090 si_sdr=4.11 si_sdri=6.35 lr=5.08e-05 |g|=11.750 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:34:13,117 INFO step=14650/20000 total=-1.1850 si_sdr=2.33 si_sdri=4.58 lr=5.04e-05 |g|=18.874 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:34:14,294 INFO step=14675/20000 total=-9.5181 si_sdr=10.50 si_sdri=12.75 lr=5.00e-05 |g|=55.046 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:34:15,489 INFO step=14700/20000 total=-4.4485 si_sdr=5.56 si_sdri=7.81 lr=4.95e-05 |g|=41.933 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:34:16,692 INFO step=14725/20000 total=-3.1136 si_sdr=4.24 si_sdri=6.49 lr=4.91e-05 |g|=9.867 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:34:17,621 INFO Dataset 样本统计 [total=18000] present=18000 absent=0 swap=0
+2026-08-09 19:34:17,666 INFO Dataset 样本统计 [total=18000] present=18000 absent=0 swap=0
+2026-08-09 19:34:17,915 INFO step=14750/20000 total=-3.2151 si_sdr=4.55 si_sdri=6.80 lr=4.86e-05 |g|=30.869 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:34:19,113 INFO step=14775/20000 total=-1.0099 si_sdr=2.15 si_sdri=4.40 lr=4.82e-05 |g|=13.563 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:34:20,309 INFO step=14800/20000 total=-0.8880 si_sdr=2.10 si_sdri=4.34 lr=4.78e-05 |g|=12.731 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:34:21,494 INFO step=14825/20000 total=-6.3818 si_sdr=7.33 si_sdri=9.57 lr=4.73e-05 |g|=37.401 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:34:22,686 INFO step=14850/20000 total=-4.8496 si_sdr=5.99 si_sdri=8.24 lr=4.69e-05 |g|=60.547 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:34:23,645 INFO Dataset 样本统计 [total=19000] present=19000 absent=0 swap=0
+2026-08-09 19:34:23,691 INFO Dataset 样本统计 [total=19000] present=19000 absent=0 swap=0
+2026-08-09 19:34:23,915 INFO step=14875/20000 total=-0.7894 si_sdr=1.87 si_sdri=4.12 lr=4.65e-05 |g|=22.559 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:34:25,121 INFO step=14900/20000 total=-0.6739 si_sdr=1.81 si_sdri=4.05 lr=4.60e-05 |g|=12.999 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:34:26,305 INFO step=14925/20000 total=-4.0169 si_sdr=5.17 si_sdri=7.41 lr=4.56e-05 |g|=35.749 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:34:27,514 INFO step=14950/20000 total=-2.7350 si_sdr=3.78 si_sdri=6.03 lr=4.52e-05 |g|=9.932 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:34:28,713 INFO step=14975/20000 total=-6.6378 si_sdr=7.61 si_sdri=9.85 lr=4.48e-05 |g|=55.445 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:34:29,613 INFO Dataset 样本统计 [total=20000] present=20000 absent=0 swap=0
+2026-08-09 19:34:29,662 INFO Dataset 样本统计 [total=20000] present=20000 absent=0 swap=0
+2026-08-09 19:34:29,918 INFO step=15000/20000 total=-3.1765 si_sdr=4.23 si_sdri=6.48 lr=4.44e-05 |g|=14.172 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:34:29,978 INFO 存 checkpoint: checkpoint_step15000.pt
+2026-08-09 19:34:32,968 INFO Dataset 样本统计 [total=291000] present=291000 absent=0 swap=0
+2026-08-09 19:34:35,922 INFO Dataset 样本统计 [total=292000] present=292000 absent=0 swap=0
+2026-08-09 19:34:38,930 INFO Dataset 样本统计 [total=293000] present=293000 absent=0 swap=0
+2026-08-09 19:34:42,011 INFO Dataset 样本统计 [total=294000] present=294000 absent=0 swap=0
+2026-08-09 19:34:45,172 INFO Dataset 样本统计 [total=295000] present=295000 absent=0 swap=0
+2026-08-09 19:34:48,313 INFO Dataset 样本统计 [total=296000] present=296000 absent=0 swap=0
+2026-08-09 19:34:51,665 INFO Dataset 样本统计 [total=297000] present=297000 absent=0 swap=0
+2026-08-09 19:34:54,923 INFO Dataset 样本统计 [total=298000] present=298000 absent=0 swap=0
+2026-08-09 19:34:58,138 INFO Dataset 样本统计 [total=299000] present=299000 absent=0 swap=0
+2026-08-09 19:35:01,354 INFO Dataset 样本统计 [total=300000] present=300000 absent=0 swap=0
+2026-08-09 19:35:01,379 INFO   dev_loss=-3.6252 dev_sisdr=4.72 dB
+2026-08-09 19:35:02,614 INFO step=15025/20000 total=-2.7879 si_sdr=3.86 si_sdri=6.11 lr=4.39e-05 |g|=10.078 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:35:03,793 INFO step=15050/20000 total=-2.8294 si_sdr=3.84 si_sdri=6.08 lr=4.35e-05 |g|=9.884 mem=1.73GB 48ms/step data=1%
+2026-08-09 19:35:04,954 INFO step=15075/20000 total=-4.7265 si_sdr=5.90 si_sdri=8.15 lr=4.31e-05 |g|=67.408 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:35:06,122 INFO step=15100/20000 total=-0.8217 si_sdr=2.08 si_sdri=4.32 lr=4.27e-05 |g|=12.126 mem=1.73GB 52ms/step data=0%
+2026-08-09 19:35:07,027 INFO Dataset 样本统计 [total=21000] present=21000 absent=0 swap=0
+2026-08-09 19:35:07,073 INFO Dataset 样本统计 [total=21000] present=21000 absent=0 swap=0
+2026-08-09 19:35:07,294 INFO step=15125/20000 total=-6.3697 si_sdr=7.34 si_sdri=9.59 lr=4.23e-05 |g|=18.970 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:35:08,463 INFO step=15150/20000 total=-2.6068 si_sdr=3.66 si_sdri=5.90 lr=4.19e-05 |g|=9.398 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:35:09,636 INFO step=15175/20000 total=-4.3110 si_sdr=5.26 si_sdri=7.51 lr=4.15e-05 |g|=140.276 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:35:10,778 INFO step=15200/20000 total=-0.4705 si_sdr=1.73 si_sdri=3.98 lr=4.10e-05 |g|=13.146 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:35:11,918 INFO step=15225/20000 total=-7.2564 si_sdr=8.22 si_sdri=10.47 lr=4.06e-05 |g|=16.553 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:35:12,775 INFO Dataset 样本统计 [total=22000] present=22000 absent=0 swap=0
+2026-08-09 19:35:12,820 INFO Dataset 样本统计 [total=22000] present=22000 absent=0 swap=0
+2026-08-09 19:35:13,065 INFO step=15250/20000 total=-3.2677 si_sdr=4.31 si_sdri=6.55 lr=4.02e-05 |g|=13.430 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:35:14,210 INFO step=15275/20000 total=-0.8752 si_sdr=2.02 si_sdri=4.27 lr=3.98e-05 |g|=16.994 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:35:15,379 INFO step=15300/20000 total=-1.2526 si_sdr=2.41 si_sdri=4.65 lr=3.94e-05 |g|=9.882 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:35:16,540 INFO step=15325/20000 total=-4.6689 si_sdr=5.68 si_sdri=7.92 lr=3.90e-05 |g|=52.295 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:35:17,695 INFO step=15350/20000 total=-9.8934 si_sdr=10.88 si_sdri=13.12 lr=3.86e-05 |g|=23.050 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:35:18,609 INFO Dataset 样本统计 [total=23000] present=23000 absent=0 swap=0
+2026-08-09 19:35:18,655 INFO Dataset 样本统计 [total=23000] present=23000 absent=0 swap=0
+2026-08-09 19:35:18,877 INFO step=15375/20000 total=-2.9056 si_sdr=3.99 si_sdri=6.24 lr=3.82e-05 |g|=46.841 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:35:20,036 INFO step=15400/20000 total=-1.5464 si_sdr=2.74 si_sdri=4.98 lr=3.78e-05 |g|=10.314 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:35:21,211 INFO step=15425/20000 total=-1.6173 si_sdr=2.69 si_sdri=4.93 lr=3.75e-05 |g|=10.476 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:35:22,377 INFO step=15450/20000 total=-7.5971 si_sdr=8.66 si_sdri=10.91 lr=3.71e-05 |g|=26.137 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:35:23,537 INFO step=15475/20000 total=-3.7110 si_sdr=4.69 si_sdri=6.93 lr=3.67e-05 |g|=175.554 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:35:24,429 INFO Dataset 样本统计 [total=24000] present=24000 absent=0 swap=0
+2026-08-09 19:35:24,478 INFO Dataset 样本统计 [total=24000] present=24000 absent=0 swap=0
+2026-08-09 19:35:24,735 INFO step=15500/20000 total=-8.8509 si_sdr=9.85 si_sdri=12.10 lr=3.63e-05 |g|=17.286 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:35:24,798 INFO 存 checkpoint: checkpoint_step15500.pt
+2026-08-09 19:35:27,903 INFO Dataset 样本统计 [total=301000] present=301000 absent=0 swap=0
+2026-08-09 19:35:30,942 INFO Dataset 样本统计 [total=302000] present=302000 absent=0 swap=0
+2026-08-09 19:35:34,094 INFO Dataset 样本统计 [total=303000] present=303000 absent=0 swap=0
+2026-08-09 19:35:37,340 INFO Dataset 样本统计 [total=304000] present=304000 absent=0 swap=0
+2026-08-09 19:35:40,630 INFO Dataset 样本统计 [total=305000] present=305000 absent=0 swap=0
+2026-08-09 19:35:43,843 INFO Dataset 样本统计 [total=306000] present=306000 absent=0 swap=0
+2026-08-09 19:35:47,131 INFO Dataset 样本统计 [total=307000] present=307000 absent=0 swap=0
+2026-08-09 19:35:50,437 INFO Dataset 样本统计 [total=308000] present=308000 absent=0 swap=0
+2026-08-09 19:35:53,749 INFO Dataset 样本统计 [total=309000] present=309000 absent=0 swap=0
+2026-08-09 19:35:56,994 INFO Dataset 样本统计 [total=310000] present=310000 absent=0 swap=0
+2026-08-09 19:35:57,019 INFO   dev_loss=-3.6784 dev_sisdr=4.77 dB
+2026-08-09 19:35:58,223 INFO step=15525/20000 total=-4.0271 si_sdr=5.04 si_sdri=7.29 lr=3.59e-05 |g|=23.695 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:35:59,436 INFO step=15550/20000 total=-2.2681 si_sdr=3.42 si_sdri=5.66 lr=3.55e-05 |g|=8.468 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:36:00,613 INFO step=15575/20000 total=-2.6954 si_sdr=3.76 si_sdri=6.01 lr=3.51e-05 |g|=11.172 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:36:01,864 INFO step=15600/20000 total=-2.7169 si_sdr=3.76 si_sdri=6.00 lr=3.48e-05 |g|=11.554 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:36:02,774 INFO Dataset 样本统计 [total=25000] present=25000 absent=0 swap=0
+2026-08-09 19:36:02,821 INFO Dataset 样本统计 [total=25000] present=25000 absent=0 swap=0
+2026-08-09 19:36:03,038 INFO step=15625/20000 total=-5.9276 si_sdr=6.97 si_sdri=9.21 lr=3.44e-05 |g|=61.208 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:36:04,210 INFO step=15650/20000 total=-6.8077 si_sdr=7.82 si_sdri=10.07 lr=3.40e-05 |g|=27.105 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:36:05,396 INFO step=15675/20000 total=0.4827 si_sdr=0.79 si_sdri=3.03 lr=3.36e-05 |g|=13.744 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:36:06,583 INFO step=15700/20000 total=-6.4298 si_sdr=7.39 si_sdri=9.64 lr=3.33e-05 |g|=39.473 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:36:07,775 INFO step=15725/20000 total=-0.7400 si_sdr=1.98 si_sdri=4.22 lr=3.29e-05 |g|=10.019 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:36:08,651 INFO Dataset 样本统计 [total=26000] present=26000 absent=0 swap=0
+2026-08-09 19:36:08,696 INFO Dataset 样本统计 [total=26000] present=26000 absent=0 swap=0
+2026-08-09 19:36:08,943 INFO step=15750/20000 total=-0.4737 si_sdr=1.78 si_sdri=4.03 lr=3.25e-05 |g|=14.463 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:36:10,122 INFO step=15775/20000 total=-5.2503 si_sdr=6.31 si_sdri=8.55 lr=3.21e-05 |g|=13.100 mem=1.73GB 49ms/step data=1%
+2026-08-09 19:36:11,305 INFO step=15800/20000 total=-3.8604 si_sdr=4.79 si_sdri=7.04 lr=3.18e-05 |g|=12.841 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:36:12,495 INFO step=15825/20000 total=-2.1001 si_sdr=3.26 si_sdri=5.50 lr=3.14e-05 |g|=11.859 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:36:13,697 INFO step=15850/20000 total=-4.2766 si_sdr=5.33 si_sdri=7.57 lr=3.11e-05 |g|=13.077 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:36:14,639 INFO Dataset 样本统计 [total=27000] present=27000 absent=0 swap=0
+2026-08-09 19:36:14,687 INFO Dataset 样本统计 [total=27000] present=27000 absent=0 swap=0
+2026-08-09 19:36:14,914 INFO step=15875/20000 total=-4.2727 si_sdr=5.44 si_sdri=7.69 lr=3.07e-05 |g|=18.838 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:36:16,108 INFO step=15900/20000 total=-6.3036 si_sdr=7.36 si_sdri=9.61 lr=3.03e-05 |g|=17.481 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:36:17,297 INFO step=15925/20000 total=-3.7208 si_sdr=4.83 si_sdri=7.08 lr=3.00e-05 |g|=22.350 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:36:18,545 INFO step=15950/20000 total=-6.3327 si_sdr=7.28 si_sdri=9.53 lr=2.96e-05 |g|=34.367 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:36:19,734 INFO step=15975/20000 total=-3.3828 si_sdr=4.46 si_sdri=6.71 lr=2.93e-05 |g|=13.156 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:36:20,623 INFO Dataset 样本统计 [total=28000] present=28000 absent=0 swap=0
+2026-08-09 19:36:20,669 INFO Dataset 样本统计 [total=28000] present=28000 absent=0 swap=0
+2026-08-09 19:36:20,923 INFO step=16000/20000 total=-5.7740 si_sdr=6.78 si_sdri=9.03 lr=2.89e-05 |g|=20.625 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:36:20,985 INFO 存 checkpoint: checkpoint_step16000.pt
+2026-08-09 19:36:24,033 INFO Dataset 样本统计 [total=311000] present=311000 absent=0 swap=0
+2026-08-09 19:36:27,070 INFO Dataset 样本统计 [total=312000] present=312000 absent=0 swap=0
+2026-08-09 19:36:30,153 INFO Dataset 样本统计 [total=313000] present=313000 absent=0 swap=0
+2026-08-09 19:36:33,288 INFO Dataset 样本统计 [total=314000] present=314000 absent=0 swap=0
+2026-08-09 19:36:36,597 INFO Dataset 样本统计 [total=315000] present=315000 absent=0 swap=0
+2026-08-09 19:36:40,355 INFO Dataset 样本统计 [total=316000] present=316000 absent=0 swap=0
+2026-08-09 19:36:43,587 INFO Dataset 样本统计 [total=317000] present=317000 absent=0 swap=0
+2026-08-09 19:36:46,768 INFO Dataset 样本统计 [total=318000] present=318000 absent=0 swap=0
+2026-08-09 19:36:49,995 INFO Dataset 样本统计 [total=319000] present=319000 absent=0 swap=0
+2026-08-09 19:36:53,252 INFO Dataset 样本统计 [total=320000] present=320000 absent=0 swap=0
+2026-08-09 19:36:53,277 INFO   dev_loss=-3.7157 dev_sisdr=4.80 dB
+2026-08-09 19:36:54,466 INFO step=16025/20000 total=-5.0159 si_sdr=6.06 si_sdri=8.30 lr=2.86e-05 |g|=35.292 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:36:55,642 INFO step=16050/20000 total=-2.2389 si_sdr=3.30 si_sdri=5.54 lr=2.82e-05 |g|=8.104 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:36:56,824 INFO step=16075/20000 total=-2.6103 si_sdr=3.67 si_sdri=5.92 lr=2.79e-05 |g|=16.252 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:36:57,990 INFO step=16100/20000 total=-0.4368 si_sdr=1.60 si_sdri=3.85 lr=2.75e-05 |g|=22.949 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:36:58,893 INFO Dataset 样本统计 [total=29000] present=29000 absent=0 swap=0
+2026-08-09 19:36:58,939 INFO Dataset 样本统计 [total=29000] present=29000 absent=0 swap=0
+2026-08-09 19:36:59,156 INFO step=16125/20000 total=-2.9196 si_sdr=4.01 si_sdri=6.25 lr=2.72e-05 |g|=10.077 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:37:00,341 INFO step=16150/20000 total=-7.3824 si_sdr=8.37 si_sdri=10.62 lr=2.69e-05 |g|=67.102 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:37:01,518 INFO step=16175/20000 total=-2.4552 si_sdr=3.64 si_sdri=5.89 lr=2.65e-05 |g|=10.075 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:37:02,695 INFO step=16200/20000 total=-1.9268 si_sdr=3.08 si_sdri=5.32 lr=2.62e-05 |g|=11.854 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:37:03,879 INFO step=16225/20000 total=-2.1747 si_sdr=3.26 si_sdri=5.51 lr=2.59e-05 |g|=8.786 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:37:04,762 INFO Dataset 样本统计 [total=30000] present=30000 absent=0 swap=0
+2026-08-09 19:37:04,810 INFO Dataset 样本统计 [total=30000] present=30000 absent=0 swap=0
+2026-08-09 19:37:05,067 INFO step=16250/20000 total=-1.7003 si_sdr=2.90 si_sdri=5.15 lr=2.55e-05 |g|=34.365 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:37:06,259 INFO step=16275/20000 total=-3.2401 si_sdr=4.25 si_sdri=6.50 lr=2.52e-05 |g|=12.295 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:37:07,441 INFO step=16300/20000 total=-6.1136 si_sdr=7.06 si_sdri=9.31 lr=2.49e-05 |g|=15.573 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:37:08,629 INFO step=16325/20000 total=-4.8650 si_sdr=5.84 si_sdri=8.09 lr=2.45e-05 |g|=17.270 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:37:09,819 INFO step=16350/20000 total=-2.2153 si_sdr=3.28 si_sdri=5.52 lr=2.42e-05 |g|=13.267 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:37:10,775 INFO Dataset 样本统计 [total=31000] present=31000 absent=0 swap=0
+2026-08-09 19:37:10,823 INFO Dataset 样本统计 [total=31000] present=31000 absent=0 swap=0
+2026-08-09 19:37:11,064 INFO step=16375/20000 total=-3.0829 si_sdr=4.19 si_sdri=6.43 lr=2.39e-05 |g|=37.834 mem=1.73GB 52ms/step data=0%
+2026-08-09 19:37:12,293 INFO step=16400/20000 total=-1.0250 si_sdr=2.14 si_sdri=4.38 lr=2.36e-05 |g|=11.735 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:37:13,498 INFO step=16425/20000 total=-0.4090 si_sdr=1.55 si_sdri=3.79 lr=2.33e-05 |g|=16.363 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:37:14,700 INFO step=16450/20000 total=-1.2480 si_sdr=2.38 si_sdri=4.63 lr=2.29e-05 |g|=11.188 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:37:15,886 INFO step=16475/20000 total=-3.9160 si_sdr=5.11 si_sdri=7.36 lr=2.26e-05 |g|=54.580 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:37:16,784 INFO Dataset 样本统计 [total=32000] present=32000 absent=0 swap=0
+2026-08-09 19:37:16,831 INFO Dataset 样本统计 [total=32000] present=32000 absent=0 swap=0
+2026-08-09 19:37:17,089 INFO step=16500/20000 total=-3.2860 si_sdr=4.40 si_sdri=6.65 lr=2.23e-05 |g|=50.013 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:37:17,154 INFO 存 checkpoint: checkpoint_step16500.pt
+2026-08-09 19:37:20,265 INFO Dataset 样本统计 [total=321000] present=321000 absent=0 swap=0
+2026-08-09 19:37:23,348 INFO Dataset 样本统计 [total=322000] present=322000 absent=0 swap=0
+2026-08-09 19:37:26,470 INFO Dataset 样本统计 [total=323000] present=323000 absent=0 swap=0
+2026-08-09 19:37:29,790 INFO Dataset 样本统计 [total=324000] present=324000 absent=0 swap=0
+2026-08-09 19:37:33,117 INFO Dataset 样本统计 [total=325000] present=325000 absent=0 swap=0
+2026-08-09 19:37:36,324 INFO Dataset 样本统计 [total=326000] present=326000 absent=0 swap=0
+2026-08-09 19:37:39,671 INFO Dataset 样本统计 [total=327000] present=327000 absent=0 swap=0
+2026-08-09 19:37:42,873 INFO Dataset 样本统计 [total=328000] present=328000 absent=0 swap=0
+2026-08-09 19:37:46,199 INFO Dataset 样本统计 [total=329000] present=329000 absent=0 swap=0
+2026-08-09 19:37:49,469 INFO Dataset 样本统计 [total=330000] present=330000 absent=0 swap=0
+2026-08-09 19:37:49,497 INFO   dev_loss=-3.7642 dev_sisdr=4.85 dB
+2026-08-09 19:37:50,712 INFO step=16525/20000 total=-4.0125 si_sdr=5.18 si_sdri=7.42 lr=2.20e-05 |g|=25.040 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:37:51,892 INFO step=16550/20000 total=-6.7221 si_sdr=7.70 si_sdri=9.95 lr=2.17e-05 |g|=24.150 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:37:53,081 INFO step=16575/20000 total=-3.1066 si_sdr=4.18 si_sdri=6.42 lr=2.14e-05 |g|=11.588 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:37:54,247 INFO step=16600/20000 total=-0.4099 si_sdr=1.60 si_sdri=3.85 lr=2.11e-05 |g|=12.084 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:37:55,179 INFO Dataset 样本统计 [total=33000] present=33000 absent=0 swap=0
+2026-08-09 19:37:55,224 INFO Dataset 样本统计 [total=33000] present=33000 absent=0 swap=0
+2026-08-09 19:37:55,444 INFO step=16625/20000 total=-3.1131 si_sdr=4.09 si_sdri=6.34 lr=2.08e-05 |g|=15.660 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:37:56,618 INFO step=16650/20000 total=-7.1339 si_sdr=8.18 si_sdri=10.42 lr=2.05e-05 |g|=45.470 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:37:57,793 INFO step=16675/20000 total=-5.8570 si_sdr=6.87 si_sdri=9.12 lr=2.02e-05 |g|=81.976 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:37:58,989 INFO step=16700/20000 total=0.4159 si_sdr=0.75 si_sdri=2.99 lr=1.99e-05 |g|=12.552 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:38:00,181 INFO step=16725/20000 total=-2.8701 si_sdr=3.86 si_sdri=6.11 lr=1.96e-05 |g|=18.013 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:38:01,071 INFO Dataset 样本统计 [total=34000] present=34000 absent=0 swap=0
+2026-08-09 19:38:01,118 INFO Dataset 样本统计 [total=34000] present=34000 absent=0 swap=0
+2026-08-09 19:38:01,373 INFO step=16750/20000 total=-5.6932 si_sdr=6.73 si_sdri=8.98 lr=1.93e-05 |g|=66.107 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:38:02,573 INFO step=16775/20000 total=-0.5324 si_sdr=1.74 si_sdri=3.99 lr=1.90e-05 |g|=18.460 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:38:03,764 INFO step=16800/20000 total=-4.5969 si_sdr=5.65 si_sdri=7.89 lr=1.87e-05 |g|=16.638 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:38:04,961 INFO step=16825/20000 total=-1.8412 si_sdr=2.98 si_sdri=5.22 lr=1.85e-05 |g|=9.170 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:38:06,148 INFO step=16850/20000 total=-2.2766 si_sdr=3.31 si_sdri=5.55 lr=1.82e-05 |g|=15.861 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:38:07,071 INFO Dataset 样本统计 [total=35000] present=35000 absent=0 swap=0
+2026-08-09 19:38:07,118 INFO Dataset 样本统计 [total=35000] present=35000 absent=0 swap=0
+2026-08-09 19:38:07,350 INFO step=16875/20000 total=-3.1263 si_sdr=4.38 si_sdri=6.62 lr=1.79e-05 |g|=54.776 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:38:08,544 INFO step=16900/20000 total=-2.4333 si_sdr=3.50 si_sdri=5.75 lr=1.76e-05 |g|=12.397 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:38:09,727 INFO step=16925/20000 total=-1.8380 si_sdr=2.98 si_sdri=5.23 lr=1.73e-05 |g|=20.864 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:38:10,907 INFO step=16950/20000 total=-0.8530 si_sdr=2.02 si_sdri=4.26 lr=1.71e-05 |g|=17.076 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:38:12,097 INFO step=16975/20000 total=-1.0670 si_sdr=2.28 si_sdri=4.53 lr=1.68e-05 |g|=13.766 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:38:12,977 INFO Dataset 样本统计 [total=36000] present=36000 absent=0 swap=0
+2026-08-09 19:38:13,023 INFO Dataset 样本统计 [total=36000] present=36000 absent=0 swap=0
+2026-08-09 19:38:13,273 INFO step=17000/20000 total=-4.1086 si_sdr=5.12 si_sdri=7.36 lr=1.65e-05 |g|=10.574 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:38:13,336 INFO 存 checkpoint: checkpoint_step17000.pt
+2026-08-09 19:38:16,526 INFO Dataset 样本统计 [total=331000] present=331000 absent=0 swap=0
+2026-08-09 19:38:19,634 INFO Dataset 样本统计 [total=332000] present=332000 absent=0 swap=0
+2026-08-09 19:38:22,799 INFO Dataset 样本统计 [total=333000] present=333000 absent=0 swap=0
+2026-08-09 19:38:26,011 INFO Dataset 样本统计 [total=334000] present=334000 absent=0 swap=0
+2026-08-09 19:38:29,326 INFO Dataset 样本统计 [total=335000] present=335000 absent=0 swap=0
+2026-08-09 19:38:32,583 INFO Dataset 样本统计 [total=336000] present=336000 absent=0 swap=0
+2026-08-09 19:38:35,876 INFO Dataset 样本统计 [total=337000] present=337000 absent=0 swap=0
+2026-08-09 19:38:39,125 INFO Dataset 样本统计 [total=338000] present=338000 absent=0 swap=0
+2026-08-09 19:38:42,393 INFO Dataset 样本统计 [total=339000] present=339000 absent=0 swap=0
+2026-08-09 19:38:45,665 INFO Dataset 样本统计 [total=340000] present=340000 absent=0 swap=0
+2026-08-09 19:38:45,690 INFO   dev_loss=-3.7557 dev_sisdr=4.84 dB
+2026-08-09 19:38:46,882 INFO step=17025/20000 total=-8.9480 si_sdr=10.00 si_sdri=12.25 lr=1.62e-05 |g|=93.971 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:38:48,061 INFO step=17050/20000 total=0.1191 si_sdr=1.08 si_sdri=3.32 lr=1.60e-05 |g|=15.386 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:38:49,237 INFO step=17075/20000 total=-11.5090 si_sdr=12.46 si_sdri=14.71 lr=1.57e-05 |g|=48.533 mem=1.73GB 48ms/step data=1%
+2026-08-09 19:38:50,435 INFO step=17100/20000 total=-4.2999 si_sdr=5.28 si_sdri=7.53 lr=1.54e-05 |g|=14.925 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:38:51,395 INFO Dataset 样本统计 [total=37000] present=37000 absent=0 swap=0
+2026-08-09 19:38:51,444 INFO Dataset 样本统计 [total=37000] present=37000 absent=0 swap=0
+2026-08-09 19:38:51,685 INFO step=17125/20000 total=-4.7986 si_sdr=5.85 si_sdri=8.10 lr=1.52e-05 |g|=92.962 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:38:53,011 INFO step=17150/20000 total=-2.1708 si_sdr=3.36 si_sdri=5.60 lr=1.49e-05 |g|=20.065 mem=1.73GB 58ms/step data=0%
+2026-08-09 19:38:54,289 INFO step=17175/20000 total=-2.9226 si_sdr=4.01 si_sdri=6.25 lr=1.47e-05 |g|=10.195 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:38:55,548 INFO step=17200/20000 total=-1.9071 si_sdr=3.00 si_sdri=5.25 lr=1.44e-05 |g|=13.724 mem=1.73GB 50ms/step data=1%
+2026-08-09 19:38:56,790 INFO step=17225/20000 total=-0.7115 si_sdr=1.85 si_sdri=4.09 lr=1.42e-05 |g|=11.027 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:38:57,691 INFO Dataset 样本统计 [total=38000] present=38000 absent=0 swap=0
+2026-08-09 19:38:57,739 INFO Dataset 样本统计 [total=38000] present=38000 absent=0 swap=0
+2026-08-09 19:38:57,996 INFO step=17250/20000 total=-0.0932 si_sdr=1.28 si_sdri=3.53 lr=1.39e-05 |g|=12.033 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:38:59,185 INFO step=17275/20000 total=-4.3609 si_sdr=5.44 si_sdri=7.69 lr=1.37e-05 |g|=20.381 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:39:00,374 INFO step=17300/20000 total=-2.3555 si_sdr=3.54 si_sdri=5.78 lr=1.34e-05 |g|=13.599 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:39:01,573 INFO step=17325/20000 total=-1.4491 si_sdr=2.64 si_sdri=4.89 lr=1.32e-05 |g|=47.081 mem=1.73GB 48ms/step data=1%
+2026-08-09 19:39:02,774 INFO step=17350/20000 total=-8.3482 si_sdr=9.41 si_sdri=11.65 lr=1.29e-05 |g|=180.415 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:39:03,695 INFO Dataset 样本统计 [total=39000] present=39000 absent=0 swap=0
+2026-08-09 19:39:03,742 INFO Dataset 样本统计 [total=39000] present=39000 absent=0 swap=0
+2026-08-09 19:39:03,967 INFO step=17375/20000 total=-11.7464 si_sdr=12.70 si_sdri=14.95 lr=1.27e-05 |g|=84.054 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:39:05,172 INFO step=17400/20000 total=-3.4861 si_sdr=4.51 si_sdri=6.76 lr=1.25e-05 |g|=25.929 mem=1.73GB 50ms/step data=0%
+2026-08-09 19:39:06,397 INFO step=17425/20000 total=-1.2043 si_sdr=2.35 si_sdri=4.60 lr=1.22e-05 |g|=9.416 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:39:07,608 INFO step=17450/20000 total=-3.6034 si_sdr=4.78 si_sdri=7.02 lr=1.20e-05 |g|=15.841 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:39:08,819 INFO step=17475/20000 total=-1.6701 si_sdr=2.76 si_sdri=5.01 lr=1.18e-05 |g|=15.055 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:39:09,702 INFO Dataset 样本统计 [total=40000] present=40000 absent=0 swap=0
+2026-08-09 19:39:09,757 INFO Dataset 样本统计 [total=40000] present=40000 absent=0 swap=0
+2026-08-09 19:39:10,026 INFO step=17500/20000 total=-4.6140 si_sdr=5.75 si_sdri=8.00 lr=1.15e-05 |g|=63.902 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:39:10,092 INFO 存 checkpoint: checkpoint_step17500.pt
+2026-08-09 19:39:13,176 INFO Dataset 样本统计 [total=341000] present=341000 absent=0 swap=0
+2026-08-09 19:39:16,255 INFO Dataset 样本统计 [total=342000] present=342000 absent=0 swap=0
+2026-08-09 19:39:19,431 INFO Dataset 样本统计 [total=343000] present=343000 absent=0 swap=0
+2026-08-09 19:39:22,619 INFO Dataset 样本统计 [total=344000] present=344000 absent=0 swap=0
+2026-08-09 19:39:25,792 INFO Dataset 样本统计 [total=345000] present=345000 absent=0 swap=0
+2026-08-09 19:39:28,915 INFO Dataset 样本统计 [total=346000] present=346000 absent=0 swap=0
+2026-08-09 19:39:32,209 INFO Dataset 样本统计 [total=347000] present=347000 absent=0 swap=0
+2026-08-09 19:39:35,402 INFO Dataset 样本统计 [total=348000] present=348000 absent=0 swap=0
+2026-08-09 19:39:38,600 INFO Dataset 样本统计 [total=349000] present=349000 absent=0 swap=0
+2026-08-09 19:39:41,788 INFO Dataset 样本统计 [total=350000] present=350000 absent=0 swap=0
+2026-08-09 19:39:41,816 INFO   dev_loss=-3.7970 dev_sisdr=4.88 dB
+2026-08-09 19:39:43,010 INFO step=17525/20000 total=-1.3542 si_sdr=2.42 si_sdri=4.66 lr=1.13e-05 |g|=11.207 mem=1.73GB 47ms/step data=1%
+2026-08-09 19:39:44,201 INFO step=17550/20000 total=-0.8624 si_sdr=2.07 si_sdri=4.31 lr=1.11e-05 |g|=14.304 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:39:45,398 INFO step=17575/20000 total=-10.9060 si_sdr=11.83 si_sdri=14.08 lr=1.09e-05 |g|=70.913 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:39:46,589 INFO step=17600/20000 total=-3.4238 si_sdr=4.40 si_sdri=6.65 lr=1.06e-05 |g|=14.286 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:39:47,522 INFO Dataset 样本统计 [total=41000] present=41000 absent=0 swap=0
+2026-08-09 19:39:47,571 INFO Dataset 样本统计 [total=41000] present=41000 absent=0 swap=0
+2026-08-09 19:39:47,793 INFO step=17625/20000 total=-2.5751 si_sdr=3.69 si_sdri=5.93 lr=1.04e-05 |g|=11.759 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:39:48,985 INFO step=17650/20000 total=-6.4723 si_sdr=7.49 si_sdri=9.74 lr=1.02e-05 |g|=44.262 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:39:50,179 INFO step=17675/20000 total=-1.6485 si_sdr=2.72 si_sdri=4.97 lr=9.99e-06 |g|=12.596 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:39:51,359 INFO step=17700/20000 total=-4.7626 si_sdr=5.79 si_sdri=8.03 lr=9.78e-06 |g|=24.407 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:39:52,580 INFO step=17725/20000 total=-4.7912 si_sdr=5.81 si_sdri=8.05 lr=9.57e-06 |g|=12.275 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:39:53,486 INFO Dataset 样本统计 [total=42000] present=42000 absent=0 swap=0
+2026-08-09 19:39:53,536 INFO Dataset 样本统计 [total=42000] present=42000 absent=0 swap=0
+2026-08-09 19:39:53,796 INFO step=17750/20000 total=-6.8178 si_sdr=7.83 si_sdri=10.07 lr=9.36e-06 |g|=17.777 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:39:54,967 INFO step=17775/20000 total=-5.6891 si_sdr=6.77 si_sdri=9.02 lr=9.16e-06 |g|=39.899 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:39:56,163 INFO step=17800/20000 total=-6.0536 si_sdr=7.08 si_sdri=9.33 lr=8.96e-06 |g|=30.234 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:39:57,359 INFO step=17825/20000 total=-2.9466 si_sdr=3.94 si_sdri=6.19 lr=8.76e-06 |g|=19.368 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:39:58,552 INFO step=17850/20000 total=-0.9977 si_sdr=2.27 si_sdri=4.51 lr=8.56e-06 |g|=9.909 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:39:59,478 INFO Dataset 样本统计 [total=43000] present=43000 absent=0 swap=0
+2026-08-09 19:39:59,526 INFO Dataset 样本统计 [total=43000] present=43000 absent=0 swap=0
+2026-08-09 19:39:59,753 INFO step=17875/20000 total=-3.4607 si_sdr=4.45 si_sdri=6.70 lr=8.36e-06 |g|=20.987 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:40:00,941 INFO step=17900/20000 total=0.3793 si_sdr=0.79 si_sdri=3.04 lr=8.17e-06 |g|=13.074 mem=1.73GB 50ms/step data=0%
+2026-08-09 19:40:02,143 INFO step=17925/20000 total=-2.1656 si_sdr=3.25 si_sdri=5.49 lr=7.98e-06 |g|=13.881 mem=1.73GB 51ms/step data=0%
+2026-08-09 19:40:03,336 INFO step=17950/20000 total=-4.2709 si_sdr=5.22 si_sdri=7.46 lr=7.79e-06 |g|=13.730 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:40:04,548 INFO step=17975/20000 total=-5.5292 si_sdr=6.63 si_sdri=8.88 lr=7.60e-06 |g|=37.458 mem=1.73GB 52ms/step data=1%
+2026-08-09 19:40:05,508 INFO Dataset 样本统计 [total=44000] present=44000 absent=0 swap=0
+2026-08-09 19:40:05,554 INFO Dataset 样本统计 [total=44000] present=44000 absent=0 swap=0
+2026-08-09 19:40:05,816 INFO step=18000/20000 total=-2.3841 si_sdr=3.43 si_sdri=5.67 lr=7.41e-06 |g|=16.833 mem=1.73GB 50ms/step data=0%
+2026-08-09 19:40:05,878 INFO 存 checkpoint: checkpoint_step18000.pt
+2026-08-09 19:40:08,945 INFO Dataset 样本统计 [total=351000] present=351000 absent=0 swap=0
+2026-08-09 19:40:11,940 INFO Dataset 样本统计 [total=352000] present=352000 absent=0 swap=0
+2026-08-09 19:40:15,014 INFO Dataset 样本统计 [total=353000] present=353000 absent=0 swap=0
+2026-08-09 19:40:18,093 INFO Dataset 样本统计 [total=354000] present=354000 absent=0 swap=0
+2026-08-09 19:40:21,271 INFO Dataset 样本统计 [total=355000] present=355000 absent=0 swap=0
+2026-08-09 19:40:24,427 INFO Dataset 样本统计 [total=356000] present=356000 absent=0 swap=0
+2026-08-09 19:40:27,621 INFO Dataset 样本统计 [total=357000] present=357000 absent=0 swap=0
+2026-08-09 19:40:30,742 INFO Dataset 样本统计 [total=358000] present=358000 absent=0 swap=0
+2026-08-09 19:40:33,891 INFO Dataset 样本统计 [total=359000] present=359000 absent=0 swap=0
+2026-08-09 19:40:37,198 INFO Dataset 样本统计 [total=360000] present=360000 absent=0 swap=0
+2026-08-09 19:40:37,223 INFO   dev_loss=-3.8912 dev_sisdr=4.97 dB
+2026-08-09 19:40:38,418 INFO step=18025/20000 total=-4.4373 si_sdr=5.41 si_sdri=7.65 lr=7.23e-06 |g|=40.163 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:40:39,665 INFO step=18050/20000 total=0.3609 si_sdr=0.88 si_sdri=3.13 lr=7.05e-06 |g|=11.409 mem=1.73GB 48ms/step data=1%
+2026-08-09 19:40:40,898 INFO step=18075/20000 total=-4.2893 si_sdr=5.34 si_sdri=7.58 lr=6.87e-06 |g|=22.575 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:40:42,100 INFO step=18100/20000 total=-0.4444 si_sdr=1.57 si_sdri=3.82 lr=6.70e-06 |g|=31.709 mem=1.73GB 49ms/step data=1%
+2026-08-09 19:40:43,033 INFO Dataset 样本统计 [total=45000] present=45000 absent=0 swap=0
+2026-08-09 19:40:43,081 INFO Dataset 样本统计 [total=45000] present=45000 absent=0 swap=0
+2026-08-09 19:40:43,300 INFO step=18125/20000 total=-3.0456 si_sdr=4.28 si_sdri=6.52 lr=6.52e-06 |g|=12.707 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:40:44,493 INFO step=18150/20000 total=-1.7914 si_sdr=2.84 si_sdri=5.09 lr=6.35e-06 |g|=11.533 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:40:45,692 INFO step=18175/20000 total=-1.3412 si_sdr=2.42 si_sdri=4.67 lr=6.18e-06 |g|=12.331 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:40:46,881 INFO step=18200/20000 total=-8.2822 si_sdr=9.20 si_sdri=11.45 lr=6.02e-06 |g|=58.086 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:40:48,083 INFO step=18225/20000 total=-1.1258 si_sdr=2.29 si_sdri=4.54 lr=5.85e-06 |g|=17.766 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:40:49,001 INFO Dataset 样本统计 [total=46000] present=46000 absent=0 swap=0
+2026-08-09 19:40:49,050 INFO Dataset 样本统计 [total=46000] present=46000 absent=0 swap=0
+2026-08-09 19:40:49,312 INFO step=18250/20000 total=-0.8741 si_sdr=1.95 si_sdri=4.20 lr=5.69e-06 |g|=10.166 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:40:50,562 INFO step=18275/20000 total=-1.6886 si_sdr=2.78 si_sdri=5.03 lr=5.53e-06 |g|=10.972 mem=1.73GB 47ms/step data=1%
+2026-08-09 19:40:51,763 INFO step=18300/20000 total=-3.2062 si_sdr=4.19 si_sdri=6.44 lr=5.37e-06 |g|=11.015 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:40:53,021 INFO step=18325/20000 total=-6.2833 si_sdr=7.28 si_sdri=9.52 lr=5.21e-06 |g|=43.905 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:40:54,350 INFO step=18350/20000 total=-3.9917 si_sdr=4.94 si_sdri=7.19 lr=5.06e-06 |g|=14.569 mem=1.73GB 57ms/step data=0%
+2026-08-09 19:40:55,307 INFO Dataset 样本统计 [total=47000] present=47000 absent=0 swap=0
+2026-08-09 19:40:55,355 INFO Dataset 样本统计 [total=47000] present=47000 absent=0 swap=0
+2026-08-09 19:40:55,576 INFO step=18375/20000 total=-3.7108 si_sdr=4.80 si_sdri=7.04 lr=4.91e-06 |g|=64.317 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:40:56,774 INFO step=18400/20000 total=-6.9923 si_sdr=8.01 si_sdri=10.25 lr=4.76e-06 |g|=36.741 mem=1.73GB 48ms/step data=1%
+2026-08-09 19:40:57,978 INFO step=18425/20000 total=-2.0252 si_sdr=3.22 si_sdri=5.46 lr=4.61e-06 |g|=11.383 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:40:59,162 INFO step=18450/20000 total=-1.3102 si_sdr=2.41 si_sdri=4.65 lr=4.47e-06 |g|=9.243 mem=1.73GB 50ms/step data=0%
+2026-08-09 19:41:00,358 INFO step=18475/20000 total=-1.9732 si_sdr=3.13 si_sdri=5.37 lr=4.33e-06 |g|=14.774 mem=1.73GB 49ms/step data=1%
+2026-08-09 19:41:01,250 INFO Dataset 样本统计 [total=48000] present=48000 absent=0 swap=0
+2026-08-09 19:41:01,298 INFO Dataset 样本统计 [total=48000] present=48000 absent=0 swap=0
+2026-08-09 19:41:01,553 INFO step=18500/20000 total=-8.3652 si_sdr=9.38 si_sdri=11.62 lr=4.19e-06 |g|=44.535 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:41:01,616 INFO 存 checkpoint: checkpoint_step18500.pt
+2026-08-09 19:41:04,634 INFO Dataset 样本统计 [total=361000] present=361000 absent=0 swap=0
+2026-08-09 19:41:07,685 INFO Dataset 样本统计 [total=362000] present=362000 absent=0 swap=0
+2026-08-09 19:41:10,757 INFO Dataset 样本统计 [total=363000] present=363000 absent=0 swap=0
+2026-08-09 19:41:13,836 INFO Dataset 样本统计 [total=364000] present=364000 absent=0 swap=0
+2026-08-09 19:41:17,113 INFO Dataset 样本统计 [total=365000] present=365000 absent=0 swap=0
+2026-08-09 19:41:20,232 INFO Dataset 样本统计 [total=366000] present=366000 absent=0 swap=0
+2026-08-09 19:41:23,452 INFO Dataset 样本统计 [total=367000] present=367000 absent=0 swap=0
+2026-08-09 19:41:26,610 INFO Dataset 样本统计 [total=368000] present=368000 absent=0 swap=0
+2026-08-09 19:41:29,785 INFO Dataset 样本统计 [total=369000] present=369000 absent=0 swap=0
+2026-08-09 19:41:32,997 INFO Dataset 样本统计 [total=370000] present=370000 absent=0 swap=0
+2026-08-09 19:41:33,022 INFO   dev_loss=-3.8869 dev_sisdr=4.97 dB
+2026-08-09 19:41:34,231 INFO step=18525/20000 total=-8.8376 si_sdr=9.87 si_sdri=12.11 lr=4.05e-06 |g|=64.049 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:41:35,441 INFO step=18550/20000 total=-7.0888 si_sdr=8.23 si_sdri=10.48 lr=3.91e-06 |g|=61.990 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:41:36,638 INFO step=18575/20000 total=-0.3901 si_sdr=1.70 si_sdri=3.95 lr=3.78e-06 |g|=10.838 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:41:37,822 INFO step=18600/20000 total=-13.4516 si_sdr=14.41 si_sdri=16.66 lr=3.65e-06 |g|=133.636 mem=1.73GB 45ms/step data=0%
+2026-08-09 19:41:38,743 INFO Dataset 样本统计 [total=49000] present=49000 absent=0 swap=0
+2026-08-09 19:41:38,788 INFO Dataset 样本统计 [total=49000] present=49000 absent=0 swap=0
+2026-08-09 19:41:39,009 INFO step=18625/20000 total=-7.8848 si_sdr=8.82 si_sdri=11.06 lr=3.52e-06 |g|=25.129 mem=1.73GB 48ms/step data=1%
+2026-08-09 19:41:40,223 INFO step=18650/20000 total=-2.6937 si_sdr=3.88 si_sdri=6.12 lr=3.39e-06 |g|=16.874 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:41:41,452 INFO step=18675/20000 total=-3.5548 si_sdr=4.60 si_sdri=6.85 lr=3.27e-06 |g|=11.037 mem=1.73GB 57ms/step data=0%
+2026-08-09 19:41:42,722 INFO step=18700/20000 total=-0.7575 si_sdr=1.96 si_sdri=4.21 lr=3.15e-06 |g|=15.885 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:41:43,940 INFO step=18725/20000 total=-4.3885 si_sdr=5.45 si_sdri=7.70 lr=3.03e-06 |g|=94.805 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:41:44,848 INFO Dataset 样本统计 [total=50000] present=50000 absent=0 swap=0
+2026-08-09 19:41:44,897 INFO Dataset 样本统计 [total=50000] present=50000 absent=0 swap=0
+2026-08-09 19:41:45,818 INFO step=18750/20000 total=-3.4079 si_sdr=4.55 si_sdri=6.80 lr=2.91e-06 |g|=17.270 mem=1.73GB 707ms/step data=92%
+2026-08-09 19:41:47,009 INFO step=18775/20000 total=-5.5581 si_sdr=6.67 si_sdri=8.92 lr=2.80e-06 |g|=49.553 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:41:48,192 INFO step=18800/20000 total=-4.6303 si_sdr=5.76 si_sdri=8.00 lr=2.68e-06 |g|=19.965 mem=1.73GB 50ms/step data=0%
+2026-08-09 19:41:49,501 INFO step=18825/20000 total=-1.4915 si_sdr=2.62 si_sdri=4.86 lr=2.57e-06 |g|=10.892 mem=1.73GB 55ms/step data=0%
+2026-08-09 19:41:50,710 INFO step=18850/20000 total=-1.1745 si_sdr=2.21 si_sdri=4.46 lr=2.47e-06 |g|=13.926 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:41:51,623 INFO Dataset 样本统计 [total=1000] present=1000 absent=0 swap=0
+2026-08-09 19:41:51,671 INFO Dataset 样本统计 [total=1000] present=1000 absent=0 swap=0
+2026-08-09 19:41:51,890 INFO step=18875/20000 total=-3.9009 si_sdr=4.92 si_sdri=7.17 lr=2.36e-06 |g|=20.312 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:41:53,109 INFO step=18900/20000 total=-2.0943 si_sdr=3.13 si_sdri=5.38 lr=2.26e-06 |g|=16.173 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:41:54,286 INFO step=18925/20000 total=-5.6887 si_sdr=6.76 si_sdri=9.01 lr=2.15e-06 |g|=19.778 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:41:55,473 INFO step=18950/20000 total=-2.8925 si_sdr=4.04 si_sdri=6.28 lr=2.06e-06 |g|=131.885 mem=1.73GB 47ms/step data=1%
+2026-08-09 19:41:56,676 INFO step=18975/20000 total=-1.0849 si_sdr=2.27 si_sdri=4.52 lr=1.96e-06 |g|=10.913 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:41:57,577 INFO Dataset 样本统计 [total=2000] present=2000 absent=0 swap=0
+2026-08-09 19:41:57,623 INFO Dataset 样本统计 [total=2000] present=2000 absent=0 swap=0
+2026-08-09 19:41:57,880 INFO step=19000/20000 total=-1.1310 si_sdr=2.30 si_sdri=4.54 lr=1.87e-06 |g|=15.855 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:41:57,942 INFO 存 checkpoint: checkpoint_step19000.pt
+2026-08-09 19:42:00,944 INFO Dataset 样本统计 [total=371000] present=371000 absent=0 swap=0
+2026-08-09 19:42:03,997 INFO Dataset 样本统计 [total=372000] present=372000 absent=0 swap=0
+2026-08-09 19:42:07,103 INFO Dataset 样本统计 [total=373000] present=373000 absent=0 swap=0
+2026-08-09 19:42:10,297 INFO Dataset 样本统计 [total=374000] present=374000 absent=0 swap=0
+2026-08-09 19:42:13,549 INFO Dataset 样本统计 [total=375000] present=375000 absent=0 swap=0
+2026-08-09 19:42:16,710 INFO Dataset 样本统计 [total=376000] present=376000 absent=0 swap=0
+2026-08-09 19:42:19,905 INFO Dataset 样本统计 [total=377000] present=377000 absent=0 swap=0
+2026-08-09 19:42:23,053 INFO Dataset 样本统计 [total=378000] present=378000 absent=0 swap=0
+2026-08-09 19:42:26,400 INFO Dataset 样本统计 [total=379000] present=379000 absent=0 swap=0
+2026-08-09 19:42:29,600 INFO Dataset 样本统计 [total=380000] present=380000 absent=0 swap=0
+2026-08-09 19:42:29,626 INFO   dev_loss=-3.8979 dev_sisdr=4.98 dB
+2026-08-09 19:42:30,921 INFO step=19025/20000 total=-5.9733 si_sdr=6.98 si_sdri=9.23 lr=1.77e-06 |g|=91.001 mem=1.73GB 56ms/step data=0%
+2026-08-09 19:42:32,122 INFO step=19050/20000 total=-6.5557 si_sdr=7.54 si_sdri=9.78 lr=1.68e-06 |g|=64.864 mem=1.73GB 45ms/step data=1%
+2026-08-09 19:42:33,306 INFO step=19075/20000 total=-1.1113 si_sdr=2.28 si_sdri=4.53 lr=1.60e-06 |g|=8.966 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:42:34,499 INFO step=19100/20000 total=-0.2646 si_sdr=1.47 si_sdri=3.72 lr=1.51e-06 |g|=13.705 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:42:35,437 INFO Dataset 样本统计 [total=3000] present=3000 absent=0 swap=0
+2026-08-09 19:42:35,484 INFO Dataset 样本统计 [total=3000] present=3000 absent=0 swap=0
+2026-08-09 19:42:35,711 INFO step=19125/20000 total=-7.0373 si_sdr=7.95 si_sdri=10.20 lr=1.43e-06 |g|=70.951 mem=1.73GB 50ms/step data=0%
+2026-08-09 19:42:36,924 INFO step=19150/20000 total=-8.7590 si_sdr=9.75 si_sdri=12.00 lr=1.35e-06 |g|=69.018 mem=1.73GB 50ms/step data=0%
+2026-08-09 19:42:38,116 INFO step=19175/20000 total=-8.8049 si_sdr=9.81 si_sdri=12.06 lr=1.27e-06 |g|=31.233 mem=1.73GB 49ms/step data=1%
+2026-08-09 19:42:39,329 INFO step=19200/20000 total=-0.5749 si_sdr=1.76 si_sdri=4.01 lr=1.19e-06 |g|=9.181 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:42:40,523 INFO step=19225/20000 total=-4.7257 si_sdr=5.73 si_sdri=7.98 lr=1.12e-06 |g|=9.241 mem=1.73GB 46ms/step data=1%
+2026-08-09 19:42:41,426 INFO Dataset 样本统计 [total=4000] present=4000 absent=0 swap=0
+2026-08-09 19:42:41,475 INFO Dataset 样本统计 [total=4000] present=4000 absent=0 swap=0
+2026-08-09 19:42:41,734 INFO step=19250/20000 total=-7.1699 si_sdr=8.17 si_sdri=10.42 lr=1.05e-06 |g|=74.632 mem=1.73GB 47ms/step data=1%
+2026-08-09 19:42:42,939 INFO step=19275/20000 total=-4.5823 si_sdr=5.69 si_sdri=7.94 lr=9.81e-07 |g|=22.086 mem=1.73GB 50ms/step data=0%
+2026-08-09 19:42:44,145 INFO step=19300/20000 total=-3.9645 si_sdr=5.00 si_sdri=7.25 lr=9.15e-07 |g|=16.654 mem=1.73GB 49ms/step data=1%
+2026-08-09 19:42:45,342 INFO step=19325/20000 total=-5.6111 si_sdr=6.67 si_sdri=8.91 lr=8.51e-07 |g|=96.386 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:42:46,528 INFO step=19350/20000 total=-2.2291 si_sdr=3.31 si_sdri=5.55 lr=7.89e-07 |g|=12.060 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:42:47,450 INFO Dataset 样本统计 [total=5000] present=5000 absent=0 swap=0
+2026-08-09 19:42:47,500 INFO Dataset 样本统计 [total=5000] present=5000 absent=0 swap=0
+2026-08-09 19:42:47,724 INFO step=19375/20000 total=-1.2180 si_sdr=2.37 si_sdri=4.61 lr=7.30e-07 |g|=9.345 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:42:48,925 INFO step=19400/20000 total=-4.3444 si_sdr=5.34 si_sdri=7.58 lr=6.72e-07 |g|=11.200 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:42:50,121 INFO step=19425/20000 total=-5.2709 si_sdr=6.30 si_sdri=8.55 lr=6.18e-07 |g|=45.267 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:42:51,329 INFO step=19450/20000 total=-2.0101 si_sdr=3.03 si_sdri=5.27 lr=5.65e-07 |g|=9.447 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:42:52,537 INFO step=19475/20000 total=0.2070 si_sdr=0.99 si_sdri=3.24 lr=5.15e-07 |g|=13.574 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:42:53,426 INFO Dataset 样本统计 [total=6000] present=6000 absent=0 swap=0
+2026-08-09 19:42:53,474 INFO Dataset 样本统计 [total=6000] present=6000 absent=0 swap=0
+2026-08-09 19:42:53,728 INFO step=19500/20000 total=-10.2405 si_sdr=11.18 si_sdri=13.43 lr=4.67e-07 |g|=36.273 mem=1.73GB 47ms/step data=1%
+2026-08-09 19:42:53,789 INFO 存 checkpoint: checkpoint_step19500.pt
+2026-08-09 19:42:56,867 INFO Dataset 样本统计 [total=381000] present=381000 absent=0 swap=0
+2026-08-09 19:43:00,073 INFO Dataset 样本统计 [total=382000] present=382000 absent=0 swap=0
+2026-08-09 19:43:03,164 INFO Dataset 样本统计 [total=383000] present=383000 absent=0 swap=0
+2026-08-09 19:43:06,300 INFO Dataset 样本统计 [total=384000] present=384000 absent=0 swap=0
+2026-08-09 19:43:09,488 INFO Dataset 样本统计 [total=385000] present=385000 absent=0 swap=0
+2026-08-09 19:43:12,773 INFO Dataset 样本统计 [total=386000] present=386000 absent=0 swap=0
+2026-08-09 19:43:16,073 INFO Dataset 样本统计 [total=387000] present=387000 absent=0 swap=0
+2026-08-09 19:43:19,277 INFO Dataset 样本统计 [total=388000] present=388000 absent=0 swap=0
+2026-08-09 19:43:22,505 INFO Dataset 样本统计 [total=389000] present=389000 absent=0 swap=0
+2026-08-09 19:43:25,730 INFO Dataset 样本统计 [total=390000] present=390000 absent=0 swap=0
+2026-08-09 19:43:25,760 INFO   dev_loss=-3.9109 dev_sisdr=4.99 dB
+2026-08-09 19:43:26,972 INFO step=19525/20000 total=-6.7902 si_sdr=7.90 si_sdri=10.15 lr=4.22e-07 |g|=86.503 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:43:28,173 INFO step=19550/20000 total=-3.4589 si_sdr=4.47 si_sdri=6.71 lr=3.78e-07 |g|=12.332 mem=1.73GB 47ms/step data=1%
+2026-08-09 19:43:29,372 INFO step=19575/20000 total=-3.2038 si_sdr=4.18 si_sdri=6.42 lr=3.37e-07 |g|=10.604 mem=1.73GB 47ms/step data=1%
+2026-08-09 19:43:30,592 INFO step=19600/20000 total=-5.0782 si_sdr=6.00 si_sdri=8.25 lr=2.99e-07 |g|=63.543 mem=1.73GB 48ms/step data=1%
+2026-08-09 19:43:31,535 INFO Dataset 样本统计 [total=7000] present=7000 absent=0 swap=0
+2026-08-09 19:43:31,583 INFO Dataset 样本统计 [total=7000] present=7000 absent=0 swap=0
+2026-08-09 19:43:31,805 INFO step=19625/20000 total=-1.7065 si_sdr=2.83 si_sdri=5.08 lr=2.63e-07 |g|=13.853 mem=1.73GB 47ms/step data=1%
+2026-08-09 19:43:33,002 INFO step=19650/20000 total=-5.1745 si_sdr=6.15 si_sdri=8.40 lr=2.29e-07 |g|=39.015 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:43:34,249 INFO step=19675/20000 total=-7.2605 si_sdr=8.25 si_sdri=10.50 lr=1.97e-07 |g|=24.336 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:43:35,469 INFO step=19700/20000 total=-2.9430 si_sdr=3.90 si_sdri=6.15 lr=1.68e-07 |g|=9.548 mem=1.73GB 52ms/step data=0%
+2026-08-09 19:43:36,672 INFO step=19725/20000 total=-2.2136 si_sdr=3.31 si_sdri=5.56 lr=1.41e-07 |g|=15.387 mem=1.73GB 49ms/step data=1%
+2026-08-09 19:43:37,553 INFO Dataset 样本统计 [total=8000] present=8000 absent=0 swap=0
+2026-08-09 19:43:37,600 INFO Dataset 样本统计 [total=8000] present=8000 absent=0 swap=0
+2026-08-09 19:43:37,854 INFO step=19750/20000 total=-2.5078 si_sdr=3.50 si_sdri=5.75 lr=1.17e-07 |g|=18.282 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:43:39,059 INFO step=19775/20000 total=-4.1280 si_sdr=5.25 si_sdri=7.50 lr=9.46e-08 |g|=61.154 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:43:40,245 INFO step=19800/20000 total=-4.5693 si_sdr=5.55 si_sdri=7.79 lr=7.48e-08 |g|=23.605 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:43:41,428 INFO step=19825/20000 total=-1.8910 si_sdr=3.05 si_sdri=5.29 lr=5.72e-08 |g|=13.983 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:43:42,632 INFO step=19850/20000 total=-5.4217 si_sdr=6.42 si_sdri=8.67 lr=4.21e-08 |g|=19.703 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:43:43,557 INFO Dataset 样本统计 [total=9000] present=9000 absent=0 swap=0
+2026-08-09 19:43:43,605 INFO Dataset 样本统计 [total=9000] present=9000 absent=0 swap=0
+2026-08-09 19:43:43,822 INFO step=19875/20000 total=-5.3807 si_sdr=6.48 si_sdri=8.73 lr=2.92e-08 |g|=21.424 mem=1.73GB 46ms/step data=0%
+2026-08-09 19:43:45,004 INFO step=19900/20000 total=-3.9657 si_sdr=5.07 si_sdri=7.32 lr=1.87e-08 |g|=11.296 mem=1.73GB 48ms/step data=0%
+2026-08-09 19:43:46,238 INFO step=19925/20000 total=-4.8885 si_sdr=5.90 si_sdri=8.15 lr=1.05e-08 |g|=11.517 mem=1.73GB 51ms/step data=1%
+2026-08-09 19:43:47,539 INFO step=19950/20000 total=-2.1890 si_sdr=3.36 si_sdri=5.61 lr=4.67e-09 |g|=12.208 mem=1.73GB 49ms/step data=0%
+2026-08-09 19:43:48,744 INFO step=19975/20000 total=-1.0680 si_sdr=2.23 si_sdri=4.48 lr=1.17e-09 |g|=14.962 mem=1.73GB 49ms/step data=1%
+2026-08-09 19:43:49,646 INFO Dataset 样本统计 [total=10000] present=10000 absent=0 swap=0
+2026-08-09 19:43:49,694 INFO Dataset 样本统计 [total=10000] present=10000 absent=0 swap=0
+2026-08-09 19:43:49,947 INFO step=20000/20000 total=-1.7424 si_sdr=2.94 si_sdri=5.19 lr=0.00e+00 |g|=21.374 mem=1.73GB 47ms/step data=0%
+2026-08-09 19:43:50,010 INFO 存 checkpoint: checkpoint_step20000.pt
+2026-08-09 19:43:53,053 INFO Dataset 样本统计 [total=391000] present=391000 absent=0 swap=0
+2026-08-09 19:43:56,061 INFO Dataset 样本统计 [total=392000] present=392000 absent=0 swap=0
+2026-08-09 19:43:59,119 INFO Dataset 样本统计 [total=393000] present=393000 absent=0 swap=0
+2026-08-09 19:44:02,225 INFO Dataset 样本统计 [total=394000] present=394000 absent=0 swap=0
+2026-08-09 19:44:05,411 INFO Dataset 样本统计 [total=395000] present=395000 absent=0 swap=0
+2026-08-09 19:44:08,636 INFO Dataset 样本统计 [total=396000] present=396000 absent=0 swap=0
+2026-08-09 19:44:11,889 INFO Dataset 样本统计 [total=397000] present=397000 absent=0 swap=0
+2026-08-09 19:44:15,038 INFO Dataset 样本统计 [total=398000] present=398000 absent=0 swap=0
+2026-08-09 19:44:18,231 INFO Dataset 样本统计 [total=399000] present=399000 absent=0 swap=0
+2026-08-09 19:44:21,443 INFO Dataset 样本统计 [total=400000] present=400000 absent=0 swap=0
+2026-08-09 19:44:21,468 INFO   dev_loss=-3.9103 dev_sisdr=4.99 dB
+2026-08-09 19:44:21,537 INFO 恢复一致性 max|Δ|=0.000e+00 → PASS
+2026-08-09 19:44:21,802 INFO 产物目录: /root/autodl-tmp/funasr-command-recognition/funasr_project/P2_project/artifacts/experiments/B1_PRESENT_seed20260723
+2026-08-09 19:44:21,803 INFO 总体判定: PASS

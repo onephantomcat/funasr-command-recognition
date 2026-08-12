@@ -1,0 +1,12 @@
+{
+  "note": "B3 v3 预检占位（debug_only=true）。P3 接入方独立重跑 40 条（20 pos+20 neg）。下方为 B3 v3 dev 集 10 条参考量级",
+  "formal_preflight_required": true,
+  "ref_10_from_dev_eval": {
+    "mean_input_rms_ref": "≈ 0.100",
+    "mean_output_rms_ref": "≈ 0.000328（energy_ratio=0.00108，> 旧 B3 的 2.0e-7）",
+    "output_input_rms_ratio_ref": "≈ 3.28e-3（修复近静音退化）",
+    "mean_act_f1_pos_ref": 0.875,
+    "corpus_sisdr_db_ref": 1.23
+  },
+  "checkpoint_sha256_ref": "13bce1b90a80710c8342fd28f0aaad90f244571be3be4c7469570992fd96db8b"
+}

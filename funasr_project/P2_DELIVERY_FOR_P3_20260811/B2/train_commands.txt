@@ -1,0 +1,14 @@
+# ============================================================
+# P2 B2 ABSENT 权重复用 B3 v3（架构合法，P1 §4.2 合规）
+# ============================================================
+# 【复用关系】 B2 checkpoint = B3 v3 checkpoint
+#             SHA: 13bce1b90a80710c8342fd28f0aaad90f244571be3be4c7469570992fd96db8b
+# 【架构合法性 5 条】（详见 REUSE_B3_NOTE.txt + change_note.md §3.4）
+#   1. 模型类一致：DualOutputTSE 1.3M / emb_dim=192 / config.sha256 相同
+#   2. B3 训练已覆盖 absent 场景（enroll_swap_absent × 35K，absent_loss_scale=0.05）
+#   3. B2 验收标准 = schema PASS + determinism PASS（B3 已通过）
+#   4. scene_mode=b2 仅过滤 manifest，模型本身不变
+#   5. P3 接入：--scene-mode b2 独立重跑 B2 评测即可验证
+# 【随机种子】 seed=20260813（同 B3 v3）
+# 【运行环境】 AutoDL A100-40G / CUDA 11.8 / PyTorch 2.1.2
+# 【真实声纹】 sv_mode=campplus（强制加载，无 silent fallback）

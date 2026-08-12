@@ -19,16 +19,11 @@ funasr_project/venv_mac/
 # Large datasets, generated audio, caches, and reports
 datasetA/
 funasr_project/data/
-funasr_project/P2_project/data/
 funasr_project/outputs/
 funasr_project/.pycache_check/
 funasr_project/__pycache__/
 funasr_project/*.log
 funasr_project/*cache*.pkl
-
-# Local test audio / debug fixtures (regenerable)
-funasr_project/test_audio/
-funasr_project/**/test_audio/
 
 # Model checkpoints
 *.pt
@@ -36,21 +31,6 @@ funasr_project/**/test_audio/
 *.onnx
 *.ckpt
 *.safetensors
-*.bin
-*.h5
-*.pb
-*.tflite
-
-# Compressed archives / large bundles
-*.tar
-*.tar.gz
-*.tgz
-*.zip
-*.7z
-*.rar
-
-# Log files (any depth)
-*.log
 
 # Local generated submissions/reports
 *eval_report*.json
@@ -67,35 +47,11 @@ _*.pkl
 _*.flag
 
 # === P2 TSE 模块（2026-08-02 追加）===
-# 评估/DEBUG 音频（可从脚本重生成）— 路径修正（真实路径为 P2_project 下）
+# 评估/DEBUG 音频（可从脚本重生成）
 funasr_project/artifacts/experiments/*/before_after_audio/
 funasr_project/artifacts/p2/debug_mixtures_v0/*.wav
 funasr_project/artifacts/p2/debug_mixtures_v0/*.npy
 funasr_project/artifacts/p2/eval_*/audio/
-funasr_project/P2_project/artifacts/debug_mixtures_v0/
-funasr_project/P2_project/artifacts/eval_checkpoint_step*/audio/
-
-# P2 artifacts 下可重生成的二进制大文件（深度任意，用后缀匹配避免 **/ glob 兼容性问题）
-funasr_project/P2_project/artifacts/*.wav
-funasr_project/P2_project/artifacts/*.npy
-funasr_project/P2_project/artifacts/*.tar
-funasr_project/P2_project/artifacts/*.tar.gz
-funasr_project/P2_project/artifacts/*/*.wav
-funasr_project/P2_project/artifacts/*/*.npy
-funasr_project/P2_project/artifacts/*/*.tar
-funasr_project/P2_project/artifacts/*/*.tar.gz
-funasr_project/P2_project/artifacts/*/*/*.wav
-funasr_project/P2_project/artifacts/*/*/*.npy
-funasr_project/P2_project/artifacts/*/*/*.tar
-funasr_project/P2_project/artifacts/*/*/*.tar.gz
-funasr_project/P2_project/artifacts/*/*/*/*.wav
-funasr_project/P2_project/artifacts/*/*/*/*.npy
-funasr_project/P2_project/artifacts/*/*/*/*.tar
-funasr_project/P2_project/artifacts/*/*/*/*.tar.gz
-
-# P2 实验产物目录（checkpoint 由 *.pt 后缀兜底，此处整目录排除以防万一）
-funasr_project/P2_project/artifacts/experiments/
-funasr_project/P2_project/artifacts/final/P2_TSE_final_artifacts*
 
 # 克隆的上游仓库（用 reports/wesep_commit.txt 记录 commit 号）
 funasr_project/third_party/wesep/
@@ -112,36 +68,25 @@ funasr_project/reports/upstream/wesep_tree_status.txt
 # === P4 声纹模块（2026-08-07 追加）===
 # 克隆的 speakerlab 源码（云端自行克隆）
 funasr_project/P4_project/artifacts/models/speakerlab_source/
-# CAMPPlus 预训练权重（28MB，云端单独下载）— 由 *.bin 全局后缀兜底，此处显式再列
+# CAMPPlus 预训练权重（28MB，云端单独下载）
 funasr_project/P4_project/artifacts/models/campplus_cn_common.bin
-funasr_project/P4_project/artifacts/models/*.bin
 
 # === 临时打包文件（2026-08-08 追加）===
 funasr_project/P4_project.zip
-
-# P2 artifacts 临时传输/生成脚本（不进 Git）
-funasr_project/P2_project/artifacts/eval_b64*.txt
-funasr_project/P2_project/artifacts/gen_*.py
-funasr_project/P2_project/artifacts/upload_commands.txt
 
 # === 本地操作手册（不进 Git）===
 P2_AutoDL*.md
 P2_云端*.md
 
-# === B1 实验产物（本地备份，防止提交大文件）— 已被上面的 P2_project/artifacts/experiments/ 涵盖
+# === B1 实验产物（本地备份，防止提交大文件）===
 funasr_project/P2_project/artifacts/experiments/B1_CAMPPLUS_LITE/
+funasr_project/P2_project/artifacts/experiments/B1_CAMPPLUS_LITE.tar.gz
 funasr_project/P2_project/artifacts/experiments/B1_50K_LITE/
+funasr_project/P2_project/artifacts/experiments/B1_50K_LITE.tar.gz
 funasr_project/P2_project/artifacts/experiments/B2_ABSENT_*/
 funasr_project/P2_project/artifacts/experiments/B3_SWAP_*/
 
-# === P2 正式交付包（2026-08-11 追加）===
-# 交付产物目录（含 checkpoint .pt、manifest.jsonl 等大文件）— 不进 Git
-funasr_project/P2_DELIVERY_FOR_P3_*/
-P2_DELIVERY_FOR_P3_*/
-# P2 最终产物目录（云端下载的 checkpoint + manifest 备份）
-funasr_project/P2_project/artifacts/final/P2_CLOUD_FIXED/
-funasr_project/P2_project/artifacts/final/P2_artifacts/
-# 根目录 outputs（评测输出、CER 报告等）
-outputs/
-# P1/P2/P3 交付接续报告（本地工作文档，不进 Git）
-P1_P2_P3_FULL_DELIVERY_REPORT_*.md
+# === P3 交付包大文件排除（train_manifest >100MB，超 GitHub 限制）===
+funasr_project/P2_DELIVERY_FOR_P3_20260811/*/data/train_manifest.jsonl
+# tar.gz 压缩包（>100MB，超 GitHub 限制，通过外部方式传给 P3）
+*.tar.gz

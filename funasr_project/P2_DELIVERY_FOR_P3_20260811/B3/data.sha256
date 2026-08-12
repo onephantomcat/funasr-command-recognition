@@ -1,0 +1,4 @@
+# B3 data.sha256（v2.1 修正：原标注 train/dev 同 SHA 错误，已重算单文件）
+# 计算命令：Get-FileHash -Algorithm SHA256
+1b3e8377b32b5a9c7761ab42f62f7192ee79bdefbbea8adc53749e55d38888a7  data/train_manifest.jsonl  split=train  n=50000
+8911193cd3e4789a8a2f175e856c0c6ead5594abb95679bd3866d052f961d909  data/dev_manifest.jsonl    split=dev    n=9000

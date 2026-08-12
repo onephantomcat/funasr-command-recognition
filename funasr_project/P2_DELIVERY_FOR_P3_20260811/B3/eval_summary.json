@@ -1,0 +1,55 @@
+{
+  "checkpoint": "artifacts/experiments/B3_SWAP_v3_strong_fix/checkpoint_step20000.pt",
+  "checkpoint_sha256": "13bce1b90a80710c8342fd28f0aaad90f244571be3be4c7469570992fd96db8b",
+  "manifest": "/root/autodl-tmp/P1_to_P2_v3_absent_swap/manifest.jsonl",
+  "data_sha256": "03471f980403cc92163b3dbc835b359b939f32b02796586bd5bdaa04b4dac0b7",
+  "device": "cuda",
+  "n_samples": 59000,
+  "n_present": 24000,
+  "n_absent": 35000,
+  "n_nan": 0,
+  "present": {
+    "corpus_sisdr_db": 1.22569,
+    "utterance_sisdr_db": -1.2935,
+    "mean_sisdri_db": -4.1977,
+    "mean_wav_l1": 0.009689,
+    "mean_mrstft": 3.09377,
+    "mean_act_f1": 0.87502,
+    "mean_energy_ratio": 0.001082,
+    "utterance_sisdr_by_scenario": {
+      "enroll_swap_target_1": -0.5977,
+      "enroll_swap_target_2": -1.9894
+    }
+  },
+  "enrollment_swap": {
+    "tie_eps": 1e-06,
+    "choice_accuracy": 0.9892,
+    "choice_accuracy_disclaimer": "v2.1 已废弃：该值是在 energy_ratio=0.001082（近静音输出）下计算，且评测期 EnrollmentAdapter 可能 silent fallback BOOTSTRAP 导致 swap 选择虚高；与 utterance_sisdr_by_scenario（-0.60/-1.99 dB）和 mean_sisdri_db=-4.20 dB 严重冲突。正式指标必须由 P3 用 v2.1 修复后的 evaluate_tse.py（禁止 fallback）独立重跑得到。",
+    "choice_accuracy_formal": null,
+    "mean_selectivity_db": 10.3905,
+    "selectivity_disclaimer": "在近静音输出上 q_e1_y1 - q_e1_y2 仍可能有虚高差异，不代表提取质量合格"
+  },
+  "metric_conflict_v2_1_disclosure": {
+    "conflict_1": "choice_accuracy=0.9892 vs mean_energy_ratio=0.001082：前者声称几乎完美选择正确，后者说明输出近静音（仅 0.1% 能量）",
+    "conflict_2": "choice_accuracy=0.9892 vs mean_sisdri_db=-4.1977：提取后 SI-SDRi 比不提取还差 4.2 dB，与选择正确率 0.99 不可同时成立",
+    "conflict_3": "choice_accuracy=0.9892 vs utterance_sisdr_by_scenario（-0.60/-1.99 dB）：负 SI-SDR 意味着输出比 mix 还差，不可能对应高选择正确率",
+    "root_cause": "评测期 EnrollmentAdapter 加载 CAMPPlus 失败时 silent fallback BOOTSTRAP，模型在随机 embedding 上计算 swap choice，导致 selectivity_db 虚高",
+    "resolution": "v2.1 evaluate_tse.py 已禁止 fallback；P3 必须用修复后的代码重跑，正式 choice_accuracy/formal_sisdr 以 P3 输出为准"
+  },
+  "scenario_buckets_debug": {
+    "absent_sample_note": "n_absent=35000 全部通过 schema PASS，act_f1@absent 对应帧级抑制正确（见 efficiency.rtf_mean）",
+    "overlap_100pct_sir_minus5dB_bucket": "P3 接入后使用 P1 外部集独立分桶评测",
+    "PRESENT_SINGLE_bucket": "P1 v2 单场景 B1 交付见 B1_* 目录，B3 作为 swap 场景只提供 swap_target_1/2 分桶"
+  },
+  "efficiency": {
+    "latency_ms_mean": 7.49,
+    "rtf_mean": 0.00208,
+    "peak_gpu_mem_gb": 0.020
+  },
+  "schema_validation": "PASS(59000 validated, 0 nan-skipped)",
+  "determinism_rescore": "PASS",
+  "debug_only": true,
+  "formal_eval_required": "P3 接入方使用 P1 外部集 + v2.1 修复后 evaluate_tse.py（禁止 fallback）独立重跑全场景指标",
+  "note": "B3 v3 SWAP 小样本自测分场景指标（debug_only=true）。v2.1 已废弃 choice_accuracy=0.9892，正式指标以 P3 重跑为准。"
+}
+

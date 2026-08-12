@@ -1,0 +1,78 @@
+# ============================================================
+# P2 三模型正式训练命令 + 随机种子 + 运行环境配置
+# §二-6（P1 §4.2 第 6 条）
+# 生成时间: 2026-08-11T05:11:57
+# ============================================================
+
+# ----------------------------------------------------------------
+# B1（PRESENT 场景，scene_mode=b1）
+#   · 交付版本：候选 1 = 本地旧 B1（PRESENT_seed20260723，SHA df95a0c...，5.25 dB/0.304/0.975，优先保留）
+#              候选 2 = 云端 B1_50K_RESUME（B1_50K_TRAIN，dev_sisdr 最新 6.61 dB）
+#   · 种子（候选 1）：20260723（可复现）
+#   · 种子（候选 2）：20260723（同，max_steps 50000 → resume step 20000）
+#   · 数据：P1 v2_b1 manifest.jsonl（split train/dev → B1/data/train_manifest. + dev_manifest.）
+#   · 声纹：sv_mode=campplus（强制加载，无 silent fallback BOOTSTRAP）
+# ----------------------------------------------------------------
+B1_CMD_50K_INIT = '''python tools/train_b1_trial.py \
+    --config configs/tse_b1.yaml \
+    --manifest /root/autodl-tmp/P1_to_P2_v2_b1/manifest.jsonl \
+    --device cuda --max_steps 50000 --seed 20260723'''
+
+B1_CMD_RESUME_20K = '''python tools/train_b1_trial.py \
+    --config configs/tse_b1.yaml \
+    --manifest /root/autodl-tmp/P1_to_P2_v2_b1/manifest.jsonl \
+    --device cuda --max_steps 20000 --seed 20260723 \
+    --resume artifacts/experiments/B1_50K_RESUME_seed20260723/checkpoint_stepXXXXX.pt'''
+
+# ----------------------------------------------------------------
+# B2（ABSENT 零抑制，scene_mode=b2 → 权重复用 B3 v3）
+#   · 架构合规性证明：见 REUSE_B3_NOTE.txt + change_note.md §3.4
+#   · 种子：20260814（场景声明）→ 复用 B3 v3 的实际训练种子 20260813（因为同源权重）
+#   · 数据：P1 v3 manifest.jsonl scene_mode=b2 切分（仅 absent）→ B2/data/train_manifest/dev_manifest
+#   · 声纹：sv_mode=campplus（强制加载）
+# ----------------------------------------------------------------
+B2_CMD_NOT_TRAINED_NOW_REUSE_B3_V3 = '''权重复用 B3 v3（同源），不单独训练。
+评测（P3 接入）:
+python tools/evaluate_tse.py \
+    --checkpoint B2/checkpoint_step20000.pt \
+    --manifest /path/to/P1_v3_manifest.jsonl --data-root /path/to/P1_v3 \
+    --scene-mode b2 --out P3_B2_FORMAL_EVAL'''
+
+# ----------------------------------------------------------------
+# B3（ENROLL-SWAP 场景 v3 强修复版 ★ 核心替换）
+#   · 模型版本：B3_SWAP_v3_strong_fix（SHA 13bce1b...96db8b）
+#   · 替换对象：旧 B3 v1.0（SHA 5c351097... P3 REJECT，40/40 近静音）
+#   · 种子：20260813
+#   · Warm-start：从 B1_50K_RESUME step20000 热启动（继承 +6.61 dB 基线）
+#   · 关键修复配置：
+#       absent_loss_scale = 0.05（absent 梯度砍 95%，防止压倒 PRESENT）
+#       lambda_sisdr = 2.0（提取质量强化）
+#       lambda_act = 1.0（帧级检测适中，v4=2.0 过度抑制已作废）
+#       lr_warmup_steps = 500（B1 warm-start 后的稳梯度）
+#   · 数据：P1 v3 manifest scene_mode=b3 切分（swap_target_1/2 + enroll_swap_absent）→ B3/data/
+# ----------------------------------------------------------------
+B3_SMOKE_CMD = '''python tools/train_b1_trial.py \
+    --config configs/tse_b3_v3.yaml \
+    --manifest /root/autodl-tmp/P1_to_P2_v3_absent_swap/manifest.jsonl \
+    --device cuda --max_steps 5 --seed 20260813 \
+    --init_checkpoint artifacts/experiments/B1_50K_RESUME_seed20260723/checkpoint_step20000.pt'''
+
+B3_FULL_TRAIN_CMD = '''python tools/train_b1_trial.py \
+    --config configs/tse_b3_v3.yaml \
+    --manifest /root/autodl-tmp/P1_to_P2_v3_absent_swap/manifest.jsonl \
+    --device cuda --max_steps 20000 --seed 20260813 \
+    --init_checkpoint artifacts/experiments/B1_50K_RESUME_seed20260723/checkpoint_step20000.pt \
+    2>&1 | tee train_B3_v3_strong_fix.log'''
+
+# ----------------------------------------------------------------
+# 运行环境（三模型通用）
+# ----------------------------------------------------------------
+# GPU: AutoDL A100-40G
+# CUDA: 11.8
+# PyTorch: 2.1.2+cu118
+# Python: 3.10
+# SV 依赖:
+#   P4_project/artifacts/models/speakerlab_source/  → sys.path 注入
+#   P4_project/artifacts/models/campplus_cn_common.bin  → 真实声纹权重
+# SV 强制: EnrollmentAdapter.mode=campplus，失败抛 RuntimeError（不允许 silent fallback BOOTSTRAP）
+# 代码依赖: 见 fix_list.txt（Git commit hash 填入后即对应精确版本）

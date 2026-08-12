@@ -98,4 +98,4 @@ notes: "B3 enroll-swap 鲁棒性训练: target_1/2=present 20K（同 speaker swa
 # P4 CAMPPlus 嵌入（与 B1 一致；swap 后的 enroll 走同一份 CAMPPlus，缓存 key=enroll_path MD5）
 sv_mode: campplus
 sv_bootstrap_seed: 20260804
-sv_model_id: ""
+sv_model_id: "iic/speech_campplus_sv_zh-cn_16k-common"

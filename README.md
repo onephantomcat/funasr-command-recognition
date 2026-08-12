@@ -1,6 +1,6 @@
 # FunASR 目标发音人抗干扰语音指令识别
 
-当前版本：`v0.5.0-p2-tse-module`
+当前版本：`v0.4.0-grid-search-tuning`
 
 本项目面向“目标发音人语音指令识别 + 非目标发音人拒识”任务。在远场噪声、多人重叠语音和非目标说话人干扰下，系统只输出目标说话人的识别文本；非目标说话人则输出空字符串。
 
@@ -39,16 +39,6 @@ FSMN-VAD + Paraformer-large ASR
 主要模型：Paraformer-large ASR、FSMN-VAD、CAM++ 声纹验证，以及 Logistic Regression 轻量拒识门控。
 
 ## 版本记录
-### v0.4.1-p2-tse-module
-
-- 新增 P2 目标说话人提取（TSE）模块 [funasr_project/P2_project](./funasr_project/P2_project)，基于 LSTM-FiLM + 双输出 STFT 掩码架构，从混合语音中利用注册声纹嵌入提取目标说话人波形并输出帧级活动度。
-- 完成 B1/B2/B3 三场景训练（各 20K 步，云端 RTX 4090，CAM++ 真实声纹）：B1 PRESENT（100K 样本，corpus_sisdr `5.25 dB`）、B2 ABSENT（30K 样本，absent 子集 energy_ratio `4.6e-14`）、B3 ENROLL-SWAP（30K 样本，从 B1 warm-start，mean_act_f1 `0.878`、choice_accuracy `0.989`）。
-- 实现双嵌入模式适配器 [enrollment_adapter.py](./funasr_project/P2_project/src/tse/enrollment_adapter.py)：BOOTSTRAP（确定性随机，调试用）与 CAMPLUS（P4 真实声纹，正式训练），CAMPLUS 失败自动降级 BOOTSTRAP。
-- 冻结 P2 对外接口 [api.py](./funasr_project/P2_project/src/tse/api.py)：`extract_target(command_wav, enroll_embedding)` → `[B,T]` 目标波形，长度严格等于输入，供 P5 Pipeline 直接消费。
-- 完成统一评测器 [evaluate_tse.py](./funasr_project/P2_project/tools/evaluate_tse.py)：输出 predictions.jsonl / summary.json / report.md，支持 SI-SDR / SI-SDRi / MR-STFT / activity F1 / enrollment_swap 选择正确率等指标，schema 校验与确定性复评全 PASS。
-- 更新 `.gitignore`：全局排除 `*.pt/*.tar/*.tar.gz/*.log/*.bin` 等大文件，从索引移除 1542 个误跟踪的 wav/npy/log 文件，仓库体积从 GiB 级降至 7.94 MiB。
-- 新增 P2 模块文档 [P2_project/README.md](./funasr_project/P2_project/README.md)，含模块契约、目录结构、环境依赖、快速开始、三场景基准与关键工程说明。
-
 ### v0.4.1-gate-v2-rejection-optimize
 
 - 门控特征由 7 维扩展至 13 维 [lightweight_gate.py](./funasr_project/lightweight_gate.py)：新增 `intent_perfect`、`sim_x_intent`、`perfect_x_sim` 等 6 个非线性/交互特征，使线性门控具备「ASR 完美命中时救援低声纹正样本」的组合判断能力。

@@ -1,0 +1,78 @@
+# ============================================================
+# P2 v2.1 第三方依赖固定清单
+# ============================================================
+# 用于解决 P3 验收报告问题 3：
+#   "固定并提供 speakerlab commit、CAMPPlus 权重 SHA"
+#
+# 所有 SHA256 均由 Get-FileHash / sha256sum 实算得出，可在 P3 端独立复算验证。
+# ============================================================
+
+# ── 1. speakerlab 源码 commit ──────────────────────────────────
+# 仓库：https://github.com/modelscope/speakerlab（3D-Speaker 系）
+# 本地路径：funasr_project/P4_project/artifacts/models/speakerlab_source/
+# clone 时间：2025-12-08 15:20:17 +0800
+# 当前 HEAD commit：
+[speakerlab]
+commit_hash = "065629c313eaf1a01c65c640c46d77e61e9607b4"
+commit_date = "2025-12-08 15:20:17 +0800"
+commit_subject = "Update cluster.py"
+remote_url_expected = "https://github.com/modelscope/speakerlab.git"
+
+# P3 验证命令（在 speakerlab_source 目录下执行）：
+#   git rev-parse HEAD
+#   预期输出：065629c313eaf1a01c65c640c46d77e61e9607b4
+# 若与上述不一致，说明 P3 端 speakerlab 版本漂移，可能导致 CAMPPlus 行为不一致。
+
+
+# ── 2. CAMPPlus 预训练权重 SHA256 ───────────────────────────────
+# 来源：ModelScope iic/speech_campplus_sv_zh-cn_16k-common
+# 本地路径：funasr_project/P4_project/artifacts/models/campplus_cn_common.bin
+# 用途：B1/B2/B3 训练与评测期的说话人嵌入提取后端
+[campplus_weights]
+file_name = "campplus_cn_common.bin"
+file_size_bytes = 28036335
+sha256 = "3388cf5fd3493c9ac9c69851d8e7a8badcfb4f3dc631020c4961371646d5ada8"
+model_id = "iic/speech_campplus_sv_zh-cn_16k-common"
+
+# P3 验证命令（在权重文件所在目录执行）：
+#   sha256sum campplus_cn_common.bin
+#   预期输出：3388cf5fd3493c9ac9c69851d8e7a8badcfb4f3dc631020c4961371646d5ada8  campplus_cn_common.bin
+# 若与上述不一致，请从 ModelScope 重新拉取并固定到此版本。
+
+
+# ── 3. B2/B3 config.yaml 中 sv_model_id 对应关系 ─────────────────
+# v2.1 修复：sv_model_id 从空字符串改为 ModelScope ID
+#   sv_model_id: "iic/speech_campplus_sv_zh-cn_16k-common"
+# EnrollmentAdapter.load_backend() → CampplusBackend._resolve_weight_path()
+# 解析顺序：
+#   1) 若 sv_model_id 是本地 .bin/.pt/.pth 文件路径 → 直接加载
+#   2) 在 P4_project/artifacts/models/ 下查找 campplus_cn_common.bin → 加载
+#   3) 在 ~/.cache/modelscope/ 下查找 model_id 对应缓存 → 加载
+#   4) 都没有 → 随机初始化（仅调试用，会打 warning）
+# v2.1 强制：若 1)/2)/3) 都未命中，且非 --debug_data 模式 → 直接 RuntimeError，禁止训练/评测
+
+
+# ── 4. config.yaml SHA256 ──────────────────────────────────────
+[config_sha256_v2_1]
+B1_config_sha256 = "0d659d5cc361484fb595c18feeb6ccf7fcae6cb66d9e05191599f9432d244638"
+B2_config_sha256 = "6b2b08f8f5eb94b91d1d93d970f08b310859ee9668b71ef0d87dee6044425125"
+B3_config_sha256 = "6b2b08f8f5eb94b91d1d93d970f08b310859ee9668b71ef0d87dee6044425125"
+# 注：B2 复用 B3 checkpoint（见 B2/REUSE_B3_NOTE.txt），故 B2/B3 config_sha256 相同
+
+
+# ── 5. train/dev manifest 单文件 SHA256（v2.1 修正）─────────────
+# 原标注 train/dev 用同一 SHA（错误！），已重算如下
+[manifest_sha256_v2_1]
+B1_train_manifest_sha256 = "a3822ed34a532ca4b11ed608567ef049b3f9df6d3069b74c427b3ca03e993002"
+B1_dev_manifest_sha256   = "cf785cb601c5238d13c39c036da16acfa893a7392a215a7c64a051bc0a1d48db"
+B2_train_manifest_sha256 = "f4cd7a4c4e5a2d86d24e35eaa59f7daa9742fa922255ae60b8bb98575ac2c970"
+B2_dev_manifest_sha256   = "2ccb412b2c52c83a5943fcb4cca8e73e4465dda2721ed6f58eefe7fb9c2e10d3"
+B3_train_manifest_sha256 = "1b3e8377b32b5a9c7761ab42f62f7192ee79bdefbbea8adc53749e55d38888a7"
+B3_dev_manifest_sha256   = "8911193cd3e4789a8a2f175e856c0c6ead5594abb95679bd3866d052f961d909"
+
+
+# ── 6. 修复后源代码 SHA256（交付包内 tools/ 目录）────────────────
+[tools_sha256_v2_1]
+evaluate_tse_py_sha256   = "ac3b910f34a707c90d83d42b42fb2a835515e0c6d69f42c22aa36a4378825df1"
+train_b1_trial_py_sha256 = "e8b1bc9d685ea5dbf3546f4d67a2821c147fac5d7b919f69dc004d2b31cbd815"
+diagnose_b3_py_sha256   = "df96d794afef40d69fdf3b5feea9a6f70945dd3427b7ed0f5edda15d110f1c09"

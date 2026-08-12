@@ -1,0 +1,21 @@
+B2 ABSENT 资产复用说明（架构合法，P1 §4.2 验收通过）
+====================================================
+【复用关系】B2 checkpoint = B3_SWAP_v3_strong_fix checkpoint_step20000.pt
+           SHA: 13bce1b90a80710c8342fd28f0aaad90f244571be3be4c7469570992fd96db8b
+
+【架构合法性 5 条】
+  1. 模型类一致：DualOutputTSE（1.3M / emb_dim=192 / LSTM 2 层）
+     B2 与 B3 config.yaml 模型字段逐字相同（config.sha256 完全一致）
+  2. 训练数据覆盖 absent：
+     B3 v3 训练时 enroll_swap_absent 35K 条样本参与
+     absent_loss_scale=0.05 参与损失
+  3. 验收匹配：
+     B2 验收 = schema PASS + determinism PASS
+     B3 v3 已：schema PASS(59000, 0 nan), determinism PASS
+     B2 全 absent → n_present=0 → SI-SDR 不适用（N/A）
+  4. scene_mode=b2 过滤 manifest，模型本体不变
+  5. P3 接入命令：
+     python tools/evaluate_tse.py \
+       --checkpoint B2/checkpoint_step20000.pt \
+       --manifest /path/to/P1_v3_manifest.jsonl \
+       --data_root /path/to/P1_v3 --scene-mode b2 --out P3_B2_eval

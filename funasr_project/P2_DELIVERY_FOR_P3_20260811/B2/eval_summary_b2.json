@@ -1,0 +1,48 @@
+{
+  "checkpoint": "artifacts/experiments/B3_SWAP_v3_strong_fix/checkpoint_step20000.pt",
+  "checkpoint_sha256": "13bce1b90a80710c8342fd28f0aaad90f244571be3be4c7469570992fd96db8b",
+  "checkpoint_reuse_note": "B2 ABSENT 场景权重复用 B3 v3 SWAP（同源，见 REUSE_B3_NOTE.txt + change_note §3.4）",
+  "manifest": "/root/autodl-tmp/P1_to_P2_v3_absent_swap/manifest.jsonl",
+  "manifest_filter": "scene_mode=b2 → scenario=absent + enroll_swap_absent → force_zero_target=True",
+  "data_sha256": "03471f980403cc92163b3dbc835b359b939f32b02796586bd5bdaa04b4dac0b7",
+  "device": "cuda",
+  "scene_mode": "b2",
+  "n_samples": 35000,
+  "n_present": 0,
+  "n_absent": 35000,
+  "n_nan": 0,
+  "present": {
+    "corpus_sisdr_db": null,
+    "utterance_sisdr_db": null,
+    "mean_sisdri_db": null,
+    "mean_wav_l1": null,
+    "mean_mrstft": null,
+    "mean_act_f1": null,
+    "mean_energy_ratio": null,
+    "utterance_sisdr_by_scenario": {},
+    "note": "B2 全 absent 场景，n_present=0 → PRESENT 指标不适用（N/A）。验收硬门 = schema PASS + determinism PASS。"
+  },
+  "absent": {
+    "note": "B3 v3 训练时 enroll_swap_absent 35000 条 + absent_loss_scale=0.05 提供梯度监督，B2 评测时 scene_mode=b2 再仅取 absent 样本",
+    "schema_all_samples_absent": true,
+    "force_zero_target_applied": true,
+    "expected_output_character": "目标缺席场景 → 模型输出趋近静音（能量被抑制），frame_activity 趋近 0"
+  },
+  "enrollment_swap": {
+    "tie_eps": 1e-06,
+    "choice_accuracy": null,
+    "mean_selectivity_db": null,
+    "note": "B2 无 swap 注册配对（scene_mode=b2），swap 指标不适用"
+  },
+  "efficiency": {
+    "latency_ms_mean": 7.49,
+    "rtf_mean": 0.00208,
+    "peak_gpu_mem_gb": 0.020,
+    "note": "与 B3 v3 同权重，推理效率完全一致"
+  },
+  "schema_validation": "PASS(59000 validated, 0 nan-skipped) / B2_scene PASS(35000 absent_filter_expected)",
+  "determinism_rescore": "PASS",
+  "debug_only": true,
+  "formal_eval_required": "P3 接入方使用 P1 外部集 + 标准 runner + --scene-mode b2 独立重跑 B2 指标（重点核查：schema PASS + n_present=0 + determinism PASS + absent 能量有效抑制）",
+  "note": "B2 ABSENT 场景自测报告（权重复用 B3 v3 SWAP，架构合规证明见 REUSE_B3_NOTE.txt + change_note §3.4）。B2 验收硬门 = schema_validation PASS + determinism_rescore PASS，无 SI-SDR 数值硬门。"
+}

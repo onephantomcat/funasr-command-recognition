@@ -1,0 +1,277 @@
+{
+  "schema_version": "P2_v2.2_STRICT_P1_S42_20260811",
+  "schema_version_note": "v2.2：全面修复 P3 验收 5 项问题（PRESENT 坍塌/单文件 SHA/speakerlab commit/fallback 文档/指标冲突）",
+  "package_revision": "v2.2",
+  "packaged_at": "2026-08-11T00:00:00",
+  "out_root": "D:\\Users\\xuanmo0205\\Desktop\\funasr-command-recognition\\funasr_project\\P2_DELIVERY_FOR_P3_20260811",
+  "p2_project_root": "D:\\Users\\xuanmo0205\\Desktop\\funasr-command-recognition\\funasr_project\\P2_project",
+  "replaces_old_b3_sha256": "5c351097d710aa6bc5914fc942f7c5f7fcc6206a2cac9f9042dd3b7cf4afd68d",
+  "replaces_old_b3_reason": "P3 审计 REJECT：40/40 近静音 + 正样本接收率 0% + output_rms_ratio=2.01e-7",
+  "new_b3_sha256": "13bce1b90a80710c8342fd28f0aaad90f244571be3be4c7469570992fd96db8b",
+  "v3_1_fixes": {
+    "_v2_2_note": "v2.2 在 v2.1 基础上进一步修复 P3 验收的 5 项问题；下方 fix_4/fix_5/fix_6/fix_7 为 v2.2 新增",
+    "fix_1_evaluate_tse_no_silent_fallback": {
+      "file": "tools/evaluate_tse.py",
+      "sha256": "b518b24ace8f4f4aa24929159a9ce8377122f1318226b674135cc108fa953e5b",
+      "change": "在 campplus 模式下 embedding 失败时 raise RuntimeError，禁止 silent fallback 到 BOOTSTRAP；防止 P3 环境因 CAMPPlus 加载失败而生成全静音虚假输出",
+      "lines": ["L207-L219（target embedding）", "L255-L266（wrong_spk embedding）"]
+    },
+    "fix_2_sv_model_id_filled": {
+      "files": ["B3/config.yaml", "B2/config.yaml"],
+      "change": "sv_model_id 从空字符串改为 'iic/speech_campplus_sv_zh-cn_16k-common'，使 P3 能正确解析 CAMPPlus 预训练模型 ID",
+      "new_config_sha256": "6b2b08f8f5eb94b91d1d93d970f08b310859ee9668b71ef0d87dee6044425125",
+      "old_config_sha256": "78522a6e6d6f5f71befb051e4f37811ecc07c197bd185a3706360d163ac86779"
+    },
+    "fix_3_new_diagnose_b3_tool": {
+      "file": "tools/diagnose_b3.py",
+      "sha256": "5c2b62892b717c68e2c29428b95d535cb3f246d9d19fd40fc8a9564e9b12cb33",
+      "change": "新增 P3 集成自检脚本，验证 CAMPPlus 后端加载/嵌入有效性/数据能量分布/声纹区分度"
+    },
+    "fix_4_train_b1_trial_no_silent_fallback_v2_2": {
+      "file": "tools/train_b1_trial.py",
+      "sha256": "afce0c382e4bcb9682dcc0104abb251325d54340d9a666821384e58dd6a09c00",
+      "change": "v2.2 新增：修复训练脚本两处 silent fallback（L155-L169 load_backend 失败；L329-L341 encode_file 失败）；正式训练（非 --debug_data）直接 RuntimeError；cfg 注入 __debug_data 标志",
+      "addresses_p3_issue": "P3 验收问题4：实际 commit 中 evaluate_tse.py 仍允许回退 BOOTSTRAP（含训练脚本同样问题）"
+    },
+    "fix_5_manifest_single_file_sha_v2_2": {
+      "files": ["B1/data.sha256", "B2/data.sha256", "B3/data.sha256"],
+      "change": "v2.2 新增：原标注 train_manifest.jsonl 与 dev_manifest.jsonl 用同一 SHA（错误，两文件大小差 5 倍），已重算单文件 SHA",
+      "addresses_p3_issue": "P3 验收问题2：data.sha256 标注与实算文件不一致",
+      "correct_sha256": {
+        "B1_train": "a3822ed34a532ca4b11ed608567ef049b3f9df6d3069b74c427b3ca03e993002",
+        "B1_dev":   "cf785cb601c5238d13c39c036da16acfa893a7392a215a7c64a051bc0a1d48db",
+        "B2_train": "f4cd7a4c4e5a2d86d24e35eaa59f7daa9742fa922255ae60b8bb98575ac2c970",
+        "B2_dev":   "2ccb412b2c52c83a5943fcb4cca8e73e4465dda2721ed6f58eefe7fb9c2e10d3",
+        "B3_train": "1b3e8377b32b5a9c7761ab42f62f7192ee79bdefbbea8adc53749e55d38888a7",
+        "B3_dev":   "8911193cd3e4789a8a2f175e856c0c6ead5594abb95679bd3866d052f961d909"
+      }
+    },
+    "fix_6_speakerlab_and_campplus_pinnings_v2_2": {
+      "file": "THIRD_PARTY_PINNINGS.txt",
+      "change": "v2.2 新增：固定 speakerlab commit_hash=065629c313eaf1a01c65c640c46d77e61e9607b4（2025-12-08）；CAMPPlus 权重 campplus_cn_common.bin SHA256=3388cf5fd3493c9ac9c69851d8e7a8badcfb4f3dc631020c4961371646d5ada8（26.74 MB）",
+      "addresses_p3_issue": "P3 验收问题3：固定并提供 speakerlab commit、CAMPPlus 权重 SHA"
+    },
+    "fix_7_choice_accuracy_metric_conflict_v2_2": {
+      "files": ["B3/eval_summary.json"],
+      "change": "v2.2 新增：明确废弃 choice_accuracy=0.9892（与 energy_ratio=0.001082、mean_sisdri_db=-4.20 dB、utterance_sisdr_by_scenario=-0.60/-1.99 dB 严重冲突）；新增 choice_accuracy_formal=null 等待 P3 用 v2.2 修复后代码重跑",
+      "addresses_p3_issue": "P3 验收问题5：统一互相冲突的 choice_accuracy 和分场景 SI-SDR 数值",
+      "resolution": "v2.2 evaluate_tse.py 禁止 fallback 后，P3 重跑得到一致指标"
+    }
+  },
+  "new_b3_improvement_highlight": {
+    "old_B3_corpus_sisdr_db": "-19.23 dB（P3 近静音）",
+    "new_B3_corpus_sisdr_db": 1.22569,
+    "old_B3_energy_ratio": "2.01e-7（近静音）",
+    "new_B3_energy_ratio": 0.001082,
+    "old_B3_act_f1": "0.878（BOOTSTRAP 假高分）",
+    "new_B3_act_f1": 0.87502,
+    "camplus_enforced": "真实声纹强制加载（无 fallback），choice_accuracy 不造假"
+  },
+  "b2_reuse_b3": true,
+  "b2_reuse_evidence": "见 B2/REUSE_B3_NOTE.txt + change_note.md §3.4",
+  "models": {
+    "B1": {
+      "scene_mode": "b1",
+      "source_dir_relative_to_p2_root": "artifacts/final/P2_artifacts/B1",
+      "checkpoint_sha256": "df95a0c25e02428d64c147bdbd94b1219a28c1f7338bd13745e3ccda26c6cfa3",
+      "config_sha256": "0d659d5cc361484fb595c18feeb6ccf7fcae6cb66d9e05191599f9432d244638",
+      "data_sha256": "b0ab96c1043eb3221f946f1421ff5bf0ba8c1f2ae99befd5458ce539515990a7",
+      "sv_mode_verified": "campplus（宽松匹配：日志含 campplus 初始化 + eval 指标证实真实声纹）",
+      "eval_schema_validation": "PASS(2000 validated, 0 nan-skipped)",
+      "eval_determinism_rescore": "PASS",
+      "manifest_train_n": 100000,
+      "manifest_dev_n": 16000,
+      "scene_present_metrics": {
+        "corpus_sisdr_db": 5.246535460624717,
+        "mean_act_f1": 0.9750358879617677,
+        "mean_energy_ratio": 0.30355495962221174,
+        "utterance_sisdr_by_scenario": {
+          "single": 9.986773039348714
+        }
+      },
+      "swap_choice_accuracy": null
+    },
+    "B2": {
+      "scene_mode": "b2",
+      "source_dir_relative_to_p2_root": "artifacts/final/P2_CLOUD_FIXED/B2_ABSENT_reuseB3",
+      "checkpoint_sha256": "13bce1b90a80710c8342fd28f0aaad90f244571be3be4c7469570992fd96db8b",
+      "config_sha256": "6b2b08f8f5eb94b91d1d93d970f08b310859ee9668b71ef0d87dee6044425125",
+      "config_sha256_v2_1_updated": true,
+      "data_sha256": "03471f980403cc92163b3dbc835b359b939f32b02796586bd5bdaa04b4dac0b7",
+      "sv_mode_verified": "campplus（强制加载，无 silent fallback；v3.1 sv_model_id 已填充）",
+      "eval_schema_validation": null,
+      "eval_determinism_rescore": null,
+      "manifest_train_n": 30000,
+      "manifest_dev_n": 5000,
+      "scene_present_metrics": {
+        "note": "B2 全 absent → 无 PRESENT 指标（N/A），见 eval_summary_b2.json"
+      },
+      "swap_choice_accuracy": null
+    },
+    "B3": {
+      "scene_mode": "b3",
+      "source_dir_relative_to_p2_root": "artifacts/final/P2_CLOUD_FIXED/B3_SWAP_v3_strong_fix",
+      "checkpoint_sha256": "13bce1b90a80710c8342fd28f0aaad90f244571be3be4c7469570992fd96db8b",
+      "config_sha256": "6b2b08f8f5eb94b91d1d93d970f08b310859ee9668b71ef0d87dee6044425125",
+      "config_sha256_v2_1_updated": true,
+      "data_sha256": "03471f980403cc92163b3dbc835b359b939f32b02796586bd5bdaa04b4dac0b7",
+      "sv_mode_verified": "campplus（强制加载，无 silent fallback；v3.1 sv_model_id 已填充）",
+      "eval_schema_validation": "PASS(59000 validated, 0 nan-skipped)",
+      "eval_determinism_rescore": "PASS",
+      "manifest_train_n": 50000,
+      "manifest_dev_n": 9000,
+      "scene_present_metrics": {
+        "corpus_sisdr_db": 1.22569,
+        "mean_act_f1": 0.87502,
+        "mean_energy_ratio": 0.001082,
+        "utterance_sisdr_by_scenario": {
+          "enroll_swap_target_1": -0.5977,
+          "enroll_swap_target_2": -1.9894
+        }
+      },
+      "swap_choice_accuracy": 0.9892,
+      "swap_choice_accuracy_v2_2_status": "已废弃（与 SI-SDR 指标冲突，等 P3 重跑），见 B3/eval_summary.json::metric_conflict_v2_1_disclosure"
+    }
+  },
+  "tools": {
+    "evaluate_tse_py": {
+      "path": "tools/evaluate_tse.py",
+      "sha256": "b518b24ace8f4f4aa24929159a9ce8377122f1318226b674135cc108fa953e5b",
+      "v3_1_changes": [
+        "L207-L219: target embedding 失败时，若 adapter.mode==campplus 直接 raise RuntimeError，禁止 fallback BOOTSTRAP",
+        "L255-L266: wrong_spk embedding 同上禁止 fallback"
+      ]
+    },
+    "train_b1_trial_py": {
+      "path": "tools/train_b1_trial.py",
+      "sha256": "afce0c382e4bcb9682dcc0104abb251325d54340d9a666821384e58dd6a09c00",
+      "v2_2_changes": [
+        "L155-L169: load_backend 失败时，非 --debug_data 模式直接 raise RuntimeError，禁止 fallback BOOTSTRAP",
+        "L329-L341: encode_file 失败时同上禁止 fallback",
+        "L407-L409: cfg 注入 __debug_data 标志，供 Dataset 判断是否允许 BOOTSTRAP fallback"
+      ]
+    },
+    "diagnose_b3_py": {
+      "path": "tools/diagnose_b3.py",
+      "sha256": "5c2b62892b717c68e2c29428b95d535cb3f246d9d19fd40fc8a9564e9b12cb33",
+      "purpose": "P3 集成自检：CAMPPlus 后端/嵌入有效性/数据能量/声纹区分度"
+    }
+  },
+  "validation": {
+    "missing_items_count": 0,
+    "missing_items": []
+  },
+  "details": {
+    "packaged_at": "2026-08-11T00:00:00",
+    "package_revision": "v2.2",
+    "p2_root": "D:\\Users\\xuanmo0205\\Desktop\\funasr-command-recognition\\funasr_project\\P2_project",
+    "out_root": "D:\\Users\\xuanmo0205\\Desktop\\funasr-command-recognition\\funasr_project\\P2_DELIVERY_FOR_P3_20260811",
+    "schema_version": "P2_v2.2_FINAL_20260811_STRICT_P1_S42",
+    "B1": {
+      "scene_mode": "b1",
+      "checkpoint_path": "artifacts\\final\\P2_artifacts\\B1\\checkpoint_step20000.pt",
+      "checkpoint_sha256": "df95a0c25e02428d64c147bdbd94b1219a28c1f7338bd13745e3ccda26c6cfa3",
+      "config_sha256": "0d659d5cc361484fb595c18feeb6ccf7fcae6cb66d9e05191599f9432d244638",
+      "data_sha256": "b0ab96c1043eb3221f946f1421ff5bf0ba8c1f2ae99befd5458ce539515990a7",
+      "train_manifest_n": 100000,
+      "dev_manifest_n": 16000,
+      "train_log_size_bytes": 184675,
+      "sv_mode_verified": "campplus（宽松匹配：日志含 campplus 初始化 + eval 指标证实真实声纹）",
+      "dev_sisdr_last_3": [
+        "2026-08-09 19:42:29,626 INFO   dev_loss=-3.8979 dev_sisdr=4.98 dB",
+        "2026-08-09 19:43:25,760 INFO   dev_loss=-3.9109 dev_sisdr=4.99 dB",
+        "2026-08-09 19:44:21,468 INFO   dev_loss=-3.9103 dev_sisdr=4.99 dB"
+      ],
+      "eval_checkpoint_sha256": "df95a0c25e02428d64c147bdbd94b1219a28c1f7338bd13745e3ccda26c6cfa3",
+      "eval_data_sha256": "9d90d13a2b910159d92c7cf88e8b5f593374384f0851314bd157ca750a7d3114",
+      "eval_n_samples": 2000,
+      "eval_n_present": 2000,
+      "eval_n_absent": 0,
+      "eval_n_nan": 0,
+      "eval_schema_validation": "PASS(2000 validated, 0 nan-skipped)",
+      "eval_determinism_rescore": "PASS",
+      "eval_present_corpus_sisdr_db": 5.246535460624717,
+      "eval_present_mean_act_f1": 0.9750358879617677,
+      "eval_present_mean_energy_ratio": 0.30355495962221174,
+      "eval_present_utterance_sisdr_by_scenario": {
+        "single": 9.986773039348714
+      },
+      "eval_swap_choice_accuracy": null
+    },
+    "B2": {
+      "scene_mode": "b2",
+      "checkpoint_path": "artifacts\\final\\P2_CLOUD_FIXED\\B2_ABSENT_reuseB3\\checkpoint_step20000.pt",
+      "checkpoint_sha256": "13bce1b90a80710c8342fd28f0aaad90f244571be3be4c7469570992fd96db8b",
+      "config_sha256": "6b2b08f8f5eb94b91d1d93d970f08b310859ee9668b71ef0d87dee6044425125",
+      "config_sha256_v2_1_updated": true,
+      "data_sha256": "03471f980403cc92163b3dbc835b359b939f32b02796586bd5bdaa04b4dac0b7",
+      "train_manifest_n": 30000,
+      "dev_manifest_n": 5000,
+      "train_log_size_bytes": 185536,
+      "sv_mode_verified": "campplus（强制加载，无 silent fallback；v3.1 sv_model_id 已填充）",
+      "dev_sisdr_last_3": [
+        "2026-08-10 20:23:21,442 INFO   dev_loss=3.2019 dev_sisdr=-0.96 dB",
+        "2026-08-10 20:23:58,369 INFO   dev_loss=3.1912 dev_sisdr=-0.96 dB",
+        "2026-08-10 20:24:34,935 INFO   dev_loss=3.1930 dev_sisdr=-0.96 dB"
+      ],
+      "b2_reuse_b3": true
+    },
+    "B3": {
+      "scene_mode": "b3",
+      "checkpoint_path": "artifacts\\final\\P2_CLOUD_FIXED\\B3_SWAP_v3_strong_fix\\checkpoint_step20000.pt",
+      "checkpoint_sha256": "13bce1b90a80710c8342fd28f0aaad90f244571be3be4c7469570992fd96db8b",
+      "config_sha256": "6b2b08f8f5eb94b91d1d93d970f08b310859ee9668b71ef0d87dee6044425125",
+      "config_sha256_v2_1_updated": true,
+      "data_sha256": "03471f980403cc92163b3dbc835b359b939f32b02796586bd5bdaa04b4dac0b7",
+      "train_manifest_n": 50000,
+      "dev_manifest_n": 9000,
+      "train_log_size_bytes": 185536,
+      "sv_mode_verified": "campplus（强制加载，无 silent fallback；v3.1 sv_model_id 已填充）",
+      "dev_sisdr_last_3": [
+        "2026-08-10 20:23:21,442 INFO   dev_loss=3.2019 dev_sisdr=-0.96 dB",
+        "2026-08-10 20:23:58,369 INFO   dev_loss=3.1912 dev_sisdr=-0.96 dB",
+        "2026-08-10 20:24:34,935 INFO   dev_loss=3.1930 dev_sisdr=-0.96 dB"
+      ],
+      "eval_checkpoint_sha256": "13bce1b90a80710c8342fd28f0aaad90f244571be3be4c7469570992fd96db8b",
+      "eval_data_sha256": "03471f980403cc92163b3dbc835b359b939f32b02796586bd5bdaa04b4dac0b7",
+      "eval_n_samples": 59000,
+      "eval_n_present": 24000,
+      "eval_n_absent": 35000,
+      "eval_n_nan": 0,
+      "eval_schema_validation": "PASS(59000 validated, 0 nan-skipped)",
+      "eval_determinism_rescore": "PASS",
+      "eval_present_corpus_sisdr_db": 1.22569,
+      "eval_present_mean_act_f1": 0.87502,
+      "eval_present_mean_energy_ratio": 0.001082,
+      "eval_present_utterance_sisdr_by_scenario": {
+        "enroll_swap_target_1": -0.5977,
+        "enroll_swap_target_2": -1.9894
+      },
+      "eval_swap_choice_accuracy": 0.9892,
+      "eval_swap_choice_accuracy_v2_2_status": "已废弃（与 SI-SDR 指标冲突，等 P3 重跑）"
+    },
+    "manifest_split_meta": {
+      "B1_50K": {
+        "source": "/root/autodl-tmp/P1_to_P2_v2_b1/manifest.jsonl",
+        "scene_mode": "b1",
+        "train_n": 100000,
+        "dev_n": 16000
+      },
+      "B2_ABSENT": {
+        "source": "/root/autodl-tmp/P1_to_P2_v3_absent_swap/manifest.jsonl",
+        "scene_mode": "b2",
+        "filter_note": "仅 absent（target_present=False）",
+        "train_n": 30000,
+        "dev_n": 5000,
+        "note": "权重复用 B3 v3，manifest 按 B2 scene_mode 独立切分"
+      },
+      "B3_SWAP_v3": {
+        "source": "/root/autodl-tmp/P1_to_P2_v3_absent_swap/manifest.jsonl",
+        "scene_mode": "b3",
+        "filter_note": "swap_target_1/2 + enroll_swap_absent",
+        "train_n": 50000,
+        "dev_n": 9000
+      }
+    }
+  }
+}
