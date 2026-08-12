@@ -1,0 +1,8 @@
+{
+  "status": "FROZEN",
+  "version": "v3_absent_swap",
+  "generator_version": "p1_v3_absent_swap_builder.v1.0.0",
+  "manifest_rows": 59000,
+  "manifest_sha256": "03471f980403cc92163b3dbc835b359b939f32b02796586bd5bdaa04b4dac0b7",
+  "acceptance_status": "PASS"
+}

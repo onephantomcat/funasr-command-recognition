@@ -1,0 +1,68 @@
+{
+  "schema_version": "p1.v2_b1.parameters.v1",
+  "generator_version": "p1_v2_b1_builder.v1.0.4",
+  "global_seed": 20260723,
+  "audio": {
+    "sample_rate": 16000,
+    "mixture_samples": 57600,
+    "mixture_seconds": 3.6,
+    "enrollment_samples": 48000,
+    "enrollment_seconds": 3.0,
+    "output_format": "mono float32 WAV",
+    "peak_limit": 0.99
+  },
+  "row_counts": {
+    "train": 100000,
+    "dev": 10000,
+    "D_single": 2000,
+    "D_overlap": 4000
+  },
+  "vad": {
+    "source": "clean target audio only",
+    "frame_samples": 400,
+    "frame_ms": 25,
+    "hop_samples": 160,
+    "hop_ms": 10,
+    "relative_rms_threshold": 0.01,
+    "relative_threshold_db": -40,
+    "remove_active_runs_shorter_than_frames": 3,
+    "fill_internal_inactive_gaps_at_most_frames": 2
+  },
+  "train_dev_scenarios": [
+    {"name": "single", "fraction": 0.35},
+    {"name": "overlap_partial", "fraction": 0.35, "overlap_uniform": [0.25, 0.75]},
+    {"name": "overlap_high", "fraction": 0.20, "overlap_uniform": [0.75, 0.95]},
+    {"name": "overlap_100", "fraction": 0.10, "overlap": 1.0}
+  ],
+  "D_overlap_scenarios": [
+    {"name": "overlap_0_25", "rows": 800, "overlap_uniform": [0.05, 0.25]},
+    {"name": "overlap_25_75", "rows": 800, "overlap_uniform": [0.25, 0.75]},
+    {"name": "overlap_75_100", "rows": 800, "overlap_uniform": [0.75, 0.95]},
+    {"name": "overlap_100", "rows": 800, "overlap": 1.0},
+    {"name": "overlap_100_sir_minus5", "rows": 800, "overlap": 1.0, "sir_db": -5.0}
+  ],
+  "sir_distribution": [
+    {"uniform_db": [-5.0, -3.0], "weight": 0.25},
+    {"uniform_db": [-3.0, -1.0], "weight": 0.20},
+    {"uniform_db": [-1.0, 1.0], "weight": 0.20},
+    {"uniform_db": [1.0, 3.0], "weight": 0.20},
+    {"uniform_db": [3.0, 5.0], "weight": 0.15}
+  ],
+  "snr_distribution": [
+    {"no_noise": true, "weight": 0.15},
+    {"uniform_db": [-5.0, -3.0], "weight": 0.15},
+    {"uniform_db": [-3.0, -1.0], "weight": 0.20},
+    {"uniform_db": [-1.0, 1.0], "weight": 0.20},
+    {"uniform_db": [1.0, 3.0], "weight": 0.15},
+    {"uniform_db": [3.0, 5.0], "weight": 0.15}
+  ],
+  "partitioning": {
+    "train_assets": "train",
+    "dev_assets": "dev",
+    "D_single_assets": "holdout",
+    "D_overlap_assets": "holdout",
+    "speaker_disjoint": true,
+    "noise_and_rir_partition": "path hash"
+  },
+  "implementation_note": "This file documents constants from build_p1_v2_b1.py; the frozen builder is authoritative."
+}

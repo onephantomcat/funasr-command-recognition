@@ -1,0 +1,3 @@
+v2_b1
+schema=p1_to_p2.v1
+generator=p1_v2_b1_builder.v1.0.4

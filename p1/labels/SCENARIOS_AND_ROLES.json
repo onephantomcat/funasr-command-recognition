@@ -1,0 +1,28 @@
+{
+  "schema_version": "p1.labels.v1",
+  "splits": ["train", "dev", "D_single", "D_overlap", "D_absent", "D_swap"],
+  "v2_b1": {
+    "target_present": [true],
+    "scenarios": [
+      "single",
+      "overlap_partial",
+      "overlap_high",
+      "overlap_0_25",
+      "overlap_25_75",
+      "overlap_75_100",
+      "overlap_100",
+      "overlap_100_sir_minus5"
+    ]
+  },
+  "v3_absent_swap": {
+    "target_present": [true, false],
+    "registration_roles": ["target_1", "target_2", "absent"],
+    "scenarios": [
+      "absent",
+      "enroll_swap_target_1",
+      "enroll_swap_target_2",
+      "enroll_swap_absent"
+    ]
+  },
+  "fairness_note": "D_* splits are evaluation-only and must not be used for training or tuning."
+}
