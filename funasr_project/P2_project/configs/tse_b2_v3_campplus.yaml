@@ -1,0 +1,85 @@
+# ============================================================
+# P2-14 B2 ABSENT 场景训练配置 v3（真实 CAM++ + B1 50K warm-start）★ 修复梯度消失
+# ------------------------------------------------------------
+# v3 相对 v2 的关键修复（解决 dev_sisdr 卡 -57 dB 不学习问题）：
+#   1. lambda_act: 0.5 → 2.0（4 倍！activity 损失强惩罚非零激活，零目标任务利器）
+#   2. zero_ref_kappa: 1e-3 → 1e-2（10 倍！零参照 SI-SDR 梯度更敏感）
+#   3. lambda_wav: 1.0 → 2.0（2 倍！波形 L1 直接压制非零输出）
+#   4. lambda_stft: 1.0 → 2.0（2 倍！谱域压制非零能量）
+#   5. seed 保持 20260814，scene_mode=b2 不变
+# ============================================================
+
+sample_rate: 16000
+
+# STFT 参数（与 B1/B3 完全一致，保证 warm-start 兼容）
+n_fft: 512
+hop_length: 128
+win_length: 512
+
+# 模型结构（与 B1/B3 完全一致，保证 warm-start 兼容）
+emb_dim: 192
+lstm_hidden: 256
+lstm_layers: 2
+dropout: 0.0
+film_scale: 0.1
+
+# ============================================================
+# ★ v3 核心修复：全 absent（target=零）任务，用强 L1/ACT/零参照损失
+# ============================================================
+lambda_sisdr: 1.0
+lambda_wav: 2.0       # v2=1.0 → 2.0（2× L1 强压零输出）
+lambda_stft: 2.0      # v2=1.0 → 2.0（2× MR-STFT 强压零能量）
+lambda_act: 2.0       # v2=0.5 → 2.0（4× ACT 强惩罚非零帧，零目标核心）
+lambda_residual: 0.5
+lambda_mix: 0.5
+lambda_id: 0.0
+
+zero_ref_kappa: 1.0e-2  # v2=1e-3 → 1e-2（10× 零参照 SI-SDR 梯度更敏感）
+mrstft_resolutions:
+  - [256, 64, 256]
+  - [512, 128, 512]
+  - [1024, 256, 1024]
+act_frame_ratio: 0.5
+
+# ============================================================
+# B2 核心：scene_mode=b2（全 absent 过滤）
+# ============================================================
+scene_mode: b2
+
+segment_length: 8
+batch_size: 16
+gradient_accumulation: 1
+amp: false
+steps: 20000
+seed: 20260814
+lr: 3.0e-4
+lr_warmup_steps: 100
+lr_schedule: cosine
+grad_clip: 2.0
+log_every: 25
+save_every: 500
+dev_every: 100
+shuffle: true
+num_workers: 2
+pin_memory: true
+prefetch_factor: 2
+
+# ============================================================
+# P1 v3 单 manifest + split 过滤（与 B3 v3 同一份）
+# ============================================================
+datasets:
+  manifest: /root/autodl-tmp/P1_to_P2_v3_absent_swap/manifest.jsonl
+  train_split: train
+  dev_split:   dev
+  eval_split: D_absent
+
+# 元信息
+tag: B2_ABSENT_v3_campplus
+lane: INTEGRATION
+asset_class: B2_ABSENT_V3_CAMPPLUS
+notes: "B2 v3: scene_mode=b2（全 absent，target_present=False）30K train/3K dev，真实 CAM++ 嵌入，从 B1_50K_RESUME step20000 warm-start。★ 梯度消失修复版：lambda_act=2.0, lambda_wav/stft=2.0, zero_ref_kappa=1e-2。"
+
+# P4 CAMPPlus 嵌入（真实声纹，与 B3 v3 保持一致）
+sv_mode: campplus
+sv_bootstrap_seed: 20260804
+sv_model_id: ""

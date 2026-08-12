@@ -243,6 +243,13 @@ def main():
 
     adapter = EnrollmentAdapter.from_config(cfg)
     LOG.info("EnrollmentAdapter mode=%s", adapter.mode)
+    if adapter.mode == "campplus":
+        try:
+            adapter.load_backend()
+            LOG.info("CAMPLUS 后端加载成功")
+        except Exception as e:
+            LOG.warning(f"CAMPLUS 后端加载失败，fallback BOOTSTRAP: {e}")
+            adapter = EnrollmentAdapter.from_config(cfg, mode="bootstrap")
 
     records, detailed, comps = [], [], []
     swap_rows = []

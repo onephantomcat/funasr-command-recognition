@@ -171,13 +171,18 @@ class B1Dataset(data.Dataset):
         self.adapter = adapter or EnrollmentAdapter.from_config(cfg)
         self._camplus_fallback = False
         if self.adapter.mode == "campplus":
-            try:
-                self.adapter.load_backend()
-                LOG.info("CAMPLUS 后端加载成功 (scene_mode=%s)", self.scene_mode)
-            except Exception as e:
-                LOG.warning(f"CAMPLUS 后端加载失败，fallback BOOTSTRAP: {e}")
-                self._camplus_fallback = True
-                self.adapter = EnrollmentAdapter.from_config(cfg, mode="bootstrap")
+            # 若主函数已预先强制加载成功（_backend 已存在），跳过重复加载，不允许 fallback
+            if getattr(self.adapter, "_backend", None) is not None:
+                LOG.info("CAMPLUS 后端已由主函数预加载（scene_mode=%s），跳过重复加载", self.scene_mode)
+            else:
+                # 只有主函数没预装时才尝试（一般是 --debug_data 模式）
+                try:
+                    self.adapter.load_backend()
+                    LOG.info("CAMPLUS 后端加载成功 (scene_mode=%s)", self.scene_mode)
+                except Exception as e:
+                    LOG.warning(f"CAMPLUS 后端加载失败，fallback BOOTSTRAP: {e}")
+                    self._camplus_fallback = True
+                    self.adapter = EnrollmentAdapter.from_config(cfg, mode="bootstrap")
         # 场景统计（每 1000 条 __getitem__ 打一条 summary log）
         self._stats = {"present": 0, "absent": 0, "swap": 0}
         LOG.info("Dataset 场景模式: %s split=%s (总 %d 条 manifest)",
@@ -492,6 +497,30 @@ def main():
 
     adapter = EnrollmentAdapter.from_config(cfg)
     LOG.info("EnrollmentAdapter mode=%s emb_dim=%d", adapter.mode, adapter.emb_dim)
+
+    # ============================================================
+    # ★ B1/B2/B3 正式训练强制 CAM++ 加载（禁止 silent fallback BOOTSTRAP）
+    #   B3 enroll-swap 场景必须使用真实 CAM++ embedding，
+    #   否则训练时 embedding 是随机向量，模型无法学会对同 speaker 不同注册句做正确选择，
+    #   评测时 choice_accuracy≈0.5。
+    #   只有 --debug_data 模式允许 fallback（纯 DEBUG_ONLY）。
+    # ============================================================
+    if adapter.mode == "campplus" and not args.debug_data:
+        _force_load_success = False
+        for _tries in range(3):
+            try:
+                adapter.load_backend()
+                _force_load_success = True
+                break
+            except Exception as _ex:
+                LOG.warning("[CAMPLUS FORCE LOAD] 第 %d/3 次尝试失败: %s，1s 后重试", _tries + 1, _ex)
+                time.sleep(1.0)
+        if not _force_load_success:
+            LOG.error("[CAMPLUS FORCE LOAD] 3 次尝试全部失败！终止训练（B1/B2/B3 正式训练不允许 fallback BOOTSTRAP，否则 B3 choice_accuracy 失效）。"
+                      "请检查：1) speakerlab_source 是否位于 P4_project/artifacts/models/speakerlab_source/；"
+                      "2) sys.path 是否包含该目录；3) 权重 campplus_cn_common.bin 是否存在。")
+            raise RuntimeError("CAM++ backend 强制加载失败，训练中止（若需要 DEBUG_ONLY fallback 模式，请加 --debug_data 参数）")
+        LOG.info("CAMPLUS 后端全局加载成功（train/dev 全部共用真实声纹，无 silent fallback）")
 
     shutil.copy(args.config, out_dir / "config.yaml")
     (out_dir / "config.sha256").write_text(sha256_file(out_dir / "config.yaml") + "\n", encoding="utf-8")

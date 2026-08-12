@@ -1,0 +1,102 @@
+# ============================================================
+# P2-15 B3 ENROLL-SWAP 场景训练配置 v2（修正版）
+# ------------------------------------------------------------
+# ★ v2 关键改动：
+#   absent_loss_scale: 0.1  → 对 absent 样本的 SI-SDR/MR-STFT 损失降为 1/10
+#   原因：B3 训练中 absent 样本（10K）损失量级远大于 present 样本（20K），
+#         导致模型倾向输出静音。缩放后 absent 样本损失贡献从 ~90% 降到 ~50%。
+#
+# 场景构成（P1 v3 manifest.jsonl scenario 字段）：
+#   - enroll_swap_target_1: target_present=True  → 输出非零，正常回归 target_wav
+#   - enroll_swap_target_2: target_present=True  → 输出非零，正常回归 target_wav
+#   - enroll_swap_absent:    target_present=False → 输出 0
+#
+# 推荐训练方式：
+#   # 1. 从 B1 checkpoint warm-start（推荐，加速收敛+提升 present 提取能力）
+#   python tools/train_b1_trial.py --config configs/tse_b3_v2.yaml --device cuda \
+#       --init_checkpoint artifacts/final/P2_artifacts/B1/checkpoint_step20000.pt
+#
+#   # 2. 从头训练（备选）
+#   python tools/train_b1_trial.py --config configs/tse_b3_v2.yaml --device cuda
+# ============================================================
+
+sample_rate: 16000
+
+# STFT 参数（与 B1 一致）
+n_fft: 512
+hop_length: 128
+win_length: 512
+
+# 模型结构（与 B1 一致，保证可加载 B1 预训练权重）
+emb_dim: 192
+lstm_hidden: 256
+lstm_layers: 2
+dropout: 0.0
+film_scale: 0.1
+
+# 损失权重
+lambda_sisdr: 1.0
+lambda_wav: 1.0
+lambda_stft: 1.0
+lambda_act: 0.5
+lambda_residual: 0.5
+lambda_mix: 0.5
+lambda_id: 0.0
+
+zero_ref_kappa: 1.0e-3
+mrstft_resolutions:
+  - [256, 64, 256]
+  - [512, 128, 512]
+  - [1024, 256, 1024]
+act_frame_ratio: 0.5
+
+# ============================================================
+# ★ v2 新增：absent 样本损失缩放
+#   absent 样本（target 全零）的 SI-SDR 和 MR-STFT 损失乘以此系数
+#   设为 0.1 使 absent 样本损失贡献从 ~90% 降到 ~50%
+#   仅影响 si_sdr_db 和 mrstft 两项，其余损失（act_bce, res_l1, mix）不变
+# ============================================================
+absent_loss_scale: 0.1
+
+# ============================================================
+# ★ B3 核心：场景模式（enroll_swap 三种子场景混合）
+# ============================================================
+scene_mode: b3
+
+segment_length: 8
+batch_size: 16
+gradient_accumulation: 1
+amp: false
+steps: 20000
+seed: 20260810
+lr: 3.0e-4
+lr_warmup_steps: 100
+lr_schedule: cosine
+grad_clip: 2.0
+log_every: 25
+save_every: 500
+dev_every: 100
+shuffle: true
+num_workers: 2
+pin_memory: true
+prefetch_factor: 2
+
+# ============================================================
+# ★ P1 v3 单 manifest + split 过滤
+# ============================================================
+datasets:
+  manifest: /root/autodl-tmp/P1_to_P2_v3_absent_swap/manifest.jsonl
+  train_split: train
+  dev_split:   dev
+  eval_split: D_swap
+
+# 元信息
+tag: B3_SWAP_v2_absent_scale01
+lane: INTEGRATION
+asset_class: B3_ENROLL_SWAP_V2
+notes: "B3 v2: absent_loss_scale=0.1 修正 absent 样本主导问题，推荐从 B1 warm-start"
+
+# P4 CAMPPlus 嵌入
+sv_mode: campplus
+sv_bootstrap_seed: 20260804
+sv_model_id: ""
