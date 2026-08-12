@@ -24,12 +24,13 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from asr_demo import build_model, recognize
-from cer import cer, corpus_cer
+from asr_demo import ASR_DIR, VAD_DIR, build_model, recognize_result
+from cer import cer_stats, corpus_cer_stats
 from command_match import edit_distance
 from lightweight_gate import accept as gate_accept
 from lightweight_gate import load_gate_model, make_features as make_gate_features
-from speaker_verify import build_sv_model, cosine_sim, extract_embedding
+from p2_tse_runtime import P2TSERuntime, sha256_file
+from speaker_verify import SV_DIR, build_sv_model, cosine_sim, extract_embedding
 from target_enhancer import enhance_file, load_target_enhancer
 from target_purify import purify_audio
 from text_norm import normalize
@@ -98,10 +99,25 @@ class AsrCache:
     def recognize(self, model, path):
         key = self.key(path)
         if key in self.data:
-            return self.data[key]["text"], 0.0, True
-        text, elapsed = recognize_quiet(model, path)
-        self.data[key] = {"text": text, "elapsed": elapsed}
-        return text, elapsed, False
+            cached = self.data[key]
+            final_text = cached.get("final_text", cached.get("text", ""))
+            return {
+                "raw_text": cached.get("raw_text", final_text),
+                "normalized_text": cached.get("normalized_text", final_text),
+                "final_text": final_text,
+                "elapsed_sec": 0.0,
+                "status": "OK",
+            }, True
+        result = recognize_quiet(model, path)
+        record = {
+            "raw_text": result.raw_text,
+            "normalized_text": result.normalized_text,
+            "final_text": result.final_text,
+            "elapsed_sec": result.elapsed_sec,
+            "status": result.status,
+        }
+        self.data[key] = record
+        return record, False
 
     def save(self):
         if not self.path:
@@ -116,7 +132,7 @@ class AsrCache:
 def recognize_quiet(model, path):
     """FunASR prints per-file progress bars; hide them so long runs stay readable."""
     with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-        return recognize(model, path)
+        return recognize_result(model, path)
 
 
 def extract_embedding_quiet(sv_model, path):
@@ -147,6 +163,21 @@ def enhanced_path_for_item(enhancer, wake_path, command_path, split, row_id, arg
             chunk_sec=args.enhancer_chunk_sec,
             overlap_sec=args.enhancer_overlap_sec,
         )
+    return out_path, info
+
+
+def p2_tse_path_for_item(runtime, wake_embedding, command_path, split, row_id, args):
+    """Create/reuse a target WAV through P2's frozen ``extract_target`` API."""
+    stem = Path(command_path).stem
+    safe_id = str(row_id if row_id is not None else stem).replace(os.sep, "_")
+    checkpoint_tag = runtime.checkpoint_sha256[:12]
+    out_path = os.path.join(
+        args.p2_tse_dir,
+        f"{split}_{safe_id}_{stem}_{checkpoint_tag}.wav",
+    )
+    if os.path.exists(out_path):
+        return out_path, {**runtime.metadata(), "output": os.path.abspath(out_path), "cached": True}
+    info = runtime.extract_file(command_path, wake_embedding, out_path)
     return out_path, info
 
 
@@ -218,19 +249,57 @@ def memory_metrics():
     return metrics
 
 
+def summarize_p2_output_quality(details):
+    """Aggregate non-scoring P2 waveform diagnostics across processed rows."""
+    infos = [
+        detail["p2_tse_info"]
+        for detail in details
+        if detail.get("p2_tse_info")
+    ]
+    if not infos:
+        return None
+    ratios = [
+        float(info["output_to_input_rms_ratio"])
+        for info in infos
+        if info.get("output_to_input_rms_ratio") is not None
+    ]
+    near_silent = sum(bool(info.get("output_near_silent")) for info in infos)
+    return {
+        "samples": len(infos),
+        "near_silent_samples": near_silent,
+        "near_silent_rate": near_silent / len(infos),
+        "rms_ratio_min": min(ratios) if ratios else None,
+        "rms_ratio_median": float(np.median(ratios)) if ratios else None,
+        "rms_ratio_max": max(ratios) if ratios else None,
+    }
+
+
 def build_report(args, pos_rows, neg_rows, details, pairs, rejected, started_at, complete):
     pos_done = sum(1 for d in details if d["split"] == "pos")
     neg_done = sum(1 for d in details if d["split"] == "neg")
     pos_cers = [d["cer"] for d in details if d["split"] == "pos"]
     pos_accepted = sum(1 for d in details if d["split"] == "pos" and d.get("accepted", True))
     sent_cer = sum(pos_cers) / max(1, pos_done)
-    total_cer, total_chars = corpus_cer(pairs, do_norm=args.local_normalize)
+    corpus = corpus_cer_stats(pairs, do_norm=args.local_normalize)
     rr = rejected / max(1, neg_done)
+    item_latencies = [detail["latency_sec"] for detail in details]
+    asr_latencies = [
+        detail["asr_latency_sec"]
+        for detail in details
+        if not detail.get("asr_cached") and detail["asr_latency_sec"] > 0
+    ]
+    if args.asr_only:
+        mode = "p2_tse_asr_only" if args.p2_tse_checkpoint else "asr_only"
+    else:
+        mode = "speaker_gate_asr"
     return {
         "dataset": "datasetA",
+        "evaluator_contract": "p3_text_eval_v1-rc1",
+        "result_valid": bool(complete),
         "root": args.root,
+        "dataset_hashes": args.dataset_hashes,
         "complete": complete,
-        "mode": "asr_only" if args.asr_only else "speaker_gate_asr",
+        "mode": mode,
         "speaker_threshold": None if args.asr_only else args.sv_threshold,
         "intent_filter": False if args.asr_only else args.intent_filter,
         "intent_threshold": None if args.asr_only or not args.intent_filter else args.intent_threshold,
@@ -246,6 +315,15 @@ def build_report(args, pos_rows, neg_rows, details, pairs, rejected, started_at,
         "use_test_label_phrase_bank": False if args.asr_only else args.use_test_label_phrase_bank,
         "purify": False if args.asr_only else args.purify,
         "enhancer_model": None if args.asr_only else args.enhancer_model,
+        "enhancer_model_sha256": args.enhancer_model_sha256,
+        "p2_tse": args.p2_tse_metadata,
+        "p2_output_quality": summarize_p2_output_quality(details),
+        "asr": {
+            "model_id": ASR_DIR,
+            "vad_model_id": VAD_DIR,
+            "with_punctuation": False,
+        },
+        "speaker_model_id": SV_DIR,
         "purify_sim_trigger": (
             None if args.asr_only or not args.purify else args.purify_sim_trigger
         ),
@@ -257,19 +335,30 @@ def build_report(args, pos_rows, neg_rows, details, pairs, rejected, started_at,
         "neg_processed": neg_done,
         "positive_accept_rate": round(pos_accepted / max(1, pos_done), 4),
         "positive_sentence_avg_cer": round(sent_cer, 4),
-        "positive_corpus_cer": round(total_cer, 4),
-        "positive_ref_chars": total_chars,
+        "positive_corpus_cer": round(corpus.value, 4),
+        "substitutions": corpus.substitutions,
+        "deletions": corpus.deletions,
+        "insertions": corpus.insertions,
+        "errors": corpus.errors,
+        "positive_ref_chars": corpus.reference_chars,
         "cer_mode": "local_normalized_debug" if args.local_normalize else "raw_character_debug",
         "official_scorer_note": "Use the organizer scorer for official results.",
         "negative_rejection_rate_rr": round(rr, 4),
         "negative_rejected": rejected,
         "elapsed_sec": round(time.time() - started_at, 2),
+        "latency_sec_p50": round(float(np.percentile(item_latencies, 50)), 4) if item_latencies else None,
+        "latency_sec_p95": round(float(np.percentile(item_latencies, 95)), 4) if item_latencies else None,
+        "asr_latency_sec_p50": round(float(np.percentile(asr_latencies, 50)), 4) if asr_latencies else None,
+        "asr_latency_sec_p95": round(float(np.percentile(asr_latencies, 95)), 4) if asr_latencies else None,
+        "asr_errors": 0,
         "memory": memory_metrics(),
         "details": details,
     }
 
 
 def save_report(out, report):
+    parent = os.path.dirname(os.path.abspath(out))
+    os.makedirs(parent, exist_ok=True)
     tmp = out + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
@@ -415,6 +504,27 @@ def main():
     parser.add_argument("--enhancer-chunk-sec", type=float, default=8.0)
     parser.add_argument("--enhancer-overlap-sec", type=float, default=1.0)
     parser.add_argument(
+        "--p2-tse-checkpoint",
+        default=None,
+        help="Frozen P2 checkpoint consumed through P2_project.src.tse.extract_target().",
+    )
+    parser.add_argument(
+        "--p2-tse-sha256",
+        default=None,
+        help="Expected frozen P2 checkpoint SHA256; mismatch aborts before evaluation.",
+    )
+    parser.add_argument(
+        "--p2-tse-dir",
+        default=None,
+        help="Output directory for P2 target WAVs. Use a fresh empty directory for formal timing.",
+    )
+    parser.add_argument(
+        "--p2-tse-device",
+        choices=("cpu", "cuda"),
+        default=None,
+        help="P2 inference device; default prefers CUDA when available.",
+    )
+    parser.add_argument(
         "--local-normalize",
         action="store_true",
         help="Apply this project's text normalizer for local debugging only; organizer scoring remains authoritative.",
@@ -432,6 +542,15 @@ def main():
         help="Only purify accepted audio at or below this speaker similarity; default purifies all accepted audio.",
     )
     args = parser.parse_args()
+    if args.p2_tse_dir is None:
+        args.p2_tse_dir = os.path.join(args.root, "p2_tse_cache")
+    if args.enhancer_model and args.p2_tse_checkpoint:
+        parser.error(
+            "--enhancer-model and --p2-tse-checkpoint are mutually exclusive "
+            "so a fair run changes only one front end"
+        )
+    if args.p2_tse_sha256 and not args.p2_tse_checkpoint:
+        parser.error("--p2-tse-sha256 requires --p2-tse-checkpoint")
     if args.sv_threshold is None:
         args.sv_threshold = (
             DATASETA_DEFAULT_FUSION_PRE_SV_THRESHOLD
@@ -445,6 +564,10 @@ def main():
     out = args.out or os.path.join(args.root, "eval_report.json")
     pos_rows = list(read_jsonl(os.path.join(args.root, "pos.jsonl")))
     neg_rows = list(read_jsonl(os.path.join(args.root, "neg.jsonl")))
+    args.dataset_hashes = {
+        "pos_jsonl_sha256": sha256_file(os.path.join(args.root, "pos.jsonl")),
+        "neg_jsonl_sha256": sha256_file(os.path.join(args.root, "neg.jsonl")),
+    }
     if args.offset:
         pos_rows = pos_rows[args.offset:]
         neg_rows = neg_rows[args.offset:]
@@ -459,8 +582,19 @@ def main():
     if args.gate_model and not args.asr_only:
         gate_model = load_gate_model(args.gate_model)
     enhancer = None
+    args.enhancer_model_sha256 = None
     if args.enhancer_model and not args.asr_only:
         enhancer = load_target_enhancer(args.enhancer_model)
+        args.enhancer_model_sha256 = sha256_file(args.enhancer_model)
+    p2_tse = None
+    args.p2_tse_metadata = None
+    if args.p2_tse_checkpoint:
+        p2_tse = P2TSERuntime(
+            args.p2_tse_checkpoint,
+            device=args.p2_tse_device,
+            expected_sha256=args.p2_tse_sha256,
+        )
+        args.p2_tse_metadata = p2_tse.metadata()
 
     if not args.asr_only:
         if args.decision_policy == "fusion":
@@ -477,6 +611,12 @@ def main():
             print(f"Target purification: keep_ratio={args.purify_keep_ratio}, floor_gain={args.purify_floor_gain}")
         if enhancer:
             print(f"Learned target enhancement: {args.enhancer_model}")
+    if p2_tse:
+        print(
+            "Frozen P2 TSE: "
+            f"{p2_tse.checkpoint_path} sha256={p2_tse.checkpoint_sha256[:16]}... "
+            f"device={p2_tse.device}"
+        )
     intent_phrases = []
     if (args.intent_filter or gate_model) and not args.asr_only:
         intent_phrases = build_intent_phrases(
@@ -490,7 +630,7 @@ def main():
     asr_cache = AsrCache(args.asr_cache)
     if torch.cuda.is_available():
         torch.cuda.reset_peak_memory_stats()
-    if not args.asr_only:
+    if not args.asr_only or p2_tse is not None:
         print("Loading speaker model...")
         sv_model = build_sv_model()
     print("Loading ASR model...")
@@ -510,9 +650,22 @@ def main():
         processing_path = path
         enhancer_info = None
         enhancer_applied = enhancer is not None
+        p2_tse_info = None
+        p2_tse_applied = p2_tse is not None
+        wake_emb = None
         if enhancer:
             processing_path, enhancer_info = enhanced_path_for_item(
                 enhancer, wake_path, path, "pos", row.get("id"), args,
+            )
+        if p2_tse:
+            wake_emb = emb_cache.get(sv_model, wake_path)
+            processing_path, p2_tse_info = p2_tse_path_for_item(
+                p2_tse,
+                wake_emb,
+                processing_path,
+                "pos",
+                row.get("id"),
+                args,
             )
         wake_allowed = (
             args.asr_only
@@ -523,7 +676,8 @@ def main():
         accepted = wake_allowed
         if not args.asr_only:
             if accepted:
-                wake_emb = emb_cache.get(sv_model, wake_path)
+                if wake_emb is None:
+                    wake_emb = emb_cache.get(sv_model, wake_path)
                 cmd_emb = emb_cache.get(sv_model, processing_path)
                 sim = cosine_sim(wake_emb, cmd_emb)
                 accepted = sim >= args.sv_threshold
@@ -539,8 +693,20 @@ def main():
                     keep_ratio=args.purify_keep_ratio,
                     floor_gain=args.purify_floor_gain,
                 )
-        hyp, asr_elapsed, asr_cached = asr_cache.recognize(model, asr_path) if accepted else ("", 0.0, False)
-        raw_hyp = hyp
+        if accepted:
+            asr_result, asr_cached = asr_cache.recognize(model, asr_path)
+        else:
+            asr_result, asr_cached = ({
+                "raw_text": "",
+                "normalized_text": "",
+                "final_text": "",
+                "elapsed_sec": 0.0,
+                "status": "SKIPPED_GATE",
+            }, False)
+        hyp = asr_result["final_text"]
+        raw_hyp = asr_result["raw_text"]
+        normalized_hyp = asr_result["normalized_text"]
+        asr_elapsed = asr_result["elapsed_sec"]
         intent_score = None
         nearest_phrase = ""
         decision_score = None
@@ -566,7 +732,7 @@ def main():
                 hyp = nearest_phrase
         elapsed = time.time() - t_item
         ref = row["识别文本"] or ""
-        c, ref_len = cer(ref, hyp, do_norm=args.local_normalize)
+        cer_result = cer_stats(ref, hyp, do_norm=args.local_normalize)
         pairs.append((ref, hyp))
         details.append({
             "split": "pos",
@@ -578,9 +744,14 @@ def main():
             "asr_audio": asr_path,
             "enhancer_applied": enhancer_applied,
             "enhancer_info": enhancer_info,
+            "p2_tse_applied": p2_tse_applied,
+            "p2_tse_info": p2_tse_info,
             "ref": ref,
             "hyp": hyp,
             "raw_hyp": raw_hyp,
+            "normalized_hyp": normalized_hyp,
+            "final_hyp": hyp,
+            "asr_status": asr_result["status"],
             "speaker_similarity": round(sim, 4) if sim is not None else None,
             "speaker_accepted": speaker_accepted,
             "intent_score": round(intent_score, 4) if intent_score is not None else None,
@@ -590,8 +761,12 @@ def main():
             "purify_info": purify_info,
             "purify_applied": purify_applied,
             "accepted": accepted,
-            "cer": round(c, 4),
-            "ref_len": ref_len,
+            "cer": round(cer_result.value, 4),
+            "substitutions": cer_result.substitutions,
+            "deletions": cer_result.deletions,
+            "insertions": cer_result.insertions,
+            "errors": cer_result.errors,
+            "ref_len": cer_result.reference_chars,
             "asr_latency_sec": round(asr_elapsed, 3),
             "asr_cached": asr_cached,
             "latency_sec": round(elapsed, 3),
@@ -610,9 +785,22 @@ def main():
         processing_path = path
         enhancer_info = None
         enhancer_applied = enhancer is not None
+        p2_tse_info = None
+        p2_tse_applied = p2_tse is not None
+        wake_emb = None
         if enhancer:
             processing_path, enhancer_info = enhanced_path_for_item(
                 enhancer, wake_path, path, "neg", row.get("id"), args,
+            )
+        if p2_tse:
+            wake_emb = emb_cache.get(sv_model, wake_path)
+            processing_path, p2_tse_info = p2_tse_path_for_item(
+                p2_tse,
+                wake_emb,
+                processing_path,
+                "neg",
+                row.get("id"),
+                args,
             )
         wake_allowed = (
             args.asr_only
@@ -623,7 +811,8 @@ def main():
         accepted = wake_allowed
         if not args.asr_only:
             if accepted:
-                wake_emb = emb_cache.get(sv_model, wake_path)
+                if wake_emb is None:
+                    wake_emb = emb_cache.get(sv_model, wake_path)
                 cmd_emb = emb_cache.get(sv_model, processing_path)
                 sim = cosine_sim(wake_emb, cmd_emb)
                 accepted = sim >= args.sv_threshold
@@ -639,8 +828,20 @@ def main():
                     keep_ratio=args.purify_keep_ratio,
                     floor_gain=args.purify_floor_gain,
                 )
-        hyp, asr_elapsed, asr_cached = asr_cache.recognize(model, asr_path) if accepted else ("", 0.0, False)
-        raw_hyp = hyp
+        if accepted:
+            asr_result, asr_cached = asr_cache.recognize(model, asr_path)
+        else:
+            asr_result, asr_cached = ({
+                "raw_text": "",
+                "normalized_text": "",
+                "final_text": "",
+                "elapsed_sec": 0.0,
+                "status": "SKIPPED_GATE",
+            }, False)
+        hyp = asr_result["final_text"]
+        raw_hyp = asr_result["raw_text"]
+        normalized_hyp = asr_result["normalized_text"]
+        asr_elapsed = asr_result["elapsed_sec"]
         intent_score = None
         nearest_phrase = ""
         decision_score = None
@@ -677,8 +878,13 @@ def main():
             "asr_audio": asr_path,
             "enhancer_applied": enhancer_applied,
             "enhancer_info": enhancer_info,
+            "p2_tse_applied": p2_tse_applied,
+            "p2_tse_info": p2_tse_info,
             "hyp": hyp,
             "raw_hyp": raw_hyp,
+            "normalized_hyp": normalized_hyp,
+            "final_hyp": hyp,
+            "asr_status": asr_result["status"],
             "speaker_similarity": round(sim, 4) if sim is not None else None,
             "speaker_accepted": speaker_accepted,
             "intent_score": round(intent_score, 4) if intent_score is not None else None,

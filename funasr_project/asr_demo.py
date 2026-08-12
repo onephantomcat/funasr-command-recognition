@@ -8,6 +8,7 @@
 import os
 import sys
 import time
+from dataclasses import dataclass
 
 from funasr import AutoModel
 import torch
@@ -16,6 +17,19 @@ import torch
 ASR_DIR = "iic/speech_seaco_paraformer_large_asr_nat-zh-cn-16k-common-vocab8404-pytorch"
 VAD_DIR = "iic/speech_fsmn_vad_zh-cn-16k-common-pytorch"
 PUNC_DIR = "iic/punc_ct-transformer_zh-cn-common-vocab272727-pytorch"
+TEXT_SERIALIZATION_VERSION = "p3_compact_whitespace_v1"
+
+
+@dataclass(frozen=True)
+class RecognitionResult:
+    """Structured ASR result; the legacy tuple API delegates to this."""
+
+    raw_text: str
+    normalized_text: str
+    final_text: str
+    elapsed_sec: float
+    status: str = "OK"
+    text_serialization_version: str = TEXT_SERIALIZATION_VERSION
 
 
 def resolve_device(device=None):
@@ -48,12 +62,27 @@ def build_model(with_punc=True, device=None):
     return AutoModel(**kwargs)
 
 
-def recognize(model, wav_path):
+def recognize_result(model, wav_path):
+    """Return raw, normalized and final text without overwriting stages."""
     t0 = time.time()
     res = model.generate(input=wav_path, batch_size_s=60)
     elapsed = time.time() - t0
-    text = res[0]["text"] if res else ""
-    return compact_asr_text(text), elapsed
+    raw_text = res[0]["text"] if res else ""
+    if not isinstance(raw_text, str):
+        raise TypeError(f"ASR model text must be str, got {type(raw_text).__name__}")
+    normalized_text = compact_asr_text(raw_text)
+    return RecognitionResult(
+        raw_text=raw_text,
+        normalized_text=normalized_text,
+        final_text=normalized_text,
+        elapsed_sec=elapsed,
+    )
+
+
+def recognize(model, wav_path):
+    """Backward-compatible ``(final_text, elapsed_sec)`` wrapper."""
+    result = recognize_result(model, wav_path)
+    return result.final_text, result.elapsed_sec
 
 
 if __name__ == "__main__":

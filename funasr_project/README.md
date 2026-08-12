@@ -11,6 +11,7 @@
 | ASR | `iic/speech_seaco_paraformer_large_asr_nat-zh-cn-16k-common-vocab8404-pytorch` |
 | VAD | `iic/speech_fsmn_vad_zh-cn-16k-common-pytorch` |
 | 声纹验证 | `iic/speech_campplus_sv_zh-cn_16k-common` |
+| P2 目标说话人提取 | 冻结 `P2_project.src.tse.extract_target()`；P3 通过 `p2_tse_runtime.py` 接入 |
 | 目标语音净化 | 基于 CAM++ 窗口相似度的训练无关软掩蔽 |
 | 拒识门控 | Logistic Regression JSON 模型 |
 
@@ -33,6 +34,8 @@ pip install -r requirements.txt
 ```
 
 项目已在 RTX 4060 Laptop + 驱动 610.62 上验证 `torch 2.7.1+cu118`。无需安装完整 CUDA Toolkit 或 `nvcc`；`asr_demo.py` 和 `speaker_verify.py` 会在可用时自动选择 CUDA。详见 [docs/GPU_SETUP.md](./docs/GPU_SETUP.md)。
+
+当前比赛工作目录已有可用 GPU 环境 `..\.venv`；P3 评测统一使用 `..\.venv\Scripts\python.exe`，不要误用本目录内的 CPU 环境。P2→P3 的接入与配对 CER 命令见 [docs/P2_P3_INTEGRATION.md](./docs/P2_P3_INTEGRATION.md)。P1 的 6000 条外部配对数据及 18000 个音频引用现已齐备；[2026-08-10 的交接审计](./docs/P3_P2_B3_HANDOFF_AUDIT_20260810.md)保留为历史记录，当前 B2/B3 权重仍未通过 P3 的 20+20 输出质量检查。
 
 首次运行会下载 FunASR/CAM++ 模型；下载完成后可复用本地缓存。
 
@@ -237,6 +240,9 @@ data/datasetA/
 | `asr_demo.py` | VAD + Paraformer 单文件识别 |
 | `speaker_verify.py` | CAM++ 声纹注册、相似度和拒识 |
 | `eval_datasetA.py` | 端到端 CER/RR/耗时评测 |
+| `build_p3_paired_manifest.py` | 将冻结 P1 manifest 与 AISHELL transcript 转为 P3 配对 CER 清单，并审计音频齐备度 |
+| `eval_paired_cer.py` | 同 sample_id 的 B0/ORACLE/B1 配对 CER、分桶和候选闸门 |
+| `p2_tse_runtime.py` | 冻结 P2 checkpoint 的 SHA/形状/CUDA/输出能量适配器 |
 | `predict_jsonl.py` | B 集无标签输入的声纹门控 + ASR 推理 |
 | `prepare_public_dataset.py` | 公共数据下载、校验和比赛格式转换 |
 | `prepare_asr_finetune_manifest.py` | 纯净 ASR 训练/开发清单 |
