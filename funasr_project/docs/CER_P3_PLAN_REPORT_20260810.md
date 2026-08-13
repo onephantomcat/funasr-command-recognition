@@ -470,3 +470,22 @@ P3 侧已经完成：
 - 不运行昂贵的全量 DatasetA；
 - 不启用当前 target enhancer 或双输出 TSE 进入默认提交链；
 - 不把当前 B3 的“可加载”解释为识别质量通过。
+
+---
+
+## 12. 执行更新（2026-08-13 18:54）
+
+P2 修复代码已合入 `main`。B1 500-step CUDA 试训为 PASS，但提交 `3a62e7c` 的首轮 20000-step 正式训练于 17:28 判定 FAIL：
+
+- checkpoint step20000 与 strict restore 正常；
+- 6 次非有限梯度均正确跳过 optimizer 更新，说明安全修复确实生效；
+- AMP scale 从 512 增长到 8192，6 次 backoff 后最终为 2048；
+- 训练误用了 P1 v3 中的 enroll-swap target-present 子集，最终 dev SI-SDR 为 `-0.01189 dB`。
+
+提交 `c92f510` 已修正为 P1 v2 普通 PRESENT（100000 train / 10000 dev），并将 B1/B3 的 20k AMP growth interval 设为 100000，使 scale 保持在已通过试训的 512。专项回归为 `10 passed, 1 skipped`。修正版 B1 已于 18:53 在 AutoDL `63d44c988c-0e1a4480` 启动，输出：
+
+```text
+/root/autodl-tmp/P2_retrain_20260813/B1_FORMAL_20000_AMP512_P1V2_20260813
+```
+
+当前执行顺序不变：修正版 B1 最终验收通过后，才依次训练 B3 三个种子；每个候选先跑 20 正 + 20 负，至少 2/3 通过后运行 6000 条外部配对 CER，最后才决定是否执行一次冻结候选的 DatasetA 全量比较。

@@ -7,7 +7,15 @@
 #   3. 执行 `git push` 推送到远端后，再确认最终 hash 一致
 # ============================================================
 
-GIT_COMMIT_HEAD = "<待填入 git rev-parse HEAD 的 40 位 hash>"
+GIT_COMMIT_HEAD = "c92f5109bcf0a135fd8a6097efe76ded1f4ca91e"
+
+# 2026-08-13 当前状态：本文件下方 v2.0 条目保留历史交付说明；最新实现还包括：
+# - train_b1_trial.py 在 AMP unscale 后逐梯度检查 finite；非有限时跳过 optimizer.step
+# - GradScaler 的 scale/backoff、optimizer applied/skipped 与非有限步进入 metrics/verdict
+# - 正式 B1/B3 配置采用已通过 500-step CUDA 试训的 AMP init_scale=512；20k 内不再自动放大 scale
+# - B3 seeds 20260813/20260814/20260815 三份配置除 seed/tag/notes 外一致
+# - 首轮 B1（3a62e7c，P1 v3，scale 最高 8192）完成但 FAIL：6 次非有限梯度均已正确跳过，dev SI-SDR=-0.01189 dB
+# - 修正版 B1（本提交）改用 P1 v2 普通 PRESENT 100k/10k，并在 AutoDL 63d44c988c-0e1a4480 连续重训
 
 # ============================================================
 # 修改文件列表（对应 change_note.md §2.1 代码修复 + §2.2 配置 + §6）
@@ -86,6 +94,10 @@ P2/src/tse/campplus_backend.py
 # ------------------------------------------------------------
 # 4. 训练配置文件（P2/configs/）
 # ------------------------------------------------------------
+P2/configs/tse_b1.yaml                # B1 修正版正式配置 ★
+                                      #   P1 v2 普通 PRESENT 双 manifest（100K train / 10K dev）
+                                      #   AMP init_scale=512, growth_interval=100000
+                                      #   保留非有限梯度跳过与严格 FAIL 判定
 P2/configs/tse_b2_v2_campplus.yaml    # B2 v2 配置：scene_mode=b2，真实 CAM++，B1 warm-start
                                       # → 训练时因 warm-start 负迁移卡住，作废 v2
 P2/configs/tse_b2_v3_campplus.yaml    # B2 v3 配置：lambda_act=2.0 / zero_ref_kappa=1e-2
@@ -99,6 +111,8 @@ P2/configs/tse_b3_v3.yaml             # B3 v3 交付版 ★
                                       #   lambda_act=1.0（帧级活动检测适中）
                                       #   lr_warmup_steps=500（warm-start 长 warmup）
                                       #   seed=20260813（可复现）
+P2/configs/tse_b3_v3_seed20260814.yaml # B3 v3 正式复现种子 2（待 B1 合格后启动）
+P2/configs/tse_b3_v3_seed20260815.yaml # B3 v3 正式复现种子 3（待 B1 合格后启动）
 P2/configs/tse_b3_v4.yaml             # B3 v4 作废保留（勿交付）
                                       #   lambda_act=2.0 + zero_ref_kappa=1e-4 过度抑制
                                       #   → energy_ratio 从 0.00108 跌到 1.57e-9（再近静音）

@@ -1,0 +1,173 @@
+{
+    "schema_version":  "p3_metrics_registry_v1",
+    "updated_at":  "2026-08-13",
+    "policy":  {
+                   "FAIR_VALID":  "Same frozen DatasetA configuration; DatasetA labels were not used to train or select the evaluated front end.",
+                   "DESCRIPTIVE_ONLY":  "Useful for debugging but not a formal fair claim.",
+                   "LEAKED":  "DatasetA labels, phrases, or outcomes influenced training, calibration, or selection.",
+                   "INVALID_EVALUATOR":  "A scoring or interface defect invalidates the reported metrics."
+               },
+    "records":  [
+                    {
+                        "artifact":  "eval_baseline.json",
+                        "sha256":  "a2818771014d7eaddf7f26f5e17af7fc3ab64a2b2f70b116e8d5b8807acec01d",
+                        "classification":  "FAIR_VALID",
+                        "candidate_outcome":  "FALLBACK_BASELINE",
+                        "metrics":  {
+                                        "corpus_cer":  0.5343,
+                                        "negative_rr":  0.9114,
+                                        "positive_accept_rate":  0.6935
+                                    },
+                        "notes":  "Hard CAM++ threshold 0.30; intent filter and phrase correction disabled."
+                    },
+                    {
+                        "artifact":  "eval_enhancer.json",
+                        "sha256":  "65a7ac79dcfce7c6a0a12510598e5a4beefa64205dafbadaa68a2afe194539e5",
+                        "classification":  "FAIR_VALID",
+                        "candidate_outcome":  "REJECT_FRONTEND",
+                        "metrics":  {
+                                        "corpus_cer":  0.6135,
+                                        "negative_rr":  0.9367,
+                                        "positive_accept_rate":  0.6107
+                                    },
+                        "notes":  "Same hard-gate configuration as baseline; target_enhancer_musan_rirs worsened CER by 7.92 percentage points."
+                    },
+                    {
+                        "artifact":  "data/datasetA/eval_report_cer_enhancer_denoised_mix.json",
+                        "sha256":  "72225a2f4102bba01fa143a72b1b4bd67ca10b202e25658a6c970438cc54c738",
+                        "classification":  "FAIR_VALID",
+                        "candidate_outcome":  "REJECT_FRONTEND",
+                        "metrics":  {
+                                        "corpus_cer":  0.6245,
+                                        "negative_rr":  0.9388,
+                                        "positive_accept_rate":  0.61
+                                    },
+                        "notes":  "Denoised-mix enhancer also worsened CER and remains disabled."
+                    },
+                    {
+                        "artifact":  "data/datasetA/eval_tse_dual_output.json",
+                        "sha256":  "14c2de97854579c15bf7f735029f0b8e1476a625e403824c92a7e47b55d9d280",
+                        "classification":  "INVALID_EVALUATOR",
+                        "candidate_outcome":  "DO_NOT_CITE",
+                        "reported_metrics":  {
+                                                 "corpus_cer":  3.4602,
+                                                 "negative_rr":  0.7257,
+                                                 "positive_accept_rate":  0.8497
+                                             },
+                        "notes":  "The evaluator passed recognize()\u0027s (text, elapsed) tuple into CER and used tuple truthiness for RR. It must be rerun from fresh outputs."
+                    },
+                    {
+                        "artifact":  "data/datasetA/eval_gate_v2.json",
+                        "sha256":  "2666a73b89017d52953154b1a18fcc7c606809becefddc13bf7e3adc2142a55c",
+                        "classification":  "LEAKED",
+                        "candidate_outcome":  "DO_NOT_CITE_AS_FAIR",
+                        "reported_metrics":  {
+                                                 "corpus_cer":  0.4033,
+                                                 "negative_rr":  0.211,
+                                                 "positive_accept_rate":  0.978
+                                             },
+                        "notes":  "The 13-feature gate metadata identifies DatasetA as its dataset; it cannot support a fair claim."
+                    },
+                    {
+                        "artifact":  "data/datasetA/eval_gate_v2_optimized.json",
+                        "sha256":  "56dc7cd0f61b4d39f5e964e1f480455bb337b9c94189714ce87e408096aa01d1",
+                        "classification":  "LEAKED",
+                        "candidate_outcome":  "DO_NOT_CITE_AS_FAIR",
+                        "notes":  "DatasetA-informed gate/threshold optimization."
+                    },
+                    {
+                        "artifact":  "data/datasetA/eval_gate_v2_phrase.json",
+                        "sha256":  "e6bbb64b36a9821c551e2a2d1b409894dca788424cc47a5b94644f86f8afb17f",
+                        "classification":  "LEAKED",
+                        "candidate_outcome":  "DO_NOT_CITE_AS_FAIR",
+                        "notes":  "DatasetA phrase information influenced the run."
+                    },
+                    {
+                        "artifact":  "outputs/p3_external_gate_formal_20260810/readiness.json",
+                        "sha256":  "55d3c7a16692f065031be35d2118d764cfeeeb4abbfea99b453dc34ced07f432",
+                        "classification":  "READY_FOR_PAIRED_EVAL",
+                        "candidate_outcome":  "WAITING_FOR_NEW_P2_CHECKPOINT",
+                        "metrics":  {
+                                        "rows":  6000,
+                                        "unique_sample_ids":  6000,
+                                        "missing_mixture_wavs":  0,
+                                        "missing_target_wavs":  0,
+                                        "missing_enrollment_wavs":  0
+                                    },
+                        "notes":  "正式 P1 外部包已核验：6000 条配对记录、18000 个 mixture/target/enrollment WAV 全部存在。P3 runner 已就绪，等待新正式 B3 checkpoint。"
+                    },
+                    {
+                        "artifact":  "P2_project/artifacts/final/P2_artifacts/B3/checkpoint_step20000.pt",
+                        "sha256":  "5c351097d710aa6bc5914fc942f7c5f7fcc6206a2cac9f9042dd3b7cf4afd68d",
+                        "classification":  "ASSET_VALID_QUALITY_REJECTED",
+                        "candidate_outcome":  "REJECT_CURRENT_P2_B3_CHECKPOINT",
+                        "metrics":  {
+                                        "final_dev_sisdr_db":  -19.233210974551262,
+                                        "checkpoint_step":  20000
+                                    },
+                        "notes":  "The checkpoint hash, structure, CUDA forward and restore checks pass, but its own dev SI-SDR and P3 waveform preflight fail the quality gate."
+                    },
+                    {
+                        "artifact":  "outputs/p3_checkpoint_preflight_20260810/datasetA_p2_limit20.json",
+                        "sha256":  "7b719b049102a0daff22ff13fc119edfa1a82c8f4bee3637ce8c1cf1e1a676ab",
+                        "classification":  "DIAGNOSTIC_ONLY_NONFORMAL",
+                        "candidate_outcome":  "REJECT_CURRENT_P2_B3_CHECKPOINT",
+                        "metrics":  {
+                                        "positive_samples":  20,
+                                        "negative_samples":  20,
+                                        "near_silent_outputs":  40,
+                                        "positive_accept_rate":  0.0,
+                                        "diagnostic_corpus_cer":  1.0,
+                                        "negative_rr":  1.0,
+                                        "rms_ratio_min":  2.0099947632209218E-07,
+                                        "rms_ratio_median":  2.1341932368323805E-07,
+                                        "rms_ratio_max":  2.2848837260020045E-07
+                                    },
+                        "notes":  "GPU preflight only, not a full DatasetA score. All outputs were near-silent; RR=1.0 is a failure mode rather than a benefit."
+                    },
+                    {
+                        "artifact":  "P2_project/artifacts/incoming/P2_B1_AMP512_20260813/trial_verdict.json",
+                        "sha256":  null,
+                        "classification":  "B1_TRAINING_PREFLIGHT_PASS",
+                        "candidate_outcome":  "CORRECTED_FORMAL_B1_RUNNING",
+                        "metrics":  {
+                                        "total_steps":  500,
+                                        "optimizer_steps_applied":  500,
+                                        "optimizer_steps_skipped":  0,
+                                        "nonfinite_gradient_steps":  [],
+                                        "dev_loss":  -1.3813487124860286,
+                                        "dev_sisdr":  2.76028106405735,
+                                        "checkpoint_restore_ok":  true,
+                                        "peak_gpu_mem_gb":  1.5772347450256348
+                                    },
+                        "notes":  "CUDA AMP512 500-step 试训通过，仅证明正式训练链可运行；不能替代 20000-step B1 或新 B3/P3 质量结论。"
+                    },
+                    {
+                        "artifact":  "/root/autodl-tmp/P2_retrain_20260813/B1_FORMAL_20000_AMP512_20260813/trial_verdict.json",
+                        "sha256":  null,
+                        "classification":  "B1_FORMAL_REJECTED",
+                        "candidate_outcome":  "DO_NOT_WARM_START_B3",
+                        "metrics":  {
+                                        "total_steps":  20000,
+                                        "optimizer_steps_applied":  19994,
+                                        "optimizer_steps_skipped":  6,
+                                        "nonfinite_gradient_steps":  [
+                                                                          8085,
+                                                                          10397,
+                                                                          11202,
+                                                                          13502,
+                                                                          14656,
+                                                                          19107
+                                                                      ],
+                                        "all_nonfinite_gradients_skipped":  true,
+                                        "amp_scale_initial":  512.0,
+                                        "amp_scale_peak_observed":  8192.0,
+                                        "amp_scale_final":  2048.0,
+                                        "dev_loss":  1.865566995255649,
+                                        "dev_sisdr":  -0.011890705108642579,
+                                        "checkpoint_restore_ok":  true
+                                    },
+                        "notes":  "首轮 20k 的梯度跳过逻辑正确，但 AMP scale 增长与错误 B1 数据选择导致质量不合格。提交 c92f510 已改用 P1 v2 普通 PRESENT 并在 20k 内保持 scale 512，修正版正在独立目录重训。"
+                    }
+                ]
+}

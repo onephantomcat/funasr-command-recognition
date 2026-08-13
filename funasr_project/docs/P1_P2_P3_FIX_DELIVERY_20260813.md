@@ -2,10 +2,10 @@
 
 **报告日期：** 2026-08-13
 
-**集成分支：** `codex/p3-integrate-pr3`
+**集成分支：** `main`（当前正式重训源码提交 `c92f5109bcf0a135fd8a6097efe76ded1f4ca91e`）
 
-**适用范围：** P1 数据、P2 双输出 TSE、P4 CAMPPlus、P3 ASR/CER 接入及 S004 真人录音
-**最终裁决：** `CODE_FIXED / EXECUTION_SMOKE_PASS / FORMAL_P2_MODEL_PENDING`
+**适用范围：** P1 数据、P2 双输出 TSE、P4 CAMPPlus、P3 ASR/CER 接入及 S001～S004 真人录音源集合
+**当前裁决：** `CODE_FIXED / B1_500_TRIAL_PASS / FIRST_B1_FORMAL_FAIL / CORRECTED_B1_RERUNNING / B3_AND_P3_PENDING`
 
 ## 技术摘要
 
@@ -13,7 +13,8 @@
 - **旧 B2/B3 权重仍然拒收。** `P2_DELIVERY_FOR_P3_20260811.tar.gz` 的文件 SHA256 与声明一致，但其中 B2/B3 仍复用 `13bce1b90a80710c8342fd28f0aaad90f244571be3be4c7469570992fd96db8b`。该权重已在 P3 20 正 + 20 负独立预检中出现 39/40 近静音、正样本接收率 0%、诊断 CER 100%，本轮代码修复不能追溯改变旧 checkpoint。
 - **P1 不再阻塞 P3 数据入口。** 现有正式外部包已经提供 6000 条唯一配对记录和 18000 个 mixture/target/enrollment 音频引用，缺失 0；同时已补齐九份 split manifest 的本地生成入口，并在 Windows 双进程下真实生成 14 条跨场景预检音频。
 - **P3 的代码与数据链已经就绪，只等待新 P2 候选。** P3 已完成 manifest 桥接、P2 runtime、B0/ORACLE/B1 配对 CER、输出能量诊断和异常语义保护。新候选到位后，应先做 20+20 小样本复验，再运行 6000 条外部配对评测；不能直接跳到 DatasetA 全量。
-- **S004 原始录音内容通过自动预检。** `S004.zip` 含 35 个文件，命名正确；32/32 条命令逐字一致，3 条长句去标点后逐字一致。它仍是原始候选包，正式入库前需人工耳检首尾留白、补授权/环境记录，并另存 16 kHz 单声道 PCM16 WAV，原 M4A 不覆盖。
+- **B1 500-step CUDA 试训已经通过；首轮 20k 正式训练已判定失败，修正版正在重训。** 首轮的 6 次非有限梯度均正确跳过 optimizer 更新、restore 也通过，但 scale 自动增长到 8192，且误用了只含 enroll-swap PRESENT 的 P1 v3，最终 dev SI-SDR 仅 `-0.01 dB`。提交 `c92f510` 已把 B1 改回 P1 v2 普通 PRESENT，并将 20k 期间 scale 保持为 512；修正版已在同一 AutoDL 实例启动。
+- **S004 是 S001～S004 联合真人录音源的一部分。** S004 自身 35 个文件的命名和朗读内容通过自动预检，但不能单独称为正式评测集；四人原始录音还需统一下载、授权/环境记录、WAV 规范化，并构造跨说话人的 mixture/target/enrollment 与 PRESENT/ABSENT/SWAP manifest。
 
 ## 当前可交付状态
 
@@ -22,10 +23,11 @@
 | P1 外部确认集 | **READY** | 6000 条配对记录；2000 `D_single` + 4000 `D_overlap`；18000 个必需音频缺失 0 | 无需重新下载；只有要求从源码完整重建时才需运行 116000 条正式生成 |
 | P1 生成复现 | **PREFLIGHT PASS** | 九份 split manifest 生成器、Windows/POSIX 可移植入口、14 条真实生成预检 | 尚未在本机完整生成 100k train + 10k dev + 6k confirmation |
 | P2 源码 | **FIXED** | 损失、数据语义、CAMPPlus、训练、评测、诊断和测试修复 | 无代码级阻断 |
-| P2 训练链 | **SMOKE PASS** | 真实 CAMPPlus B1 2-step、B1→B3 2-step strict warm-start、1-step DEBUG 完整反向 | 尚未完成正式 B1/B3 多种子训练 |
+| P2 B1 训练链 | **CORRECTED FORMAL RERUNNING** | B1 500-step CUDA 试训 PASS；首轮 20k 失败证据完整保留；修正版 20k 已启动 | 等待修正版最终 dev、零非有限梯度、restore 与 checkpoint；未通过前不得启动 B3 |
+| P2 B3 三种子 | **CONFIG READY / NOT STARTED** | `20260813 / 20260814 / 20260815` 三份除 seed/tag/notes 外一致的配置 | 等合格 B1 strict warm-start 后逐一训练 |
 | P2 旧 B2/B3 checkpoint | **REJECT** | 可用于失败回归对照 | 不得进入 P3 正式链路 |
 | P3 接入代码 | **READY** | P2 runtime、配对 CER、文本/CER 契约、能量诊断 | 等待不同于旧 SHA 的新 P2 checkpoint |
-| S004 真人录音 | **RAW CANDIDATE PASS** | 35 条原始 M4A，文件名和朗读内容通过 | 人工耳检、授权/设备环境记录、规范 WAV 副本 |
+| S001～S004 真人录音源 | **RAW PARTIAL / WAITING** | S004 自身 35 条内容预检通过；S001/S002/S003/S004 计划用途已明确 | 等待齐包、修正版 S002、S003、授权/设备环境、规范 WAV 和跨说话人场景 manifest；不阻塞当前 P2 正式训练 |
 
 ## 接收内容与 Git 合并结论
 
@@ -99,7 +101,7 @@ ASSET_VALID / QUALITY_REJECTED / DO_NOT_RUN_FORMAL_P3
 
 ### 测试矩阵
 
-- 提交前最终项目全量 pytest：`100 passed, 2 skipped, 22 subtests passed`；两项 skip 均为当前 Python 3.13 环境无 CUDA 的专属项。
+- 2026-08-13 本次本机全量 pytest：`88 passed, 3 skipped, 22 subtests passed`；正式 AMP 配置变更后的专项回归：`10 passed, 1 skipped`。
 - B3 专项回归（含多 worker RNG）为 `8/8 PASS`。
 - 随机 TSE smoke：4 种长度 `160 / 16000 / 57600 / 160000` 全部通过 shape、finite、完整分支反向和 mixture consistency。
 - 注册条件 smoke：确定性、不同 embedding、shuffle、零 mixture、embedding 梯度 `6/6 PASS`。
@@ -153,6 +155,39 @@ B3 从该 B1 checkpoint 严格 warm-start 的真实 CAMPPlus 2-step：
 
 限制必须同时说明：2-step 时 4 个 ABSENT 输出/input RMS 比仍约 `0.50`，抑制尚未学成。上述结果只证明真实 embedding、损失、反向、warm-start 和恢复链能运行，**不证明 B3 正式质量达标**。
 
+### B1 500-step 与正式训练（2026-08-13 更新）
+
+B1 CUDA 500-step 试训结果：
+
+- optimizer 更新 `500/500`，跳过 `0`；非有限梯度步骤 `[]`；
+- AMP scale `512 → 512`，回退 `0`；
+- dev loss `-1.3813487`，dev SI-SDR `2.7602811 dB`；
+- checkpoint restore max diff `0`，`restore_ok=true`；
+- 峰值显存约 `1.58 GB`，总裁决 `PASS`。
+
+首轮正式 B1 使用提交 `3a62e7c` 的 `configs/tse_b1.yaml`，于 2026-08-13 16:30 在 AutoDL `63d44c988c-0e1a4480` 启动，并于 17:28 完成：
+
+- `steps=20000`，AMP init scale `512`，但 `growth_interval=2000` 使 scale 最高增长到 `8192`；
+- 真实 CAMPPlus 强制加载成功，无 BOOTSTRAP fallback；
+- P1 v3 manifest 总计 59000 条；B1 过滤 `target_present=false` 后实际为 train `20000`、dev `2000`；
+- B1 样本对应 `enroll_swap_target_1/2`：目标语音仍在 mixture，注册句来自同一说话人的另一句。因此日志的 `swap` 统计不是 ABSENT，也不会把 target 置零；
+- 输出目录：`/root/autodl-tmp/P2_retrain_20260813/B1_FORMAL_20000_AMP512_20260813`；
+- 发生 6 次非有限梯度（step `8085/10397/11202/13502/14656/19107`），每次都满足 `optimizer_step_skipped=true` 且未更新参数；
+- checkpoint step20000 存在，restore max diff `0`，但最终 dev loss `1.86557`、dev SI-SDR `-0.01189 dB`，总裁决 `FAIL`。
+
+失败后的直接测量表明，500-step PASS 使用的是 P1 v2 普通 PRESENT 训练集（100000 train / 10000 dev），而首轮 20k 切到了只含 ABSENT/SWAP 增强场景的 P1 v3。为同时修复 AMP 增长和数据语义，提交 `c92f510` 做了两项最小修改：
+
+- B1 恢复使用 `/root/autodl-tmp/P1_to_P2_v2_b1/manifests/tse_train_present.jsonl` 与 `tse_dev.jsonl`；B2/B3 继续使用 P1 v3；
+- B1 与 B3 三个种子的 `amp_growth_interval` 改为 `100000`，在 20k 内保持已验证的 scale 512；非有限梯度跳过逻辑和严格失败判定均保留。
+
+修正版 B1 于 2026-08-13 18:53 启动，PID `8620`，输出目录：
+
+```text
+/root/autodl-tmp/P2_retrain_20260813/B1_FORMAL_20000_AMP512_P1V2_20260813
+```
+
+首轮检查确认 train `100000`、dev `10000`、真实 CAMPPlus、GradScaler `init_scale=512 / growth_interval=100000`，训练进程与两个 DataLoader worker 正常运行。用户已取消暂停要求，本任务连续运行且没有重复启动。
+
 ### S004 录音预检
 
 - ZIP 顶层为 `S004/`，共 35 个 M4A：3 条 E + 16 条 C × 2 take。
@@ -187,17 +222,17 @@ python ..\p1\v2_b1\build_p1_v2_b1_portable.py `
 ```
 
 2. 全量生成结束后，使用冻结 builder 自带 acceptance report 判定；不要增加另一套 baseline/hash/gate 登记表。
-3. 真人采集继续沿用 S004 的直接命名方式。每人 35 条，禁止读编号/提示，读错任一 take 就重录对应文件。
-4. S004 入库前补：参与者同意、日期、设备/环境、匿名编号；保留原 M4A，并另生成 `16 kHz / mono / PCM16 WAV` 规范副本。
-5. 继续采集到建议的 20 人规模。当前已发现 S002 和 S004 候选，其他编号是否正式通过应以各自审计记录为准，不能仅按编号推算人数。
+3. 真人采集以 S001～S004 作为当前联合原始说话人集合；每人 35 条，禁止读编号/提示，读错任一 take 就重录对应文件。
+4. 当前先等待队友给出完整 S001、修正版 S002、S003；S004 已完成单人内容预检。四人入库前统一补参与者同意、日期、设备/环境、匿名编号；保留原 M4A，并另生成 `16 kHz / mono / PCM16 WAV` 规范副本。
+5. 齐包后再构造跨说话人 mixture、target、enrollment、wrong enrollment、PRESENT/ABSENT/SWAP 和唯一 `ref_text` manifest。它用于真人小规模补充评测，不替代 P2 训练集或 6000 条正式外部确认集。
 
 ## P2 接下来怎么做
 
 ### 正式重训顺序
 
-1. 用修复后的代码、真实 CAMPPlus 和 P1 train/dev 先跑 B1 500-step 正式试车；确认无 NaN、梯度有限、PRESENT SI-SDR/能量未坍塌、checkpoint 严格恢复。
-2. 完成与新代码匹配的 B1 正式训练。旧 B1 可以作为对照或初始化来源，但不能把其旧损失日志当成新实现的训练证明。
-3. 从新 B1 strict warm-start 训练 B3；至少保留 `20260813 / 20260814 / 20260815` 三个独立种子候选。
+1. **已完成：** 修复代码、真实 CAMPPlus 和 P1 train/dev 的 B1 500-step CUDA 试车已 PASS。
+2. **正在运行：** 完成与提交 `c92f510` 匹配的修正版 B1 20000-step 正式训练；首轮 `3a62e7c` 结果已判定 FAIL，只作失败对照。结束后检查最终 dev、非有限梯度记录和 strict restore。
+3. **待执行：** 从合格新 B1 strict warm-start 依次训练 B3；配置已经补齐 `20260813 / 20260814 / 20260815` 三个独立种子。
 4. B2 结构可以与 B3 相同，但“结构相同”不足以证明质量可复用。只有新 B3 在 ABSENT 与 SWAP 分场景均经 P3 实测通过后，B2 才可引用同一权重；否则单独训练/选择 B2。
 
 ### P2 下一次交付必须包含
@@ -234,7 +269,7 @@ python ..\p1\v2_b1\build_p1_v2_b1_portable.py `
 
 ## 限制、风险和没有宣称的结果
 
-- 本轮没有完成 20000-step 正式 B3 重训，因此没有新正式 B3 checkpoint，也没有可宣称的新 CER/RR。
+- 20000-step 正式 B1 当前仍在运行，尚不能宣称正式 B1 完成；B3 三种子和新 CER/RR 尚未执行。
 - 本轮没有完整重建 P1 的 116000 条正式样本；完成的是输入清单生成和 14 条真实跨场景预检。已有 6000 条外部正式包不受此限制。
 - 真实 CAMPPlus 2-step 结果不能外推正式收敛；尤其 ABSENT 2-step 仍未被抑制。
 - S004 自动内容预检不能替代人工耳检、授权和最终格式转换。

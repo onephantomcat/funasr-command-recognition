@@ -1,7 +1,51 @@
 {
   "module": "P2_TSE",
-  "updated_at": "2026-07-30",
-  "branch": "feature/xuanmo-rejection-optimize-v2",
+  "updated_at": "2026-08-13T18:54:00+08:00",
+  "branch": "main",
+  "head": "c92f5109bcf0a135fd8a6097efe76ded1f4ca91e",
+  "current_execution": {
+    "status": "B1_CORRECTED_FORMAL_RERUNNING",
+    "instance": "63d44c988c-0e1a4480",
+    "started_at": "2026-08-13T18:53:06+08:00",
+    "config": "P2_project/configs/tse_b1.yaml",
+    "output": "/root/autodl-tmp/P2_retrain_20260813/B1_FORMAL_20000_AMP512_P1V2_20260813",
+    "steps_planned": 20000,
+    "train_samples": 100000,
+    "dev_samples": 10000,
+    "amp_init_scale": 512.0,
+    "amp_growth_interval": 100000,
+    "sv_mode": "campplus",
+    "pause_requested": false,
+    "monitor_automation": "p2",
+    "note": "首轮 P1 v3/动态增长 scale 的 20k 结果已 FAIL；修正版使用 P1 v2 普通 PRESENT 与固定 AMP512。17:00 暂停安排已删除，保持单一训练进程连续运行。"
+  },
+  "recent_validation": {
+    "b1_500_step": "PASS",
+    "optimizer_steps_applied": 500,
+    "optimizer_steps_skipped": 0,
+    "nonfinite_gradient_steps": [],
+    "dev_loss": -1.3813487124860286,
+    "dev_sisdr": 2.76028106405735,
+    "checkpoint_restore_ok": true,
+    "peak_gpu_mem_gb": 1.5772347450256348
+  },
+  "first_formal_failure": {
+    "source_commit": "3a62e7ccd4c4bc3f5512e54fc22d5c577fec1a50",
+    "output": "/root/autodl-tmp/P2_retrain_20260813/B1_FORMAL_20000_AMP512_20260813",
+    "status": "FAIL",
+    "completed_at": "2026-08-13T17:28:21+08:00",
+    "optimizer_steps_applied": 19994,
+    "optimizer_steps_skipped": 6,
+    "nonfinite_gradient_steps": [8085, 10397, 11202, 13502, 14656, 19107],
+    "all_nonfinite_gradients_skipped": true,
+    "amp_scale_initial": 512.0,
+    "amp_scale_peak_observed": 8192.0,
+    "amp_scale_final": 2048.0,
+    "dev_loss": 1.865566995255649,
+    "dev_sisdr": -0.011890705108642579,
+    "checkpoint_restore_ok": true,
+    "reason": "AMP scale growth caused non-finite gradients, and P1 v3 supplied only enroll-swap target-present rows instead of ordinary B1 PRESENT training data."
+  },
   "decisions": [
     {
       "id": "D-2026-07-25-01",
@@ -81,6 +125,12 @@
       "note": "评测器骨架完成：手册 10 项必测全过（12 passed，修复 mrstft batch 维/corpus 方向断言/满幅正弦削波误判）；用 DEBUG_OVERFIT ckpt 在 12 条混合上实跑：语料级 1.64 dB vs 逐句 5.99 dB（两口径可区分），SI-SDRi 均值 1.41 dB，act_f1 0.98，注册交换选择正确率 0.667（选择性 15.98 dB），RTF 0.0035，峰值显存 0.021 GB；schema 校验 PASS(12/12) + 确定性复评逐字节一致（est 音频 subtype=FLOAT 位精确往返）；未见过样本（S0767 等 4 条）分数显著低于过拟合 8 条，符合预期。pytest 全量回归 31 passed"
     }
   },
+  "next_execution": [
+    "修正版 B1 正式训练完成后验证最终 dev、非有限梯度记录和 strict restore",
+    "从同一合格 B1 strict warm-start B3 seeds 20260813/20260814/20260815",
+    "每个新 B3 先跑 P3 20 正 + 20 负；至少 2/3 通过后运行 6000 paired CER",
+    "外部评测可信后再运行一次冻结候选的 DatasetA 全量比较"
+  ],
   "blocked": [],
   "constraints_frozen": {
     "lambda_id": 0.0,

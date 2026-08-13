@@ -1,6 +1,6 @@
 {
   "module": "P2_TSE",
-  "updated_at": "2026-07-30",
+  "updated_at": "2026-08-13T18:54:00+08:00",
   "register": {
     "P1_v0_debug_sources": {
       "status": "SUBSTITUTED",
@@ -9,40 +9,40 @@
       "fallback_work": "无（P2-07 已 PASS）"
     },
     "P1_v1_smoke": {
-      "status": "MISSING",
+      "status": "AVAILABLE_HISTORICAL",
       "required_for": ["P2-10"],
       "deadline": "2026-07-31",
-      "fallback_work": "P2-11 评测器骨架先行、P2 API 测试、WeSep 上游冒烟（P2-05）"
+      "fallback_work": "当前正式训练使用 P1 v3；该项仅保留历史登记"
     },
     "P1_v2_b1": {
-      "status": "MISSING",
+      "status": "AVAILABLE",
       "required_for": ["P2-12", "P2-13"],
       "deadline": "2026-08-03",
-      "fallback_work": "P2-09 过拟合诊断细化、评测器联调；注意：B1 窗口 7/30-8/7，逾期则 8/7 裁决顺延"
+      "fallback_work": "100000 条普通 PRESENT 训练集与 10000 条 dev 已用于 B1 500-step PASS，并用于 c92f510 修正版 20k 正式重训"
     },
     "P1_v3_absent_swap": {
-      "status": "MISSING",
+      "status": "AVAILABLE",
       "required_for": ["P2-14", "P2-15"],
       "deadline": "2026-08-07",
-      "fallback_work": "B2 零抑制损失单测（losses.absent_zero_loss 已定义）、05B 方案细化"
+      "fallback_work": "manifest 与音频已在 AutoDL；该资产供 B2/B3 ABSENT/SWAP 使用，不再冒充 B1 普通 PRESENT；B3 待合格 B1 后启动"
     },
     "P3_asr_eval_v1": {
-      "status": "MISSING",
+      "status": "READY",
       "required_for": ["B1_FORMAL_CER"],
       "deadline": "2026-08-05",
-      "fallback_work": "预留配对预测格式 paired_predictions.jsonl（P2-11 设计），到位即接"
+      "fallback_work": "P3 runtime、20+20、6000 paired CER runner 已实现；等待新正式 B3 checkpoint"
     },
     "P4_sv_contract_v1": {
-      "status": "MISSING",
+      "status": "AVAILABLE",
       "required_for": ["B1_FORMAL", "P2-12"],
       "deadline": "2026-08-03",
-      "fallback_work": "BOOTSTRAP 确定性随机 embedding 继续支撑 debug 车道（保留 swap 语义）"
+      "fallback_work": "正式训练已严格加载真实 CAMPPlus；BOOTSTRAP 仅限显式 debug"
     },
     "P5_pipeline_contract_v1": {
-      "status": "MISSING",
+      "status": "PARTIAL",
       "required_for": ["P2-16"],
       "deadline": "2026-08-09",
-      "fallback_work": "extract_target API 契约文档化（src/tse/api.py 已实现双输出接口）"
+      "fallback_work": "extract_target 与 P2TSERuntime 已实现；跨系统最终接入仍待新 checkpoint"
     },
     "P6_deploy_contract_v1": {
       "status": "MISSING",
