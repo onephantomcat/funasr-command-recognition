@@ -188,7 +188,7 @@ B1 CUDA 500-step 试训结果：
 
 首轮检查确认 train `100000`、dev `10000`、真实 CAMPPlus、GradScaler `init_scale=512 / growth_interval=100000`，训练进程与两个 DataLoader worker 正常运行。用户已取消暂停要求，本任务连续运行且没有重复启动。
 
-20:39 自动检查时训练仍处于 step `2000/20000` 后的 10,000 条 dev 全量评估，日志已连续记录到 `7000/10000`；`checkpoint_step2000.pt` 保持存在。检查瞬间 GPU 利用率 `0%`、显存 `2271 MiB`，训练主进程及两个 DataLoader 子进程均仍存活，CPU 时间持续增长，属于 dev 数据处理阶段而非任务退出。累计仍只有 step `1538` 的 1 次非有限梯度，训练器已按设计执行 `optimizer update skipped`，scale `512 → 256` 后没有新增同类记录。`dev_metrics.jsonl` 仍为空，最终 verdict 尚未生成。现有验收代码把“所有梯度均有限”列为必过项，所以即使安全跳过生效，这次运行最终仍预计为 `FAIL`；继续运行用于取得 dev 与 restore 的直接证据，不能据此放行 B3。本次只记录运行状态，没有修改配置或启动重复任务，也没有放宽既有安全判定。
+21:43 自动检查时训练已完成 step 2000 与 step 4000 两轮各 10,000 条 dev 全量评估，并恢复到 step `4125/20000`；`checkpoint_step2000.pt` 与 `checkpoint_step4000.pt` 均存在。step 2000 指标为 `dev_loss=-1.8249511459`、`dev_sisdr=3.1341933973 dB`，step 4000 改善到 `dev_loss=-2.5572967597`、`dev_sisdr=3.8020851040 dB`。检查瞬间 GPU 利用率 `31%`、显存 `2271 MiB`，训练主进程及两个 DataLoader 子进程正常。累计仍只有 step `1538` 的 1 次非有限梯度，训练器已按设计执行 `optimizer update skipped`，scale `512 → 256` 后没有新增同类记录。最终 verdict 尚未生成。质量趋势正在改善，但现有验收代码把“所有梯度均有限”列为必过项，因此本次最终工程 verdict 仍预计为 `FAIL`；继续运行用于取得最终 dev 与 restore 的直接证据，不能据此放行 B3。本次只记录运行状态，没有修改配置或启动重复任务，也没有放宽既有安全判定。
 
 ### S004 录音预检
 

@@ -1,6 +1,6 @@
 {
   "module": "P2_TSE",
-  "updated_at": "2026-08-13T20:39:50+08:00",
+  "updated_at": "2026-08-13T21:43:23+08:00",
   "branch": "main",
   "head": "c92f5109bcf0a135fd8a6097efe76ded1f4ca91e",
   "current_execution": {
@@ -18,10 +18,10 @@
     "pause_requested": false,
     "monitor_automation": "p2",
     "last_observation": {
-      "observed_at": "2026-08-13T20:39:50+08:00",
-      "latest_step": 2000,
+      "observed_at": "2026-08-13T21:43:23+08:00",
+      "latest_step": 4125,
       "main_pid": 8620,
-      "gpu_utilization_pct": 0,
+      "gpu_utilization_pct": 31,
       "gpu_memory_mib": 2271,
       "amp_scale_current": 256.0,
       "optimizer_steps_skipped_observed": 1,
@@ -29,10 +29,16 @@
       "all_observed_nonfinite_gradients_skipped": true,
       "projected_verdict_under_existing_rules": "FAIL_IF_NO_RULE_CHANGE",
       "checkpoint_step2000_exists": true,
-      "dev_evaluation_status": "RUNNING",
-      "dev_samples_observed": 7000,
+      "checkpoint_step4000_exists": true,
+      "dev_evaluation_status": "COMPLETED_THROUGH_STEP4000",
+      "dev_evaluations_completed": 2,
+      "dev_samples_observed_latest_eval": 10000,
       "dev_samples_planned": 10000,
-      "dev_metrics_available": false,
+      "dev_metrics_available": true,
+      "dev_metrics": [
+        {"step": 2000, "dev_loss": -1.8249511459380388, "dev_sisdr": 3.1341933972835543},
+        {"step": 4000, "dev_loss": -2.5572967597397045, "dev_sisdr": 3.8020851040244104}
+      ],
       "trial_verdict_available": false
     },
     "note": "首轮 P1 v3/动态增长 scale 的 20k 结果已 FAIL；修正版使用 P1 v2 普通 PRESENT、AMP512 初始化且禁用增长，仍保留遇到非有限梯度时的 scale 回退。现有 verdict 把所有梯度均有限列为必过项，因此 step1538 会使最终工程 verdict 为 FAIL；继续运行用于取得 dev/restore 直接证据，但不得放行 B3。"
