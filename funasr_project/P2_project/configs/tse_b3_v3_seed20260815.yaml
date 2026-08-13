@@ -1,0 +1,60 @@
+# B3 v3 正式复现种子 3。
+# 除 seed/tag 外必须与 tse_b3_v3.yaml 保持相同；从同一合格 B1 checkpoint strict warm-start。
+
+sample_rate: 16000
+n_fft: 512
+hop_length: 128
+win_length: 512
+emb_dim: 192
+lstm_hidden: 256
+lstm_layers: 2
+dropout: 0.0
+film_scale: 0.1
+lambda_sisdr: 2.0
+lambda_wav: 0.5
+lambda_stft: 0.5
+lambda_act: 1.0
+lambda_residual: 0.5
+lambda_mix: 0.5
+lambda_id: 0.0
+zero_ref_kappa: 1.0e-3
+mrstft_resolutions:
+  - [256, 64, 256]
+  - [512, 128, 512]
+  - [1024, 256, 1024]
+act_frame_ratio: 0.5
+absent_loss_scale: 0.05
+scene_mode: b3
+segment_length: 8
+batch_size: 16
+gradient_accumulation: 1
+amp: true
+amp_init_scale: 512.0
+amp_growth_factor: 2.0
+amp_backoff_factor: 0.5
+amp_growth_interval: 100000
+steps: 20000
+seed: 20260815
+lr: 3.0e-4
+lr_warmup_steps: 100
+lr_schedule: cosine
+grad_clip: 2.0
+log_every: 25
+save_every: 500
+dev_every: 2000
+shuffle: true
+num_workers: 2
+pin_memory: true
+prefetch_factor: 2
+datasets:
+  manifest: /root/autodl-tmp/P1_to_P2_v3_absent_swap/manifest.jsonl
+  train_split: train
+  dev_split: dev
+  eval_split: D_swap
+tag: B3_SWAP_v3_seed20260815
+lane: INTEGRATION
+asset_class: B3_ENROLL_SWAP_V3
+notes: "B3 v3 正式复现种子 3；从同一合格 B1 checkpoint strict warm-start。"
+sv_mode: campplus
+sv_bootstrap_seed: 20260804
+sv_model_id: "iic/speech_campplus_sv_zh-cn_16k-common"

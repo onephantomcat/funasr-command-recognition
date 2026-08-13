@@ -1,19 +1,18 @@
 # ============================================================
-# P2-13 B1 PRESENT 场景训练配置（P1 v3 最终版）
+# P2-13 B1 PRESENT 场景正式重训配置（P1 v2 普通 PRESENT）
 # ------------------------------------------------------------
 # 任务：训练模型在「目标 speaker 出现在 mixture 中」时，正确提取目标语音
-# 场景过滤：scene_mode=b1 → 不过滤 scenario（全场景），但 P1 v3 manifest
-#          中 split=train/dev 的 scenario 包含 present + absent + swap，
-#          B1 只取 target_present=True 的样本（普通 present 场景）
+# 场景过滤：scene_mode=b1；输入为已经按普通 PRESENT 切分的 P1 v2 manifests。
 #
-# 注意：B1 与 B2/B3 共享同一份 P1 v3 manifest.jsonl，靠 scene_mode + scenario 过滤区分
+# 注意：P1 v3 是 ABSENT/SWAP 增强集，其 PRESENT 行全部属于 enroll-swap；
+#       B2/B3 继续使用 P1 v3，B1 不与它们共用训练 manifest。
 #
 # 运行方式：
 #   云端 GPU 正式训练：
 #     python tools/train_b1_trial.py --config configs/tse_b1.yaml --device cuda
 #   本地 CPU 冒烟 5 步：
 #     python tools/train_b1_trial.py --config configs/tse_b1.yaml --debug_data --max_steps 5 --device cpu
-#   用 P1 v3 真实数据冒烟 10 步：
+#   用 P1 v2 真实数据冒烟 10 步：
 #     python tools/train_b1_trial.py --config configs/tse_b1.yaml --device cpu --max_steps 10
 # ============================================================
 
@@ -61,7 +60,9 @@ amp: true
 amp_init_scale: 512.0
 amp_growth_factor: 2.0
 amp_backoff_factor: 0.5
-amp_growth_interval: 2000
+# Keep the validated scale fixed during a 20k run.  The previous interval
+# allowed 512 -> 8192 and caused six non-finite-gradient skips.
+amp_growth_interval: 100000
 steps: 20000
 seed: 20260723
 lr: 3.0e-4
@@ -77,24 +78,21 @@ pin_memory: true
 prefetch_factor: 2
 
 # ============================================================
-# ★ P1 v3 单 manifest + split 过滤（与 B2/B3 共享同一份 manifest）
+# ★ P1 v2 普通 PRESENT 双 manifest
 # ============================================================
 datasets:
-  # P1 v3 全量 59K 样本的 manifest.jsonl（内含 scenario/target_present/split 字段）
-  manifest: /root/autodl-tmp/P1_to_P2_v3_absent_swap/manifest.jsonl
-  # train/dev 均从单 manifest 过滤：
-  #   B1 scene_mode=b1 → 不按 scenario 过滤，全 split=train 的 present 样本
-  #   （P1 v3 manifest 中 split=train 的 present 样本约 10K-20K）
-  train_split: train
-  dev_split:   dev
-  # D_single 评估集（present 场景，训练期不用，final eval 用）
-  eval_split: D_single
+  # P1 v3 is the ABSENT/SWAP augmentation set and its target-present rows are
+  # all enroll-swap scenes.  B1 must use the ordinary PRESENT manifests that
+  # produced the validated B1 baseline and the passing 500-step AMP trial.
+  train_manifest: /root/autodl-tmp/P1_to_P2_v2_b1/manifests/tse_train_present.jsonl
+  dev_manifest: /root/autodl-tmp/P1_to_P2_v2_b1/manifests/tse_dev.jsonl
+  eval_manifest: /root/autodl-tmp/P1_to_P2_v2_b1/manifests/D_single.jsonl
 
 # 元信息
 tag: B1_PRESENT_seed20260723
 lane: INTEGRATION
 asset_class: B1_PRESENT
-notes: "B1 present 场景训练: target_present=True 的普通场景，P1 v3 manifest.jsonl 单文件按 split 过滤"
+notes: "B1 ordinary PRESENT training on P1 v2 manifests; AMP scale 512 with growth disabled for the 20k formal run"
 
 # P4 CAMPPlus 嵌入（与 B2/B3 一致）
 sv_mode: campplus
