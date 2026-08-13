@@ -55,7 +55,13 @@ scene_mode: b1
 segment_length: 8
 batch_size: 16
 gradient_accumulation: 1
-amp: false            # 保持关闭（稳定第一）
+amp: true
+# 500-step CUDA 试训在 init_scale=512 下完成 500/500 次有限梯度更新；
+# 保留动态缩放，并由训练器在非有限梯度时跳过 optimizer 更新。
+amp_init_scale: 512.0
+amp_growth_factor: 2.0
+amp_backoff_factor: 0.5
+amp_growth_interval: 2000
 steps: 20000
 seed: 20260723
 lr: 3.0e-4
@@ -64,7 +70,7 @@ lr_schedule: cosine
 grad_clip: 2.0
 log_every: 25
 save_every: 500       # 40 个 ckpt
-dev_every: 100        # 200 次 dev 评测
+dev_every: 2000       # 正式训练期间 10 次全量 dev；避免评测挤占训练执行
 shuffle: true
 num_workers: 2
 pin_memory: true
