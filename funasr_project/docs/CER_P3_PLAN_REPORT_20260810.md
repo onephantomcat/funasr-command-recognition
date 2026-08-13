@@ -491,3 +491,7 @@ P2 修复代码已合入 `main`。B1 500-step CUDA 试训为 PASS，但提交 `3
 当前执行顺序不变：修正版 B1 最终验收通过后，才依次训练 B3 三个种子；每个候选先跑 20 正 + 20 负，至少 2/3 通过后运行 6000 条外部配对 CER，最后才决定是否执行一次冻结候选的 DatasetA 全量比较。
 
 22:43 状态检查：修正版 B1 已到 step `16000/20000`，`checkpoint_step16000.pt` 已保存，当前 step 16000 的 10,000 条 dev 全量评估约完成 `6000/10000`。step 2000 至 12000 的 `dev_sisdr` 总体从 `3.134` 提升到 `4.921 dB`，但 step 14000 出现 `dev_loss=NaN`（`dev_sisdr=5.302 dB`）。step `5832` 的第二次非有限梯度已正确跳过 optimizer 更新，GradScaler 从 `256` 回退到 `128`；累计两次梯度异常均被安全处理。另有 21 次非有限训练 loss 被跳过，分布于 step `11573–15987`。检查瞬间 GPU `0%`、显存 `2359 MiB`，三个训练相关进程仍在，处于 dev 数据处理阶段。现有验收规则下已有明确失败证据，B3 不放行；继续 B1 只为取得最终 checkpoint、verdict 与 strict restore，不修改配置或启动重复任务。
+
+00:33 最终状态：B1 已完成 `20000/20000`，最终 `dev_loss=NaN / dev_sisdr=5.6227000603 dB`，`checkpoint_step20000.pt` 已生成，strict restore `max|Δ|=0` 为 `PASS`。完整 verdict 为 `FAIL`：53 个非有限 loss step，2 个非有限 gradient step（均安全跳过），optimizer `19945 applied / 55 skipped`，AMP scale 最终为 `128`，且 `loss_last_100_mean=NaN / loss_decreasing=false`。因此 B3 三种子、P3 20+20、6000 paired CER 和 DatasetA 全量比较全部保持未执行；后续必须先修复 B1 数值稳定性并重新取得总体 PASS。
+
+资源收尾：AutoDL 实例 `63d44c988c-0e1a4480` 已于 00:35 确认进入“已关机”，未操作其他实例；每小时自动跟进 `p2` 已删除。

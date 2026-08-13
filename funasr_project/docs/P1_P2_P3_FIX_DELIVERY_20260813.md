@@ -190,6 +190,10 @@ B1 CUDA 500-step 试训结果：
 
 22:43 自动检查时训练已到 step `16000/20000` 并保存 `checkpoint_step16000.pt`，正在执行该节点的 10,000 条 dev 全量评估，按累计计数已完成约 `6000/10000`。已完成的 dev 指标依次为：step 2000 `-1.82495 / 3.134 dB`、4000 `-2.55730 / 3.802 dB`、6000 `-3.26796 / 4.478 dB`、8000 `-2.67850 / 3.821 dB`、10000 `-3.38014 / 4.498 dB`、12000 `-3.82501 / 4.921 dB`；step 14000 的 `dev_sisdr=5.302 dB`，但 `dev_loss=NaN`。step `5832` 又出现一次非有限梯度，optimizer 更新已正确跳过，scale `256 → 128`；累计两次非有限梯度均安全跳过。此外，从 step `11573` 至 `15987` 已记录 21 次“非有限损失，跳过本步”。检查瞬间 GPU 利用率 `0%`、显存 `2359 MiB`，训练主进程及两个 DataLoader 子进程仍存活，处于 dev 数据处理阶段。当前已有明确非有限 dev loss 与多次非有限训练 loss，按现有验收规则不能放行 B3；继续运行仅用于取得最终 checkpoint、verdict 与 strict restore 证据。本次没有修改配置、停止任务或启动重复任务，也没有放宽既有安全判定。
 
+00:33 最终审计：修正版 B1 已完成 `20000/20000` 并退出，`checkpoint_step20000.pt` 存在（`16,223,710` bytes），最终 dev 为 `dev_loss=NaN / dev_sisdr=5.6227000603 dB`。`trial_verdict.json` 记录 `n_nan_steps=53`、optimizer `19945` 次应用与 `55` 次跳过，其中非有限梯度发生在 step `1538`、`5832`，两次均安全跳过并使 AMP scale 最终回退至 `128`；`loss_last_100_mean=NaN`、`loss_decreasing=false`。strict restore 的 `max|Δ|=0`，恢复一致性 `PASS`，显存峰值 `1.798 GiB` 也在预算内，但 `no_nan=false`、`grad_finite=false`、`loss_decreasing=false`，所以总体判定明确为 `FAIL`。因此未启动任何 B3 seed，也未运行 P3 20 正+20 负、6000 条外部配对 CER 或 DatasetA 全量比较。下一步必须先修复 B1 的非有限 loss/梯度根因并重新获得总体 PASS；不能用本 checkpoint 作为 B3 warm-start。
+
+资源收尾：AutoDL 实例 `63d44c988c-0e1a4480` 已于 00:35 确认进入“已关机”，未操作其他实例；每小时自动跟进 `p2` 已删除。
+
 ### S004 录音预检
 
 - ZIP 顶层为 `S004/`，共 35 个 M4A：3 条 E + 16 条 C × 2 take。
