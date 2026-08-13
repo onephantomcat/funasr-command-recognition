@@ -27,10 +27,11 @@
       "optimizer_steps_skipped_observed": 1,
       "nonfinite_gradient_steps_observed": [1538],
       "all_observed_nonfinite_gradients_skipped": true,
+      "projected_verdict_under_existing_rules": "FAIL_IF_NO_RULE_CHANGE",
       "dev_metrics_available": false,
       "trial_verdict_available": false
     },
-    "note": "首轮 P1 v3/动态增长 scale 的 20k 结果已 FAIL；修正版使用 P1 v2 普通 PRESENT、AMP512 初始化且禁用增长，仍保留遇到非有限梯度时的 scale 回退。17:00 暂停安排已删除，保持单一训练进程连续运行。"
+    "note": "首轮 P1 v3/动态增长 scale 的 20k 结果已 FAIL；修正版使用 P1 v2 普通 PRESENT、AMP512 初始化且禁用增长，仍保留遇到非有限梯度时的 scale 回退。现有 verdict 把所有梯度均有限列为必过项，因此 step1538 会使最终工程 verdict 为 FAIL；继续运行用于取得 dev/restore 直接证据，但不得放行 B3。"
   },
   "recent_validation": {
     "b1_500_step": "PASS",
