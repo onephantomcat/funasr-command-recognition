@@ -1,6 +1,6 @@
 {
   "module": "P2_TSE",
-  "updated_at": "2026-08-13T18:54:00+08:00",
+  "updated_at": "2026-08-13T19:15:16+08:00",
   "branch": "main",
   "head": "c92f5109bcf0a135fd8a6097efe76ded1f4ca91e",
   "current_execution": {
@@ -17,7 +17,20 @@
     "sv_mode": "campplus",
     "pause_requested": false,
     "monitor_automation": "p2",
-    "note": "首轮 P1 v3/动态增长 scale 的 20k 结果已 FAIL；修正版使用 P1 v2 普通 PRESENT 与固定 AMP512。17:00 暂停安排已删除，保持单一训练进程连续运行。"
+    "last_observation": {
+      "observed_at": "2026-08-13T19:15:16+08:00",
+      "latest_step": 1700,
+      "main_pid": 8620,
+      "gpu_utilization_pct": 62,
+      "gpu_memory_mib": 2271,
+      "amp_scale_current": 256.0,
+      "optimizer_steps_skipped_observed": 1,
+      "nonfinite_gradient_steps_observed": [1538],
+      "all_observed_nonfinite_gradients_skipped": true,
+      "dev_metrics_available": false,
+      "trial_verdict_available": false
+    },
+    "note": "首轮 P1 v3/动态增长 scale 的 20k 结果已 FAIL；修正版使用 P1 v2 普通 PRESENT、AMP512 初始化且禁用增长，仍保留遇到非有限梯度时的 scale 回退。17:00 暂停安排已删除，保持单一训练进程连续运行。"
   },
   "recent_validation": {
     "b1_500_step": "PASS",
