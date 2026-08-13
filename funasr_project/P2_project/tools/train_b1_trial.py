@@ -459,6 +459,63 @@ def get_lr(step, peak_lr, warmup_steps, total_steps, schedule="cosine"):
     return peak_lr
 
 
+def optimizer_step_if_finite(model, optimizer, scaler, grad_clip):
+    """Apply one optimizer update only when every unscaled gradient is finite.
+
+    GradScaler normally skips ``optimizer.step`` internally after detecting Inf/NaN.
+    Keeping the decision explicit makes the behavior observable and avoids running
+    gradient clipping on non-finite tensors.
+    """
+    scaler.unscale_(optimizer)
+    parameters = [p for p in model.parameters() if p.grad is not None]
+    if not parameters:
+        raise RuntimeError("optimizer step requested but no gradients were produced")
+
+    scale_before = float(scaler.get_scale())
+    nonfinite_tensors = sum(
+        not bool(torch.isfinite(parameter.grad).all().item())
+        for parameter in parameters
+    )
+    gradients_finite = nonfinite_tensors == 0
+    grad_norm = float("inf")
+    clipped = False
+    skip_reason = None
+
+    if gradients_finite:
+        grad_norm = float(
+            torch.nn.utils.clip_grad_norm_(parameters, grad_clip).detach().cpu().item()
+        )
+        gradients_finite = math.isfinite(grad_norm)
+        clipped = gradients_finite and grad_norm > grad_clip
+        if not gradients_finite:
+            skip_reason = "nonfinite_grad_norm"
+    else:
+        skip_reason = "nonfinite_gradient"
+
+    optimizer_step_applied = False
+    if gradients_finite:
+        scaler.step(optimizer)
+        optimizer_step_applied = True
+
+    # GradScaler records found_inf during unscale_. Calling update() without
+    # step() is supported and backs the scale off for a non-finite window.
+    scaler.update()
+    scale_after = float(scaler.get_scale())
+    optimizer.zero_grad(set_to_none=True)
+
+    return {
+        "grad_norm": grad_norm,
+        "grad_finite": gradients_finite,
+        "nonfinite_gradient_tensors": int(nonfinite_tensors),
+        "clipped": clipped,
+        "optimizer_step_applied": optimizer_step_applied,
+        "optimizer_step_skipped": not optimizer_step_applied,
+        "skip_reason": skip_reason,
+        "amp_scale_before": scale_before,
+        "amp_scale_after": scale_after,
+    }
+
+
 @torch.no_grad()
 def evaluate_dev(model, loader, cfg, device, use_amp):
     """dev 集平均损失 + SI-SDR（不反向，不记录吞吐量）。"""
@@ -664,10 +721,26 @@ def main():
         LOG.info("Warm-start 从 %s 加载权重（step=%s）", args.init_checkpoint, init_ckpt.get("step", "?"))
 
     opt = torch.optim.Adam(model.parameters(), lr=float(cfg["lr"]))
+    scaler_kwargs = {
+        "enabled": use_amp,
+        "init_scale": float(cfg.get("amp_init_scale", 65536.0)),
+        "growth_factor": float(cfg.get("amp_growth_factor", 2.0)),
+        "backoff_factor": float(cfg.get("amp_backoff_factor", 0.5)),
+        "growth_interval": int(cfg.get("amp_growth_interval", 2000)),
+    }
     try:
-        scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
+        scaler = torch.amp.GradScaler("cuda", **scaler_kwargs)
     except AttributeError:
-        scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
+        scaler = torch.cuda.amp.GradScaler(**scaler_kwargs)
+    LOG.info(
+        "GradScaler enabled=%s init_scale=%.1f growth_factor=%.3f "
+        "backoff_factor=%.3f growth_interval=%d",
+        use_amp,
+        scaler_kwargs["init_scale"],
+        scaler_kwargs["growth_factor"],
+        scaler_kwargs["backoff_factor"],
+        scaler_kwargs["growth_interval"],
+    )
 
     total_steps = int(args.max_steps if args.max_steps else cfg["steps"])
     warmup = int(cfg["lr_warmup_steps"])
@@ -675,9 +748,13 @@ def main():
     grad_clip = float(cfg["grad_clip"])
     log_every = int(cfg["log_every"])
     save_every = int(cfg["save_every"])
+    dev_every = int(cfg.get("dev_every", save_every))
     if save_every > total_steps:
         save_every = max(1, total_steps)
         LOG.warning("save_every > total_steps，降为 %d（空跑模式）", save_every)
+    if dev_every > total_steps:
+        dev_every = max(1, total_steps)
+        LOG.warning("dev_every > total_steps，降为 %d（空跑模式）", dev_every)
 
     start_step = 0
     if args.resume:
@@ -692,6 +769,7 @@ def main():
     metrics_f = open(out_dir / "metrics.jsonl", "a" if args.resume else "w", encoding="utf-8")
     dev_metrics_f = open(out_dir / "dev_metrics.jsonl", "a" if args.resume else "w", encoding="utf-8")
     nan_steps = 0
+    accumulation_has_nonfinite_loss = False
     si_sdr_mix_baseline = None
     t_train0 = time.time()
 
@@ -753,24 +831,54 @@ def main():
             total, terms = compute_losses(cfg, out, batch)
 
         grad_norm, clipped = 0.0, False
+        grad_finite = None
+        nonfinite_gradient_tensors = 0
+        optimizer_step_applied = False
+        optimizer_step_skipped = False
+        skip_reason = None
+        amp_scale_before = float(scaler.get_scale())
+        amp_scale_after = amp_scale_before
         if step > 0:
             if not torch.isfinite(total):
                 nan_steps += 1
+                accumulation_has_nonfinite_loss = True
+                skip_reason = "nonfinite_loss"
                 LOG.warning("step=%d 非有限损失，跳过本步", step)
             else:
                 scaler.scale(total / grad_accum).backward()
-                if step % grad_accum == 0:
-                    scaler.unscale_(opt)
-                    grad_norm = torch.nn.utils.clip_grad_norm_(
-                        model.parameters(), grad_clip).item()
-                    clipped = grad_norm > grad_clip
+
+            if step % grad_accum == 0:
+                if accumulation_has_nonfinite_loss:
+                    opt.zero_grad(set_to_none=True)
+                    optimizer_step_skipped = True
+                    accumulation_has_nonfinite_loss = False
+                else:
                     cur_lr = get_lr(step, float(cfg["lr"]), warmup,
                                     total_steps, cfg["lr_schedule"])
                     for pg in opt.param_groups:
                         pg["lr"] = cur_lr
-                    scaler.step(opt)
-                    scaler.update()
-                    opt.zero_grad(set_to_none=True)
+                    step_result = optimizer_step_if_finite(
+                        model, opt, scaler, grad_clip
+                    )
+                    grad_norm = step_result["grad_norm"]
+                    grad_finite = step_result["grad_finite"]
+                    nonfinite_gradient_tensors = step_result["nonfinite_gradient_tensors"]
+                    clipped = step_result["clipped"]
+                    optimizer_step_applied = step_result["optimizer_step_applied"]
+                    optimizer_step_skipped = step_result["optimizer_step_skipped"]
+                    skip_reason = step_result["skip_reason"]
+                    amp_scale_before = step_result["amp_scale_before"]
+                    amp_scale_after = step_result["amp_scale_after"]
+                    if optimizer_step_skipped:
+                        LOG.warning(
+                            "step=%d optimizer update skipped: reason=%s "
+                            "nonfinite_gradient_tensors=%d amp_scale=%.1f->%.1f",
+                            step,
+                            skip_reason,
+                            nonfinite_gradient_tensors,
+                            amp_scale_before,
+                            amp_scale_after,
+                        )
 
         step_time = time.time() - t_step0
         cur_lr = get_lr(step, float(cfg["lr"]), warmup, total_steps, cfg["lr_schedule"])
@@ -786,7 +894,14 @@ def main():
             "mix": float(terms["mix"].detach().cpu()),
             "lr": cur_lr,
             "grad_norm": grad_norm,
+            "grad_finite": grad_finite,
+            "nonfinite_gradient_tensors": nonfinite_gradient_tensors,
             "clipped": clipped,
+            "optimizer_step_applied": optimizer_step_applied,
+            "optimizer_step_skipped": optimizer_step_skipped,
+            "skip_reason": skip_reason,
+            "amp_scale_before": amp_scale_before,
+            "amp_scale_after": amp_scale_after,
             "nan": not bool(torch.isfinite(total)),
             "gpu_mem_gb": (torch.cuda.max_memory_allocated() / 1024 ** 3)
                           if device.type == "cuda" else 0.0,
@@ -821,6 +936,7 @@ def main():
                 sha256_file(ckpt_path) + "\n", encoding="utf-8")
             LOG.info("存 checkpoint: %s", ckpt_path.name)
 
+        if step > 0 and step % dev_every == 0:
             dev_rec = {"step": step, **evaluate_dev(model, dev_loader, cfg, device, use_amp)}
             dev_metrics_f.write(json.dumps(dev_rec, ensure_ascii=False) + "\n")
             dev_metrics_f.flush()
@@ -866,14 +982,31 @@ def main():
     p50_step = float(np.percentile([m["step_time_ms"] for m in train_metrics], 50)) if train_metrics else 0.0
     p95_step = float(np.percentile([m["step_time_ms"] for m in train_metrics], 95)) if train_metrics else 0.0
     mean_data_wait = float(np.mean([m["data_wait_pct"] for m in train_metrics])) if train_metrics else 0.0
+    grad_checks = [m for m in train_metrics if m.get("grad_finite") is not None]
+    optimizer_steps_applied = sum(
+        bool(m.get("optimizer_step_applied")) for m in train_metrics
+    )
+    optimizer_steps_skipped = sum(
+        bool(m.get("optimizer_step_skipped")) for m in train_metrics
+    )
+    nonfinite_gradient_steps = [m for m in grad_checks if not m["grad_finite"]]
+    all_nonfinite_gradients_skipped = all(
+        bool(m.get("optimizer_step_skipped"))
+        and not bool(m.get("optimizer_step_applied"))
+        for m in nonfinite_gradient_steps
+    )
+    amp_scale_backoffs = sum(
+        float(m.get("amp_scale_after", 0.0)) < float(m.get("amp_scale_before", 0.0))
+        for m in train_metrics
+    )
 
     epoch_steps = max(1, len(train_ds) // batch_size)
     est_epoch_time = epoch_steps * p50_step / 1000.0
 
     verdicts = {
         "no_nan": nan_steps == 0,
-        "grad_finite": all(m["grad_norm"] >= 0 and np.isfinite(m["grad_norm"])
-                           for m in train_metrics) if train_metrics else False,
+        "grad_finite": all(bool(m["grad_finite"]) for m in grad_checks)
+                           if grad_checks else False,
         "peak_mem_under_budget": peak_mem < 4.0,
         "throughput_measured": mean_sps > 0,
         "loss_decreasing": bool(loss_decreasing),
@@ -895,6 +1028,14 @@ def main():
         "train_time_sec": float(train_time),
         "n_train_samples": len(train_ds),
         "n_nan_steps": nan_steps,
+        "optimizer_steps_applied": optimizer_steps_applied,
+        "optimizer_steps_skipped": optimizer_steps_skipped,
+        "nonfinite_gradient_steps": [int(m["step"]) for m in nonfinite_gradient_steps],
+        "all_nonfinite_gradients_skipped": all_nonfinite_gradients_skipped,
+        "amp_scale_initial": float(all_metrics[0].get("amp_scale_before", scaler.get_scale()))
+                             if all_metrics else float(scaler.get_scale()),
+        "amp_scale_final": float(scaler.get_scale()),
+        "amp_scale_backoffs": amp_scale_backoffs,
         "peak_gpu_mem_gb": float(peak_mem),
         "mem_budget_gb": 4.0,
         "mem_margin_gb": float(4.0 - peak_mem),
@@ -923,7 +1064,17 @@ def main():
         f.write(f"- 配置: `{Path(args.config).name}`\n")
         f.write(f"- 数据: train={len(train_ds)} 条（manifest={Path(train_manifest).name}）\n")
         f.write(f"- AMP: {use_amp}；batch={batch_size}；seg={cfg['segment_length']}s；"
-                f"accum={grad_accum}；effective_batch={batch_size * grad_accum}\n\n")
+                f"accum={grad_accum}；effective_batch={batch_size * grad_accum}\n")
+        f.write(f"- checkpoint 间隔: {save_every} 步；dev 全量评估间隔: {dev_every} 步\n\n")
+        f.write("## AMP / 梯度更新\n\n")
+        f.write(f"- 初始 scale: {summary['amp_scale_initial']:.1f}\n")
+        f.write(f"- 最终 scale: {summary['amp_scale_final']:.1f}\n")
+        f.write(f"- scale 回退次数: {amp_scale_backoffs}\n")
+        f.write(f"- optimizer 实际更新: {optimizer_steps_applied} 次\n")
+        f.write(f"- optimizer 跳过更新: {optimizer_steps_skipped} 次\n")
+        f.write(f"- 非有限梯度步骤: {summary['nonfinite_gradient_steps']}\n")
+        f.write(f"- 非有限梯度均已跳过: "
+                f"{'是' if all_nonfinite_gradients_skipped else '否'}\n\n")
         f.write("## 吞吐量\n\n")
         f.write(f"- samples/sec: {mean_sps:.2f}\n")
         f.write(f"- step time P50: {p50_step:.1f} ms / P95: {p95_step:.1f} ms\n")
