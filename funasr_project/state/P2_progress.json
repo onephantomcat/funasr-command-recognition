@@ -1,6 +1,6 @@
 {
   "module": "P2_TSE",
-  "updated_at": "2026-08-13T19:34:26+08:00",
+  "updated_at": "2026-08-13T20:39:50+08:00",
   "branch": "main",
   "head": "c92f5109bcf0a135fd8a6097efe76ded1f4ca91e",
   "current_execution": {
@@ -18,7 +18,7 @@
     "pause_requested": false,
     "monitor_automation": "p2",
     "last_observation": {
-      "observed_at": "2026-08-13T19:34:26+08:00",
+      "observed_at": "2026-08-13T20:39:50+08:00",
       "latest_step": 2000,
       "main_pid": 8620,
       "gpu_utilization_pct": 0,
@@ -30,7 +30,7 @@
       "projected_verdict_under_existing_rules": "FAIL_IF_NO_RULE_CHANGE",
       "checkpoint_step2000_exists": true,
       "dev_evaluation_status": "RUNNING",
-      "dev_samples_observed": 1000,
+      "dev_samples_observed": 7000,
       "dev_samples_planned": 10000,
       "dev_metrics_available": false,
       "trial_verdict_available": false
