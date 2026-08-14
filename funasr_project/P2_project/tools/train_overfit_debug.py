@@ -130,7 +130,13 @@ def compute_losses(cfg, model_out, batch):
     PRESENT 定义。这样可防止零目标谱损失压倒 PRESENT，同时保留真实的
     ABSENT 抑制监督。
     """
-    s_tgt, s_res, p_tgt = model_out
+    if len(model_out) == 4:
+        s_tgt, s_res, p_tgt, activity_logits = model_out
+    elif len(model_out) == 3:
+        s_tgt, s_res, p_tgt = model_out
+        activity_logits = None
+    else:
+        raise ValueError(f"expected 3 or 4 model outputs, got {len(model_out)}")
     y, itr, x = batch["target"], batch["interferer"], batch["mix"]
     kappa = float(cfg["zero_ref_kappa"])
 
@@ -142,7 +148,7 @@ def compute_losses(cfg, model_out, batch):
     absent_scale = float(cfg.get("absent_loss_scale", 1.0))
     if not 0.0 <= absent_scale <= 1.0:
         raise ValueError(f"absent_loss_scale must be within [0, 1], got {absent_scale}")
-    sample_weights = torch.ones(y.shape[0], device=y.device, dtype=s_tgt.dtype)
+    sample_weights = torch.ones(y.shape[0], device=y.device, dtype=torch.float32)
     sample_weights[is_absent] = absent_scale
 
     def weighted_mean(values, weights=sample_weights):
@@ -157,12 +163,15 @@ def compute_losses(cfg, model_out, batch):
         s_tgt, y, cfg["mrstft_resolutions"], reduction="none"
     )
     act_bce_ps = activity_bce_loss(
-        p_tgt, batch["frame_act"], reduction="none"
+        activity_logits if activity_logits is not None else p_tgt,
+        batch["frame_act"],
+        reduction="none",
+        from_logits=activity_logits is not None,
     )
 
     # residual 是 mixture-target 的完整余量（干扰人声 + 噪声），与模型硬投影一致。
     residual_ref = x - y
-    present_weights = (~is_absent).to(dtype=s_tgt.dtype)
+    present_weights = (~is_absent).to(dtype=torch.float32)
     terms = {
         "si_sdr_db": weighted_mean(si_sdr_ps, present_weights),
         "wav_l1": weighted_mean(wav_l1_ps),
@@ -278,7 +287,7 @@ def main():
         t0 = time.time()
         if step > 0:
             opt.zero_grad(set_to_none=True)
-        out = model(batch["mix"], batch["emb"])
+        out = model(batch["mix"], batch["emb"], return_activity_logits=True)
         total, terms = compute_losses(cfg, out, batch)
 
         grad_norm, clipped = 0.0, False

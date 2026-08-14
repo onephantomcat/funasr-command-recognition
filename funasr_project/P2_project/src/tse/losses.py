@@ -7,6 +7,7 @@
 """
 
 import torch
+import torch.nn.functional as F
 import warnings
 
 
@@ -43,11 +44,15 @@ def si_sdr(est, ref, eps=1e-6, reduction="mean"):
 
     注意：eps=1e-6 适配 AMP(float16)，避免 float16 下下溢。
     """
+    # Loss reductions must not run in FP16.  An eight-second 16 kHz waveform
+    # can overflow the FP16 sum-of-squares even when every sample is in [-1, 1].
+    est = est.float()
+    ref = ref.float()
     ref_energy = (ref ** 2).sum(-1, keepdim=True)
     scale = (est * ref).sum(-1, keepdim=True) / (ref_energy + eps)
     target = scale * ref
     noise = est - target
-    ratio = (target ** 2).sum(-1) / (noise ** 2).sum(-1) + eps
+    ratio = (target ** 2).sum(-1) / ((noise ** 2).sum(-1) + eps)
     return _reduce(10.0 * torch.log10(ratio + eps), reduction)
 
 
@@ -61,6 +66,8 @@ def scale_sensitive_l1(est, ref, kappa, reduction="mean"):
     PRESENT 输出压到接近零也几乎不受这项惩罚。训练需要保留幅度监督，
     因此非零参考直接使用 waveform L1。
     """
+    est = est.float()
+    ref = ref.float()
     l1 = (est - ref).abs().mean(-1)
     zero_ref_l1 = est.abs().mean(-1)
     is_zero_ref = ref.abs().mean(-1) < kappa
@@ -72,17 +79,21 @@ def mix_consistency_loss(s_tgt, s_res, x, eps=1e-8):
 
     仅度量；投影修正（硬约束）在 model 内完成，职责分离。
     """
+    s_tgt = s_tgt.float()
+    s_res = s_res.float()
+    x = x.float()
     resid = x - (s_tgt + s_res)
     return resid.abs().mean(-1).sum() / (x.abs().mean(-1).sum() + eps)
 
 
 def absent_zero_loss(s_tgt):
     """ABSENT 零目标损失（05B §6 预留，今日只定义+单测，不进总损失）。"""
-    return (s_tgt ** 2).mean(-1).mean()
+    return (s_tgt.float() ** 2).mean(-1).mean()
 
 
 def _stft_mag(wav, n_fft, hop, win):
     """STFT 幅度谱 [B, F, Fr]（hann 窗，与模型 center 对齐约定一致）。"""
+    wav = wav.float()
     window = torch.hann_window(win, device=wav.device, dtype=wav.dtype)
     return torch.stft(
         wav, n_fft=n_fft, hop_length=hop, win_length=win,
@@ -101,6 +112,8 @@ def mrstft_loss(est, ref, resolutions, eps=1e-6, reduction="mean"):
     """
     if not resolutions:
         raise ValueError("mrstft resolutions must not be empty")
+    est = est.float()
+    ref = ref.float()
     total = est.new_zeros(est.shape[0])
     zero_ref = ref.abs().mean(-1) < eps
     for n_fft, hop, win in resolutions:
@@ -121,8 +134,18 @@ def mrstft_loss(est, ref, resolutions, eps=1e-6, reduction="mean"):
     return _reduce(total / len(resolutions), reduction)
 
 
-def activity_bce_loss(p_tgt, frame_act, eps=1e-7, reduction="mean", _warned=[False]):
-    """帧级活动度 BCE：p_tgt [B,Fr]（sigmoid 后概率），frame_act [B,Fr]∈{0,1}。
+def activity_bce_loss(
+    activity,
+    frame_act,
+    eps=1e-7,
+    reduction="mean",
+    _warned=[False],
+    from_logits=False,
+):
+    """帧级活动度 BCE，始终在 FP32 中计算。
+
+    ``activity`` 默认是 sigmoid 后概率；训练器传 ``from_logits=True``，
+    直接使用 numerically-stable BCE-with-logits。推理接口仍返回概率。
 
     健壮性：不同 PyTorch 版本对 torch.stft 默认 center/pad 行为可能变化，
     导致 model 输出帧数 (p_tgt 端) ≠ Dataset 端 frame_activity 估算的帧数。
@@ -131,7 +154,7 @@ def activity_bce_loss(p_tgt, frame_act, eps=1e-7, reduction="mean", _warned=[Fal
       - 用最近邻将 frame_act (0/1 标签) 对齐到 p_tgt 帧数，保证损失可算
          (保 0/1 语义，不引入中间 float 值污染 BCE)
     """
-    p_len = p_tgt.shape[-1]
+    p_len = activity.shape[-1]
     a_len = frame_act.shape[-1]
     if p_len != a_len:
         if not _warned[0]:
@@ -150,6 +173,14 @@ def activity_bce_loss(p_tgt, frame_act, eps=1e-7, reduction="mean", _warned=[Fal
                 print("!! " + msg, flush=True)
             _warned[0] = True
         frame_act = _align_frames(frame_act, p_len, mode="nearest")
-    p = p_tgt.clamp(eps, 1.0 - eps)
-    per_sample = -(frame_act * torch.log(p) + (1.0 - frame_act) * torch.log(1.0 - p)).mean(-1)
+    frame_act = frame_act.to(device=activity.device, dtype=torch.float32)
+    if from_logits:
+        per_frame = F.binary_cross_entropy_with_logits(
+            activity.float(), frame_act, reduction="none"
+        )
+    else:
+        # Clamp only after conversion: 1 - 1e-7 rounds back to 1.0 in FP16.
+        probability = activity.float().clamp(eps, 1.0 - eps)
+        per_frame = F.binary_cross_entropy(probability, frame_act, reduction="none")
+    per_sample = per_frame.mean(-1)
     return _reduce(per_sample, reduction)

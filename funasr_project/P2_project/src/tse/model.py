@@ -53,8 +53,14 @@ class DualOutputTSE(nn.Module):
         self.mask_res = nn.Linear(hidden, self.freq_dim)
         self.act_head = nn.Linear(hidden, 1)
 
-    def forward(self, mix_wav, enroll_emb):
-        """mix_wav [B,T]、enroll_emb [B,D] → (s_tgt, s_res, p_tgt [B,Fr])。"""
+    def forward(self, mix_wav, enroll_emb, return_activity_logits=False):
+        """Run target extraction while preserving the public probability API.
+
+        The default return value remains ``(s_tgt, s_res, p_tgt)``.  Training
+        may request a fourth value, the pre-sigmoid activity logits, so BCE can
+        use the stable logits formulation without changing checkpoint keys or
+        inference callers.
+        """
         T = mix_wav.shape[-1]
         x_orig = mix_wav
         if T < self.n_fft:
@@ -84,12 +90,15 @@ class DualOutputTSE(nn.Module):
         h, _ = self.lstm(h)
         mask_tgt = torch.sigmoid(self.mask_tgt(h)).transpose(1, 2)
         mask_res = torch.sigmoid(self.mask_res(h)).transpose(1, 2)
-        p_tgt = torch.sigmoid(self.act_head(h)).squeeze(-1)
+        activity_logits = self.act_head(h).squeeze(-1)
+        p_tgt = torch.sigmoid(activity_logits)
 
         s_tgt = self._istft(spec * mask_tgt, T)
         s_res = self._istft(spec * mask_res, T)
 
         s_tgt, s_res = self._apply_consistency_projection(s_tgt, s_res, x_orig)
+        if return_activity_logits:
+            return s_tgt, s_res, p_tgt, activity_logits
         return s_tgt, s_res, p_tgt
 
     def _istft(self, spec, length):

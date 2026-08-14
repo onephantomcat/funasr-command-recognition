@@ -516,21 +516,46 @@ def optimizer_step_if_finite(model, optimizer, scaler, grad_clip):
     }
 
 
+def nonfinite_loss_terms(total, terms):
+    """Return scalar loss names containing NaN or Inf for diagnostics."""
+    named_values = [("total", total), *terms.items()]
+    return [
+        name
+        for name, value in named_values
+        if not bool(torch.isfinite(value).all().item())
+    ]
+
+
 @torch.no_grad()
 def evaluate_dev(model, loader, cfg, device, use_amp):
     """dev 集平均损失 + SI-SDR（不反向，不记录吞吐量）。"""
     model.eval()
     total_loss, total_sisdr, n = 0.0, 0.0, 0
+    nonfinite_batches = 0
+    nonfinite_counts = {}
     for batch in loader:
         batch = {k: (v.to(device) if torch.is_tensor(v) else v) for k, v in batch.items()}
         with torch.amp.autocast("cuda", enabled=use_amp):
-            out = model(batch["mix"], batch["emb"])
-            loss, terms = compute_losses(cfg, out, batch)
+            out = model(
+                batch["mix"], batch["emb"], return_activity_logits=True
+            )
+        loss, terms = compute_losses(cfg, out, batch)
+        bad_terms = nonfinite_loss_terms(loss, terms)
+        if bad_terms:
+            nonfinite_batches += 1
+            for name in bad_terms:
+                nonfinite_counts[name] = nonfinite_counts.get(name, 0) + 1
         total_loss += float(loss.detach().cpu())
         total_sisdr += float(terms["si_sdr_db"].detach().cpu())
         n += 1
     model.train()
-    return {"dev_loss": total_loss / max(1, n), "dev_sisdr": total_sisdr / max(1, n)}
+    return {
+        "dev_loss": total_loss / max(1, n),
+        "dev_sisdr": total_sisdr / max(1, n),
+        "dev_finite": nonfinite_batches == 0,
+        "dev_nonfinite_batches": nonfinite_batches,
+        "dev_nonfinite_terms": nonfinite_counts,
+    }
 
 
 def main():
@@ -804,12 +829,14 @@ def main():
                 LOG.info("当前 batch 无 PRESENT，SI-SDR baseline 不适用")
 
         with torch.amp.autocast("cuda", enabled=use_amp):
-            out = model(batch["mix"], batch["emb"])
+            out = model(
+                batch["mix"], batch["emb"], return_activity_logits=True
+            )
             # step 0 诊断：打印 batch 与 model 输出各张量形状
             #   (用于定位云端 PyTorch 版本差异导致的 STFT 帧数不一致问题)
             if step == 0:
                 try:
-                    s_tgt_0, s_res_0, p_tgt_0 = out
+                    s_tgt_0, s_res_0, p_tgt_0 = out[:3]
                     LOG.info(
                         "[SHAPE step0] PyTorch=%s device=%s | "
                         "mix=%s target=%s frame_act(label)=%s | "
@@ -828,7 +855,10 @@ def main():
                     )
                 except Exception as _ex:
                     LOG.warning("[SHAPE step0] 打印失败: %s", _ex)
-            total, terms = compute_losses(cfg, out, batch)
+        # All waveform reductions and BCE run outside autocast in FP32.  The
+        # forward remains mixed precision, preserving its memory benefit.
+        total, terms = compute_losses(cfg, out, batch)
+        bad_loss_terms = nonfinite_loss_terms(total, terms)
 
         grad_norm, clipped = 0.0, False
         grad_finite = None
@@ -843,7 +873,11 @@ def main():
                 nan_steps += 1
                 accumulation_has_nonfinite_loss = True
                 skip_reason = "nonfinite_loss"
-                LOG.warning("step=%d 非有限损失，跳过本步", step)
+                LOG.warning(
+                    "step=%d 非有限损失，跳过本步 nonfinite_terms=%s",
+                    step,
+                    ",".join(bad_loss_terms) or "unknown",
+                )
             else:
                 scaler.scale(total / grad_accum).backward()
 
@@ -900,6 +934,7 @@ def main():
             "optimizer_step_applied": optimizer_step_applied,
             "optimizer_step_skipped": optimizer_step_skipped,
             "skip_reason": skip_reason,
+            "nonfinite_terms": bad_loss_terms,
             "amp_scale_before": amp_scale_before,
             "amp_scale_after": amp_scale_after,
             "nan": not bool(torch.isfinite(total)),
@@ -940,8 +975,13 @@ def main():
             dev_rec = {"step": step, **evaluate_dev(model, dev_loader, cfg, device, use_amp)}
             dev_metrics_f.write(json.dumps(dev_rec, ensure_ascii=False) + "\n")
             dev_metrics_f.flush()
-            LOG.info("  dev_loss=%.4f dev_sisdr=%.2f dB",
-                     dev_rec["dev_loss"], dev_rec["dev_sisdr"])
+            LOG.info(
+                "  dev_loss=%.4f dev_sisdr=%.2f dB finite=%s nonfinite_batches=%d",
+                dev_rec["dev_loss"],
+                dev_rec["dev_sisdr"],
+                dev_rec["dev_finite"],
+                dev_rec["dev_nonfinite_batches"],
+            )
 
     metrics_f.close()
     dev_metrics_f.close()
@@ -965,6 +1005,24 @@ def main():
 
     all_metrics = [json.loads(l) for l in open(out_dir / "metrics.jsonl", encoding="utf-8")]
     train_metrics = [m for m in all_metrics if m["step"] > 0]
+    dev_metrics = [
+        json.loads(line)
+        for line in open(out_dir / "dev_metrics.jsonl", encoding="utf-8")
+        if line.strip()
+    ]
+    final_dev = dev_metrics[-1] if dev_metrics else None
+    dev_metrics_finite = bool(
+        final_dev
+        and math.isfinite(float(final_dev["dev_loss"]))
+        and math.isfinite(float(final_dev["dev_sisdr"]))
+        and bool(final_dev.get("dev_finite", True))
+        and int(final_dev.get("dev_nonfinite_batches", 0)) == 0
+    )
+
+    nonfinite_term_counts = {}
+    for metric in train_metrics:
+        for name in metric.get("nonfinite_terms", []):
+            nonfinite_term_counts[name] = nonfinite_term_counts.get(name, 0) + 1
 
     if total_steps >= 200:
         first_window = [m for m in train_metrics if m["step"] <= 100]
@@ -1010,11 +1068,19 @@ def main():
         "peak_mem_under_budget": peak_mem < 4.0,
         "throughput_measured": mean_sps > 0,
         "loss_decreasing": bool(loss_decreasing),
+        "dev_metrics_finite": dev_metrics_finite,
         "checkpoint_restore_ok": restore_ok,
         "full_train_time_estimated": train_time > 0,
     }
-    must_pass = ["no_nan", "grad_finite", "peak_mem_under_budget",
-                 "throughput_measured", "checkpoint_restore_ok", "full_train_time_estimated"]
+    must_pass = [
+        "no_nan",
+        "grad_finite",
+        "peak_mem_under_budget",
+        "throughput_measured",
+        "dev_metrics_finite",
+        "checkpoint_restore_ok",
+        "full_train_time_estimated",
+    ]
     overall = "PASS" if all(verdicts[k] for k in must_pass) else "FAIL"
 
     summary = {
@@ -1028,6 +1094,7 @@ def main():
         "train_time_sec": float(train_time),
         "n_train_samples": len(train_ds),
         "n_nan_steps": nan_steps,
+        "nonfinite_loss_terms": nonfinite_term_counts,
         "optimizer_steps_applied": optimizer_steps_applied,
         "optimizer_steps_skipped": optimizer_steps_skipped,
         "nonfinite_gradient_steps": [int(m["step"]) for m in nonfinite_gradient_steps],
@@ -1046,6 +1113,8 @@ def main():
         "loss_first_100_mean": loss_first,
         "loss_last_100_mean": loss_last,
         "loss_decreasing": bool(loss_decreasing),
+        "final_dev": final_dev,
+        "dev_metrics_finite": dev_metrics_finite,
         "restore_diff": float(restore_diff),
         "restore_ok": restore_ok,
         "est_epoch_time_sec": float(est_epoch_time),
@@ -1088,6 +1157,13 @@ def main():
         f.write(f"- total loss 末 100 步均值: {loss_last:.4f}\n")
         f.write(f"- loss 下降: {'是' if loss_decreasing else '否'}\n")
         f.write(f"- NaN step 数: {nan_steps}\n\n")
+        f.write(f"- 非有限损失分项计数: {nonfinite_term_counts}\n")
+        if final_dev is not None:
+            f.write(
+                f"- 最终 dev: loss={final_dev['dev_loss']:.6f}, "
+                f"SI-SDR={final_dev['dev_sisdr']:.6f} dB, "
+                f"finite={'是' if dev_metrics_finite else '否'}\n\n"
+            )
         f.write("## 恢复\n\n")
         f.write(f"- checkpoint: {last_ckpt.name if last_ckpt.exists() else 'N/A'}\n")
         f.write(f"- 恢复一致性 max|Δ|: {restore_diff:.3e}\n")
