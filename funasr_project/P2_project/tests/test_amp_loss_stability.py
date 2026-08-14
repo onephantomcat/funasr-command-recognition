@@ -104,7 +104,13 @@ class AmpLossStabilityTests(unittest.TestCase):
         device = torch.device("cuda")
         model = DualOutputTSE(cfg).to(device).train()
         optimizer = torch.optim.Adam(model.parameters(), lr=1.0e-4)
-        scaler = torch.amp.GradScaler("cuda", enabled=True, init_scale=128.0)
+        try:
+            scaler = torch.amp.GradScaler(
+                "cuda", enabled=True, init_scale=128.0
+            )
+        except AttributeError:
+            # PyTorch 2.1 exposes GradScaler only from torch.cuda.amp.
+            scaler = torch.cuda.amp.GradScaler(enabled=True, init_scale=128.0)
         generator = torch.Generator(device=device).manual_seed(20260814)
         mixture = torch.randn(2, 4096, device=device, generator=generator) * 0.05
         target = torch.randn(2, 4096, device=device, generator=generator) * 0.02
