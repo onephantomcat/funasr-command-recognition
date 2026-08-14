@@ -347,7 +347,7 @@ pairs.append((ref_text, hyp_text))
 - 总体/SINGLE/OVERLAP/100%-overlap/-5dB；
 - S/D/I/N 和 95% 配对 bootstrap 区间；
 - 删除激增、数字、英文、短句、长句、削波、近零输出、残余泄漏等桶；
-- 至少 2/3 seeds 同方向改善。
+- 至少 2/3 个独立模型训练 seeds 同方向改善；manifest 行内用于构造混合音频的 `seed` 不参与该计数。
 
 ### 8 月 14 日：一次冻结候选的 DatasetA 阶段验证
 
@@ -430,7 +430,7 @@ pairs.append((ref_text, hyp_text))
 | B1 高重叠 | CER 相对下降 ≥15%或绝对下降 ≥5 pp |
 | SINGLE 保护 | CER 恶化 ≤2 pp |
 | 极端重叠 | 100% overlap、SIR=-5 dB 方向不反转 |
-| 随机性 | 至少 2/3 seeds 改善，并报告配对区间 |
+| 随机性 | 至少 2/3 个独立模型训练 seeds 改善，并报告配对区间；不得用 manifest 混音 seed 代替 |
 | A 公平性 | A 不进训练/短语库/选阈；只对冻结候选做阶段验证或严格 OOF |
 | 负样本 | 不进 CER；RR 独立报告；ERROR 不得冒充正确拒识 |
 | 效率 | 完整链路 P50/P95、内存、CUDA peak；正式计时不复用缓存 |

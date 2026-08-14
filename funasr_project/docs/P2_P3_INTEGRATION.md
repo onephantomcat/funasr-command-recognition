@@ -84,8 +84,9 @@ Get-FileHash `
   --data-root <P1_confirm_root> `
   --p2-tse-checkpoint P2_project\artifacts\final\P2_artifacts\B3\checkpoint_step20000.pt `
   --p2-tse-sha256 5c351097d710aa6bc5914fc942f7c5f7fcc6206a2cac9f9042dd3b7cf4afd68d `
+  --training-seed 20260813 `
   --device cuda `
-  --out-dir outputs\p3_paired_b1_rc1
+  --out-dir outputs\p3_paired_b1_rc2
 ```
 
 输出：
@@ -93,7 +94,20 @@ Get-FileHash `
 - `paired_predictions.jsonl`：同一 `sample_id` 的 `B0_MIXTURE`、`ORACLE_TARGET`、`B1_P2_TARGET` 三条记录，含 raw hypothesis、S/D/I/N、场景和 ASR 状态；
 - `summary.json`：总体、SINGLE、OVERLAP、100% overlap、100% overlap/SIR=-5 dB 分桶及 B1 对 B0 的变化。
 
-放行条件：高重叠 CER 相对下降至少 15%或绝对下降至少 5 pp；SINGLE 恶化不超过 2 pp；100% overlap/SIR=-5 dB 方向不反转；正式结论需至少 2/3 seeds 改善。
+单次训练种子条件：结果有效且 ASR 错误为 0、P2 输出诊断完整且无近静音样本、高重叠 CER 相对下降至少 15%或绝对下降至少 5 pp、SINGLE 恶化不超过 2 pp、100% overlap/SIR=-5 dB 方向不反转。
+
+正式结论必须对三个独立训练 checkpoint 分别运行上述命令，再聚合三个 `summary.json`。manifest 每行的 `seed` 只用于构造混合音频，不能代替模型训练种子：
+
+```powershell
+..\.venv\Scripts\python.exe aggregate_paired_cer_seeds.py `
+  --summary outputs\p3_paired_b3_seed1\summary.json `
+  --summary outputs\p3_paired_b3_seed2\summary.json `
+  --summary outputs\p3_paired_b3_seed3\summary.json `
+  --frozen-training-seed 20260813 `
+  --out outputs\p3_paired_b3_three_seed\aggregate.json
+```
+
+只有冻结候选自身通过且至少 2/3 个独立训练种子通过时，聚合 verdict 才是 `ACCEPT_B1_CANDIDATE`。
 
 ## 3. DatasetA 冻结候选验证
 
