@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 import os
 import statistics
 import time
@@ -26,7 +25,7 @@ from p3_eval_contracts import recognize_result_safely, require_unique_sample_ids
 from speaker_verify import build_sv_model, extract_embedding
 
 
-CONTRACT_VERSION = "p3_paired_cer_v1-rc1"
+CONTRACT_VERSION = "p3_paired_cer_v1-rc2"
 CONDITIONS = ("B0_MIXTURE", "ORACLE_TARGET", "B1_P2_TARGET")
 
 
@@ -93,10 +92,6 @@ def analysis_bucket(row):
         buckets.append(f"sir_db:{float(sir):g}")
     if row.get("snr_db") is not None:
         buckets.append(f"snr_db:{float(row['snr_db']):g}")
-    if row.get("seed") is not None:
-        seed_bucket = f"seed:{row['seed']}"
-        buckets.append(seed_bucket)
-        buckets.append(f"{seed_bucket}:{'SINGLE' if is_single else 'OVERLAP'}")
     return list(dict.fromkeys(buckets))
 
 
@@ -130,6 +125,12 @@ def summarize_predictions(predictions):
         condition = record["condition"]
         by_condition[condition].append(record)
         for bucket in record["buckets"]:
+            # ``seed`` in the paired manifest controls mixture construction.  It
+            # is not a model-training seed and must never drive the 2/3-model
+            # replication decision.  Ignore legacy seed buckets defensively so
+            # rc1 prediction files can be resummarized without rerunning ASR.
+            if bucket.startswith("seed:"):
+                continue
             by_bucket[bucket][condition].append(record)
 
     overall = {condition: _aggregate(by_condition[condition]) for condition in CONDITIONS}
@@ -157,21 +158,40 @@ def summarize_predictions(predictions):
     return overall, buckets, comparisons
 
 
-def acceptance_summary(comparisons):
+def acceptance_summary(
+    comparisons,
+    *,
+    result_valid,
+    asr_errors,
+    p2_output_quality,
+    expected_samples,
+):
+    """Evaluate one trained checkpoint on one paired manifest.
+
+    Replication across independently trained checkpoints is intentionally left
+    to ``aggregate_paired_cer_seeds.py``.  The per-row manifest ``seed`` is a
+    mixture-construction seed and is unrelated to that replication criterion.
+    """
     high_overlap_key = "OVERLAP_100" if "OVERLAP_100" in comparisons else "OVERLAP"
     high_overlap = comparisons.get(high_overlap_key)
     single = comparisons.get("SINGLE")
     extreme = comparisons.get("OVERLAP_100_SIR_-5DB")
-    seed_keys = sorted(
-        key for key in comparisons
-        if key.startswith("seed:") and key.endswith(":OVERLAP")
+    quality_available = isinstance(p2_output_quality, dict)
+    quality_samples = p2_output_quality.get("samples") if quality_available else None
+    near_silent_samples = (
+        p2_output_quality.get("near_silent_samples") if quality_available else None
     )
-    seed_improved = sum(
-        comparisons[key]["absolute_reduction_pp"] > 0 for key in seed_keys
-    )
-    required_seed_improvements = math.ceil(len(seed_keys) * 2 / 3) if seed_keys else None
 
     checks = {
+        "result_valid": bool(result_valid),
+        "asr_errors_zero": asr_errors == 0,
+        "p2_quality_available": quality_available,
+        "p2_quality_complete": bool(
+            quality_available and quality_samples == expected_samples
+        ),
+        "p2_near_silent_zero": None if not quality_available else bool(
+            near_silent_samples == 0
+        ),
         "high_overlap_bucket": high_overlap_key if high_overlap else None,
         "high_overlap_gain": None if high_overlap is None else bool(
             high_overlap["absolute_reduction_pp"] >= 5.0
@@ -186,24 +206,23 @@ def acceptance_summary(comparisons):
         "extreme_direction_not_reversed": None if extreme is None else bool(
             extreme["absolute_reduction_pp"] >= 0.0
         ),
-        "seed_count": len(seed_keys),
-        "seed_improved": seed_improved,
-        "seed_required": required_seed_improvements,
-        "at_least_two_of_three_seeds": bool(
-            len(seed_keys) >= 3 and seed_improved >= required_seed_improvements
-        ),
     }
     required = (
+        checks["result_valid"],
+        checks["asr_errors_zero"],
+        checks["p2_quality_available"],
+        checks["p2_quality_complete"],
+        checks["p2_near_silent_zero"],
         checks["high_overlap_gain"],
         checks["single_degradation_le_2pp"],
         checks["extreme_direction_not_reversed"],
     )
-    if any(value is None for value in required) or len(seed_keys) < 3:
-        verdict = "INCONCLUSIVE_MISSING_REQUIRED_BUCKETS_OR_SEEDS"
-    elif all(required) and checks["at_least_two_of_three_seeds"]:
-        verdict = "ACCEPT_B1_CANDIDATE"
+    if any(value is None for value in required):
+        verdict = "INCONCLUSIVE_MISSING_REQUIRED_EVIDENCE"
+    elif all(required):
+        verdict = "PASS_SINGLE_RUN_THRESHOLDS"
     else:
-        verdict = "REJECT_CURRENT_TSE"
+        verdict = "FAIL_SINGLE_RUN_THRESHOLDS"
     return {"verdict": verdict, "checks": checks}
 
 
@@ -247,6 +266,12 @@ def main():
     parser.add_argument("--out-dir", required=True)
     parser.add_argument("--p2-tse-checkpoint", default=None)
     parser.add_argument("--p2-tse-sha256", default=None)
+    parser.add_argument(
+        "--training-seed",
+        type=int,
+        required=True,
+        help="Seed used to train the evaluated checkpoint (not the manifest mixture seed)",
+    )
     parser.add_argument("--device", choices=("cpu", "cuda"), default=None)
     parser.add_argument("--limit", type=int, default=None)
     args = parser.parse_args()
@@ -257,6 +282,10 @@ def main():
     if args.limit is not None:
         rows = rows[:args.limit]
     validate_manifest(rows, require_precomputed_tse=not bool(args.p2_tse_checkpoint))
+
+    out_dir = Path(args.out_dir).resolve()
+    if out_dir.exists():
+        raise FileExistsError(f"refusing to reuse paired CER output directory: {out_dir}")
 
     device = args.device or ("cuda" if torch.cuda.is_available() else "cpu")
     p2_runtime = None
@@ -270,9 +299,8 @@ def main():
         sv_model = build_sv_model(device=device)
 
     asr_model = build_model(with_punc=False, device=device)
-    out_dir = Path(args.out_dir).resolve()
     target_dir = out_dir / "p2_targets"
-    out_dir.mkdir(parents=True, exist_ok=True)
+    out_dir.mkdir(parents=True)
     if p2_runtime:
         target_dir.mkdir(parents=True, exist_ok=True)
 
@@ -331,11 +359,19 @@ def main():
     predictions_path = out_dir / "paired_predictions.jsonl"
     write_jsonl(predictions_path, predictions)
     overall, buckets, comparisons = summarize_predictions(predictions)
-    acceptance = acceptance_summary(comparisons)
     errors = sum(record["asr_status"] == "ERROR" for record in predictions)
+    p2_output_quality = summarize_p2_quality(predictions)
+    acceptance = acceptance_summary(
+        comparisons,
+        result_valid=errors == 0,
+        asr_errors=errors,
+        p2_output_quality=p2_output_quality,
+        expected_samples=len(rows),
+    )
     summary = {
         "contract": CONTRACT_VERSION,
         "result_valid": errors == 0,
+        "training_seed": args.training_seed,
         "manifest": str(manifest_path),
         "manifest_sha256": sha256_file(manifest_path),
         "data_root": str(data_root),
@@ -353,7 +389,7 @@ def main():
         "overall": overall,
         "buckets": buckets,
         "b1_vs_b0": comparisons,
-        "p2_output_quality": summarize_p2_quality(predictions),
+        "p2_output_quality": p2_output_quality,
         "acceptance": acceptance,
         "predictions_sha256": sha256_file(predictions_path),
     }
