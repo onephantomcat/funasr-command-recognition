@@ -35,7 +35,7 @@ pip install -r requirements.txt
 
 项目已在 RTX 4060 Laptop + 驱动 610.62 上验证 `torch 2.7.1+cu118`。无需安装完整 CUDA Toolkit 或 `nvcc`；`asr_demo.py` 和 `speaker_verify.py` 会在可用时自动选择 CUDA。详见 [docs/GPU_SETUP.md](./docs/GPU_SETUP.md)。
 
-当前比赛工作目录已有可用 GPU 环境 `..\.venv`；P3 评测统一使用 `..\.venv\Scripts\python.exe`，不要误用本目录内的 CPU 环境。P2→P3 的接入与配对 CER 命令见 [docs/P2_P3_INTEGRATION.md](./docs/P2_P3_INTEGRATION.md)。P1 的 6000 条外部配对数据及 18000 个音频引用现已齐备；[2026-08-10 的交接审计](./docs/P3_P2_B3_HANDOFF_AUDIT_20260810.md)保留为历史记录，当前 B2/B3 权重仍未通过 P3 的 20+20 输出质量检查。
+当前比赛工作目录已有可用 GPU 环境 `..\.venv`；P3 评测统一使用 `..\.venv\Scripts\python.exe`，不要误用本目录内的 CPU 环境。P2→P3 的接入与配对 CER 命令见 [docs/P2_P3_INTEGRATION.md](./docs/P2_P3_INTEGRATION.md)。P1 的 6000 条外部配对数据及 18000 个音频引用现已齐备；[2026-08-10 的交接审计](./docs/P3_P2_B3_HANDOFF_AUDIT_20260810.md)保留为历史记录。2026-08-14 的 B3 三种子外部 paired CER 已通过聚合，但冻结 P2 候选在 DatasetA 全流程公平比较中劣于基线，当前不推广该 checkpoint；详见[最终验证报告](./docs/P2_P3_DATASETA_FINAL_REPORT_20260814.md)。
 
 首次运行会下载 FunASR/CAM++ 模型；下载完成后可复用本地缓存。
 
@@ -177,6 +177,31 @@ DataSetA 用于阶段性开发与临时排行榜。为了避免标签泄漏，�
 ```
 
 该模式会增加约三倍前端耗时，默认快速路径不会启用。实验细节和后续外部训练计划见 [docs/ASR_OPTIMIZATION_V034.md](./docs/ASR_OPTIMIZATION_V034.md)。
+
+## P2/P3 最终验证状态（2026-08-14）
+
+P2 的 AMP 数值稳定性修复、B1 正式重训、三个 B3 独立训练种子和外部 paired CER 已完成。外部配对集是模型选择和修复验证用的公开/外部数据；DatasetA 只保留一次冻结的终检，不能用于调阈值、挑 checkpoint、构建短语库或选择损失权重。
+
+| 阶段 | 固定条件 | 结果 | 当前处置 |
+| --- | --- | --- | --- |
+| B1 正式训练 | 20,000 updates、finite dev、无 NaN/跳步、strict restore | PASS | 可作为 B3 warm-start |
+| B3 20 正 + 20 负预检 | 3 个独立训练种子、P2 非近静音、真实正/负输入 | 3 / 3 PASS | 进入外部 paired CER |
+| 外部 paired CER | 6,000 条同样本、B0/ORACLE/P2、3 个训练种子 | `ACCEPT_B1_CANDIDATE` | 冻结 seed `20260813` |
+| DatasetA 全量公平比较 | hard、SV=0.30、无 intent/phrase/cache | 候选 CER 73.66%，基线 53.43% | 候选 REJECT，保留基线 |
+
+### 外部 paired CER 摘要
+
+| 训练种子 | B0 CER | P2 CER | 变化 | 单次结果 |
+| --- | ---: | ---: | ---: | --- |
+| 20260813 | 64.16% | 60.55% | -3.61pp | PASS |
+| 20260814 | 64.16% | 60.77% | -3.39pp | PASS |
+| 20260815 | 64.16% | 60.79% | -3.37pp | PASS |
+
+### DatasetA 公平比较摘要
+
+候选仅多了冻结 P2 前端；其余 DatasetA 参数与基线相同。候选把正样本接受率从 69.35% 降至 47.21%，而负样本拒绝率仅从 91.14% 升至 91.56%，使全流程 CER 增至 73.66%。P2 输出并非近静音（1,838 条均有效）；根因是 P2 输出对 CAM++ 下游门控的身份表征发生回归，且通过门控的样本 ASR 也变差。
+
+不要在 DatasetA 降低声纹阈值来掩盖该结果。后续应在独立外部开发集上实现并选择可反传的身份保持损失，再按“外部小样本 → 6,000 paired CER → 一次 DatasetA 冻结终检”的顺序验证。完整数据、根因定位和复现边界见 [P2/P3 最终验证报告](./docs/P2_P3_DATASETA_FINAL_REPORT_20260814.md)。
 
 ## 训练轻量拒识门控
 

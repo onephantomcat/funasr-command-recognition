@@ -1,5 +1,7 @@
 # P2 → P3 冻结接入说明
 
+> **2026-08-14 最终状态更新：** 三个 B3 训练种子已完成外部 6,000 条 paired CER，并聚合为 `ACCEPT_B1_CANDIDATE`；随后冻结的 `seed=20260813` 在 DatasetA 全量公平比较中使 CER 从 53.43% 恶化至 73.66%，因此当前候选已 **REJECT**，基线继续保留。本文其余 2026-08-10～13 的段落是历史接入与复现记录，不得覆盖此最终结论。完整指标与后续修复方向见 [P2/P3 最终验证报告](./P2_P3_DATASETA_FINAL_REPORT_20260814.md)。
+
 > **2026-08-13 状态更新**：队友分支新增的 `0bd3a9d`、`dd91f4c` 已拉取并按语义纳入集成；正式 CAMPPlus silent fallback、逐样本 `absent_loss_scale`、零目标 MR-STFT、PRESENT 幅度监督、残差参考、swap/ABSENT 语义、strict warm-start 和诊断链均已修复并实跑。P1 九份 split manifest 的本地生成入口及 Windows 可移植构建入口已补齐，14 条跨场景真实预检通过。当前代码状态为 `FIXED / SMOKE_PASS`，但 B2/B3 旧 checkpoint `13bce1b9…db8b` 仍是 P3 已拒收权重；必须由 P2 用新代码重训并交付不同 checkpoint，P3 才恢复 20+20 和后续 6000 条评测。完整结论见 `P1_P2_P3_FIX_DELIVERY_20260813.md`。
 
 > **2026-08-12 状态更新**：P1 正式外部包已到位，6000 条配对清单和 18000 个 mixture/target/enrollment 音频引用已通过实际重建检查。Git 分支当前只包含已合并的 P2 版本；微信群收到的 v2.2 包还没有对应 Git 提交，其 `diagnose_b3.py` 不在分支内，另外三个工具脚本也与分支版本不同。v2.2 包中的 B2/B3 checkpoint 仍是已在 P3 20+20 实测中出现 39/40 近静音、正样本接收率 0% 的同一权重，因此在 P2 提供新权重或可复现修复前，不运行全量评测。下方 2026-08-10 内容保留为历史接入依据。
