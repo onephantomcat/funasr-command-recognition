@@ -620,6 +620,13 @@ def main():
     LOG.addHandler(fh)
     LOG.addHandler(ch)
 
+    # p2_overfit（train_overfit_debug 模块日志，含 "id_loss SV backend 已加载"）
+    # 在本进程默认无 handler，INFO 级消息被静默丢弃；挂到同一组 handler 使 id_loss 链路可观测。
+    ovf_log = logging.getLogger("p2_overfit")
+    ovf_log.setLevel(logging.INFO)
+    ovf_log.addHandler(fh)
+    ovf_log.addHandler(ch)
+
     LOG.info("config=%s device=%s seed=%d amp=%s sv_mode=%s", args.config, device, seed, use_amp, cfg.get("sv_mode", "bootstrap"))
     LOG.info("torch=%s cuda=%s", torch.__version__, torch.cuda.is_available())
 
@@ -947,15 +954,18 @@ def main():
             "effective_batch": batch_size * grad_accum,
             "si_sdri_db": float(terms["si_sdr_db"].detach().cpu()) - (si_sdr_mix_baseline or 0),
         }
+        if "id_cos" in terms:  # lambda_id > 0 时才存在，记录身份保持观测
+            rec["id_cos"] = float(terms["id_cos"].detach().cpu())
         metrics_f.write(json.dumps(rec, ensure_ascii=False) + "\n")
         metrics_f.flush()
 
         if step % log_every == 0 or step == total_steps:
             LOG.info("step=%d/%d total=%.4f si_sdr=%.2f si_sdri=%.2f lr=%.2e |g|=%.3f "
-                     "mem=%.2fGB %.0fms/step data=%.0f%%",
+                     "mem=%.2fGB %.0fms/step data=%.0f%%%s",
                      step, total_steps, rec["total"], rec["si_sdr_db"], rec["si_sdri_db"],
                      cur_lr, grad_norm, rec["gpu_mem_gb"], rec["step_time_ms"],
-                     rec["data_wait_pct"])
+                     rec["data_wait_pct"],
+                     (" id_cos=%.4f" % rec["id_cos"]) if "id_cos" in rec else "")
 
         if step > 0 and step % save_every == 0:
             ckpt_path = out_dir / f"checkpoint_step{step}.pt"
@@ -1060,12 +1070,13 @@ def main():
 
     epoch_steps = max(1, len(train_ds) // batch_size)
     est_epoch_time = epoch_steps * p50_step / 1000.0
+    mem_budget = float(cfg.get("mem_budget_gb", 4.0))
 
     verdicts = {
         "no_nan": nan_steps == 0,
         "grad_finite": all(bool(m["grad_finite"]) for m in grad_checks)
                            if grad_checks else False,
-        "peak_mem_under_budget": peak_mem < 4.0,
+        "peak_mem_under_budget": peak_mem < mem_budget,
         "throughput_measured": mean_sps > 0,
         "loss_decreasing": bool(loss_decreasing),
         "dev_metrics_finite": dev_metrics_finite,
@@ -1104,8 +1115,8 @@ def main():
         "amp_scale_final": float(scaler.get_scale()),
         "amp_scale_backoffs": amp_scale_backoffs,
         "peak_gpu_mem_gb": float(peak_mem),
-        "mem_budget_gb": 4.0,
-        "mem_margin_gb": float(4.0 - peak_mem),
+        "mem_budget_gb": mem_budget,
+        "mem_margin_gb": float(mem_budget - peak_mem),
         "samples_per_sec_mean": mean_sps,
         "step_time_ms_p50": p50_step,
         "step_time_ms_p95": p95_step,
@@ -1151,7 +1162,7 @@ def main():
         f.write(f"- 训练总耗时: {train_time:.1f}s（{total_steps} 步）\n\n")
         f.write("## 显存\n\n")
         f.write(f"- 峰值显存: {peak_mem:.3f} GB\n")
-        f.write(f"- 预算: 4.0 GB；余量: {4.0 - peak_mem:.3f} GB\n\n")
+        f.write(f"- 预算: {mem_budget:.1f} GB；余量: {mem_budget - peak_mem:.3f} GB\n\n")
         f.write("## 收敛\n\n")
         f.write(f"- total loss 首 100 步均值: {loss_first:.4f}\n")
         f.write(f"- total loss 末 100 步均值: {loss_last:.4f}\n")

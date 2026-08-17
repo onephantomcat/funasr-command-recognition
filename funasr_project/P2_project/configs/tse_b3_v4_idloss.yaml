@@ -60,6 +60,7 @@ scene_mode: b3
 segment_length: 8
 batch_size: 8              # ★ v4=16 → 8（SV backend 显存预算，探针 3：1.79 GB）
 gradient_accumulation: 2   # ★ v4=1 → 2（等效 batch=16 不变）
+mem_budget_gb: 8.0         # ★ 试车显存闸门（默认 4.0 未计入 SV 可微前向；bs=8+id_loss 云端实测峰值约 4.6 GB）
 amp: false
 steps: 20000
 seed: 20260817             # ★ v4=20260814 → 20260817
