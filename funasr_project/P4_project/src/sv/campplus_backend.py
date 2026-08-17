@@ -203,6 +203,31 @@ class CampplusBackend:
         except ImportError:
             return self._mel_fallback(wav)
 
+    def _extract_fbank_trainable(
+        self, wav: torch.Tensor, sample_rate: int = 16000
+    ) -> torch.Tensor:
+        """逐样本提取 fbank 并 stack，全程保留梯度（供 id_loss 反传）。
+
+        注意：torchaudio 2.11 的 kaldi.fbank 对 2D [B, T] 批量输入会
+        静默只取第 0 通道（探针 5 实证：B=4 输出 [T', F] 且等于 ch0），
+        因此 _extract_fbank 的批量路径对 B>1 不安全；本方法逐样本调用，
+        与生产 embed_batch 逐样本用法数值一致（最大差 4.2e-07）。
+        """
+        import torchaudio.compliance.kaldi as kaldi
+        feats = []
+        for i in range(wav.shape[0]):
+            f = kaldi.fbank(
+                wav[i].unsqueeze(0),
+                num_mel_bins=self.cfg.feat_dim,
+                sample_frequency=sample_rate,
+            )
+            if f.ndim == 3:
+                f = f.squeeze(0)  # [1, T, F] → [T, F]
+            if self.cfg.mean_norm:
+                f = f - f.mean(dim=0, keepdim=True)
+            feats.append(f)
+        return torch.stack(feats, dim=0)
+
     def _mel_fallback(self, wav: torch.Tensor) -> torch.Tensor:
         """torchaudio 不可用时的 mel 频谱兜底实现。"""
         n_fft = 400
@@ -253,6 +278,39 @@ class CampplusBackend:
 
         wav = wav.to(self.device)
         feats = self._extract_fbank(wav, self.cfg.sample_rate)
+        emb = self._model(feats)
+        emb = F.normalize(emb, p=2, dim=-1)
+        return emb
+
+    def embed_trainable(self, wav: torch.Tensor) -> torch.Tensor:
+        """可微分嵌入提取（P2 id_loss 训练专用）。
+
+        与生产逐样本 embed 用法数值一致（探针 5：最大差 4.2e-07），
+        但不包 no_grad，梯度可从嵌入回传至输入波形。
+        （勿与 embed() 的批量调用对比：kaldi.fbank 对 B>1 输入会静默
+        塌缩到第 0 通道，见 _extract_fbank_trainable 注释。）
+
+        调用方责任：
+        - 本 backend 参数应已冻结（requires_grad_(False)），仅作梯度通路；
+        - 输入批次内各样本须等长（stack 约束，训练 collate 已保证）。
+
+        Args:
+            wav: [B, T] float 波形（16 kHz），可带 requires_grad
+
+        Returns:
+            emb: [B, D] L2 归一化嵌入（带梯度图）
+        """
+        if not self._loaded or self._model is None:
+            raise RuntimeError("模型未加载，先调用 load()")
+        if wav.ndim != 2:
+            raise ValueError(f"wav 需为 [B,T]，得到 ndim={wav.ndim}")
+        if wav.numel() == 0:
+            raise ValueError("wav 为空数组")
+        if not torch.isfinite(wav).all():
+            raise ValueError("wav 含 NaN/Inf")
+
+        wav = wav.to(self.device)
+        feats = self._extract_fbank_trainable(wav, self.cfg.sample_rate)
         emb = self._model(feats)
         emb = F.normalize(emb, p=2, dim=-1)
         return emb

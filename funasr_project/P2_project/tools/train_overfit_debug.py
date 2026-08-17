@@ -5,7 +5,8 @@
 
 固定设置：8 条 DEBUG_ONLY 混合（不 shuffle）、seed 20260723、AMP 关、增强关。
 PRESENT 损失：-λ_sisdr·SI-SDR + λ_wav·L1(尺度敏感) + λ_stft·MR-STFT + λ_act·BCE(p_tgt, m)
-              + λ_residual·L1(residual, mixture-target)   （λ_id=0 硬约束）
+              + λ_residual·L1(residual, mixture-target)
+              + λ_id·(1 - cos(embed_trainable(s_tgt), enroll_emb))   （λ_id 默认 0，硬关闭）
 
 产物：artifacts/experiments/DEBUG_OVERFIT_seed<seed>/
   config.yaml / config.sha256 / data.sha256 / train.log / metrics.jsonl /
@@ -66,6 +67,41 @@ def bootstrap_embedding(enrollment_rel_path, emb_dim):
     seed = int(sha256_text(enrollment_rel_path)[:8], 16)
     g = torch.Generator().manual_seed(seed)
     return torch.randn(emb_dim, generator=g)
+
+
+_SV_BACKEND = None
+_SV_BACKEND_DEVICE = None
+
+
+def _get_sv_backend(cfg, device):
+    """模块级 CampplusBackend 缓存（仅 lambda_id > 0 时启用）。
+
+    参数冻结（requires_grad_(False)），仅作 id_loss 的梯度通路；
+    设备变化时重建。权重缺失或 speakerlab 不可用时显式失败。
+    """
+    global _SV_BACKEND, _SV_BACKEND_DEVICE
+    dev = torch.device(device)
+    if _SV_BACKEND is not None and _SV_BACKEND_DEVICE == dev:
+        return _SV_BACKEND
+    from src.tse.enrollment_adapter import _inject_p4_paths
+    _inject_p4_paths()
+    from sv.campplus_backend import CampplusBackend
+    from sv.types import CampplusBackendConfig
+
+    sv_cfg = CampplusBackendConfig(
+        model_id=str(cfg.get("sv_model_id") or "iic/speech_campplus_sv_zh-cn_16k-common"),
+        embedding_size=int(cfg["emb_dim"]),
+        sample_rate=int(cfg["sample_rate"]),
+        device=str(dev),
+    )
+    backend = CampplusBackend(sv_cfg)
+    backend.load()
+    for p in backend._model.parameters():
+        p.requires_grad_(False)
+    _SV_BACKEND = backend
+    _SV_BACKEND_DEVICE = dev
+    LOG.info("id_loss SV backend 已加载（参数冻结，device=%s）", dev)
+    return backend
 
 
 def frame_activity(activity, win_length, hop_length, ratio_thresh):
@@ -181,12 +217,28 @@ def compute_losses(cfg, model_out, batch):
         "mix": mix_consistency_loss(s_tgt, s_res, x),
     }
 
+    # 身份保持损失：lambda_id > 0 时启用（默认 0，硬关闭且行为逐位不变）。
+    # id_cos = cos(embed_trainable(s_tgt), enrollment_emb)，仅对 present 样本计权。
+    lambda_id = float(cfg.get("lambda_id", 0.0) or 0.0)
+    if lambda_id > 0.0:
+        sv = _get_sv_backend(cfg, s_tgt.device)
+        # AMP 下强制回 FP32，避免 fbank/对数在低精度下数值不稳。
+        with torch.autocast(device_type=s_tgt.device.type, enabled=False):
+            est_emb = sv.embed_trainable(s_tgt.float())
+        ref_emb = torch.nn.functional.normalize(
+            batch["emb"].to(device=est_emb.device, dtype=torch.float32), p=2, dim=-1
+        )
+        id_cos_ps = (est_emb * ref_emb).sum(dim=-1)
+        terms["id_cos"] = weighted_mean(id_cos_ps, present_weights)
+
     total = (-float(cfg["lambda_sisdr"]) * terms["si_sdr_db"]
              + float(cfg["lambda_wav"]) * terms["wav_l1"]
              + float(cfg["lambda_stft"]) * terms["mrstft"]
              + float(cfg["lambda_act"]) * terms["act_bce"]
              + float(cfg["lambda_residual"]) * terms["res_l1"]
              + float(cfg["lambda_mix"]) * terms["mix"])
+    if lambda_id > 0.0:
+        total = total + lambda_id * (1.0 - terms["id_cos"])
     return total, terms
 
 

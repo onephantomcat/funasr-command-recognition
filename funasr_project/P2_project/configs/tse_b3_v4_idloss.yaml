@@ -1,0 +1,96 @@
+# ============================================================
+# P2 B3 ENROLL-SWAP 训练配置 v4 + id_loss（身份保持修复版）
+# ------------------------------------------------------------
+# ★ 本配置相对 tse_b3_v4.yaml 的唯一意图差异：启用身份保持损失
+#   1. lambda_id: 0.0 → 0.5          （id_loss = λ_id·(1 - cos(embed_trainable(s_tgt), enroll_emb))）
+#   2. batch_size: 16 → 8            （SV backend 前向占显存，探针 3 实测 B=8 约 1.79 GB）
+#   3. gradient_accumulation: 1 → 2  （等效 batch 仍为 16，与 v4 对齐）
+#   4. seed: 20260814 → 20260817     （新种子，独立复现）
+#
+# 背景（P2_P3_DATASETA_FINAL_REPORT_20260814 根因）：
+#   v4 配置早已声明 lambda_id: 0.0，但训练脚本从未读取该键，
+#   且 CampplusBackend.embed() 全程 no_grad —— 身份保持损失从未生效。
+#   backup 消融（--sv-source mix 全量）证实：P2 增强输出的说话人
+#   特征已破坏（pos 接受率 47.21% vs 基线 69.35%），id_loss 为对症修复。
+#
+# 依赖：funasr_project/P4_project/src/sv/campplus_backend.py 的
+#   embed_trainable()（可微分嵌入，与 embed() 数值差 0.00e+00）。
+# 注意：lambda_id = 0 时训练行为与 v4 逐位一致（阶段 2 回归基线）。
+# ============================================================
+
+sample_rate: 16000
+
+# STFT 参数（与 B1 一致）
+n_fft: 512
+hop_length: 128
+win_length: 512
+
+# 模型结构（与 B1 一致，保证可加载 B1 预训练权重）
+emb_dim: 192
+lstm_hidden: 256
+lstm_layers: 2
+dropout: 0.0
+film_scale: 0.1
+
+# ============================================================
+# 损失权重（与 v4 相同，仅 lambda_id 启用）
+# ============================================================
+lambda_sisdr: 3.0
+lambda_wav: 0.25
+lambda_stft: 0.25
+lambda_act: 2.0
+lambda_residual: 0.5
+lambda_mix: 0.5
+lambda_id: 0.5          # ★ 身份保持损失权重（v4=0.0 硬关闭 → 0.5）
+
+zero_ref_kappa: 1.0e-4
+mrstft_resolutions:
+  - [256, 64, 256]
+  - [512, 128, 512]
+  - [1024, 256, 1024]
+act_frame_ratio: 0.5
+
+absent_loss_scale: 0.02
+
+# ============================================================
+# B3 场景模式（enroll_swap 三种子场景混合）
+# ============================================================
+scene_mode: b3
+
+segment_length: 8
+batch_size: 8              # ★ v4=16 → 8（SV backend 显存预算，探针 3：1.79 GB）
+gradient_accumulation: 2   # ★ v4=1 → 2（等效 batch=16 不变）
+amp: false
+steps: 20000
+seed: 20260817             # ★ v4=20260814 → 20260817
+lr: 3.0e-4
+lr_warmup_steps: 1500
+lr_schedule: cosine
+grad_clip: 2.0
+log_every: 25
+save_every: 500
+dev_every: 100
+shuffle: true
+num_workers: 2
+pin_memory: true
+prefetch_factor: 2
+
+# ============================================================
+# P1 v3 单 manifest + split 过滤
+# ============================================================
+datasets:
+  manifest: /root/autodl-tmp/P1_to_P2_v3_absent_swap/manifest.jsonl
+  train_split: train
+  dev_split:   dev
+  eval_split: D_swap
+
+# 元信息
+tag: B3_SWAP_v4_idloss
+lane: INTEGRATION
+asset_class: B3_ENROLL_SWAP_V4_IDLOSS
+notes: "B3 v4 + id_loss: lambda_id=0.5, bs8×grad_accum2（等效16）, seed=20260817。修复正式报告根因（lambda_id 未接线 + embed no_grad）。从 B1_50K_RESUME warm-start。目标：pos 接受率从 47.21% 恢复至基线 69.35% 附近，同时保持 SI-SDR 提取收益。"
+
+# P4 CAMPPlus 嵌入
+sv_mode: campplus
+sv_bootstrap_seed: 20260804
+sv_model_id: "iic/speech_campplus_sv_zh-cn_16k-common"

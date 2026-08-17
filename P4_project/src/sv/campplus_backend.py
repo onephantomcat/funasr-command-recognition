@@ -1,155 +1,359 @@
-"""CAM++ Model Backend.
+"""Campplus 说话人嵌入后端（P4-02）。
 
-Frozen model: iic/speech_campplus_sv_zh-cn_16k-common v1.0.0
-SHA256: 3388cf5fd3493c9ac9c69851d8e7a8badcfb4f3dc631020c4961371646d5ada8
-Embedding dim: 192, FBank 80-dim with mean_nor, no L2 norm on output.
+封装 3D-Speaker Campplus 模型，提供波形 → 嵌入的最小推理链：
+    波形 → fbank → Campplus → L2 归一化 → 嵌入 [B, D]
 
-This module wraps the frozen 3D-Speaker CAM++ model with a fixed frontend.
-The model is loaded once and reused. All configuration is versioned.
+职责边界：
+- 只负责嵌入提取，不关心注册会话、验证打分；
+- 模型加载支持 ModelScope model_id 与本地权重两种路径；
+- 推理全程 @torch.no_grad()，不保留梯度；
+- 错误输入显式失败（raise ValueError），不静默通过。
+
+标记：CAMPLUS_BACKEND_READY / MODEL_WEIGHTS_REQUIRED
 """
 
-import os
-import sys
-import hashlib
-from typing import Optional, Tuple
+from __future__ import annotations
 
-import numpy as np
+from typing import List, Optional, Sequence
+from pathlib import Path
+
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
-# Frozen source path
-_SPEAKERLAB_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-    "artifacts", "models", "speakerlab_source"
-)
-if _SPEAKERLAB_PATH not in sys.path:
-    sys.path.insert(0, _SPEAKERLAB_PATH)
-
-from speakerlab.models.campplus.DTDNN import CAMPPlus
-from speakerlab.process.processor import FBank
+from .types import CampplusBackendConfig
 
 
-# Frozen configuration
-CONFIG = {
-    "model_id": "iic/speech_campplus_sv_zh-cn_16k-common",
-    "revision": "v1.0.0",
-    "checkpoint_filename": "campplus_cn_common.bin",
-    "checkpoint_sha256": "3388cf5fd3493c9ac9c69851d8e7a8badcfb4f3dc631020c4961371646d5ada8",
-    "feat_dim": 80,
-    "embedding_size": 192,
-    "sample_rate": 16000,
-    "mean_nor": True,
-    "dtype": "float32",
-    "l2_normalized": False,
-    "preprocess_version": "sv_preprocess_v1",
-}
+class CampplusBackend:
+    """Campplus 说话人嵌入提取后端。
 
-# Global singleton
-_model: Optional[CAMPPlus] = None
-_frontend: Optional[FBank] = None
-_model_sha256_verified: Optional[str] = None
+    使用方式::
 
-
-def get_model_path() -> str:
-    """Return path to frozen CAM++ checkpoint."""
-    project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-    return os.path.join(
-        project_root, "artifacts", "models", "campplus_frozen",
-        CONFIG["checkpoint_filename"]
-    )
-
-
-def verify_model_sha256() -> Tuple[bool, str]:
-    """Verify the checkpoint SHA256 matches the frozen value."""
-    model_path = get_model_path()
-    h = hashlib.sha256()
-    with open(model_path, "rb") as f:
-        while True:
-            chunk = f.read(8192)
-            if not chunk:
-                break
-            h.update(chunk)
-    actual = h.hexdigest()
-    expected = CONFIG["checkpoint_sha256"]
-    return actual == expected, actual
-
-
-def load_model(device: str = "cpu") -> Tuple[CAMPPlus, FBank]:
-    """Load and return CAM++ model and FBank frontend (singleton).
-
-    The model is loaded once. Subsequent calls return the cached instance.
-    Returns (model, frontend).
+        cfg = CampplusBackendConfig(model_id="iic/speech_campplus_sv_zh-cn_16k-common")
+        backend = CampplusBackend(cfg)
+        backend.load()          # 加载权重（一次性）
+        emb = backend.embed(wav)  # wav: [B, T] → [B, D]
     """
-    global _model, _frontend, _model_sha256_verified
 
-    if _model is not None and _frontend is not None:
-        return _model, _frontend
+    def __init__(self, cfg: CampplusBackendConfig):
+        self.cfg = cfg
+        self.device = torch.device(cfg.device)
+        self._model: Optional[nn.Module] = None
+        self._loaded = False
 
-    # Verify checkpoint hash
-    ok, actual_hash = verify_model_sha256()
-    if not ok:
-        raise RuntimeError(
-            f"Model SHA256 mismatch! Expected {CONFIG['checkpoint_sha256']}, "
-            f"got {actual_hash}"
+    @property
+    def is_loaded(self) -> bool:
+        return self._loaded
+
+    def load(self) -> None:
+        """加载 Campplus 模型结构 + 预训练权重。
+
+        优先尝试从 speakerlab 导入 CAMPPlus 源码构建模型；
+        若 speakerlab 不可用则报 RuntimeError，禁止静默 fallback。
+
+        权重加载优先级：
+        1. cfg.model_id 指向本地 .bin/.pt/.pth 文件 → 直接加载
+        2. cfg.model_id 是 ModelScope ID + 本地缓存目录有权重 → 加载缓存
+        3. 都没有 → 明确失败（正式声纹不能用随机初始化冒充）
+        """
+        if self._loaded:
+            return
+        try:
+            from speakerlab.models.campplus.DTDNN import CAMPPlus
+            self._model = CAMPPlus(
+                feat_dim=self.cfg.feat_dim,
+                embedding_size=self.cfg.embedding_size,
+            )
+            self._model = self._model.to(self.device)
+            self._model.eval()
+
+            weight_path = self._resolve_weight_path()
+            if weight_path is None:
+                raise FileNotFoundError(
+                    "未找到 CAMPPlus 预训练权重；拒绝使用随机初始化声纹模型。"
+                    "请提供本地 model_id，或把 campplus_cn_common.bin 放入 "
+                    "P4_project/artifacts/models/ / ModelScope 缓存。"
+                )
+            self._load_weights(weight_path)
+            self._loaded = True
+        except ImportError as exc:
+            raise RuntimeError(
+                f"speakerlab 不可用: {exc}\n"
+                "请确认 speakerlab_source 已克隆到 P4_project/artifacts/models/speakerlab_source/，"
+                "且路径已加入 sys.path。"
+            ) from exc
+        except Exception as exc:
+            raise RuntimeError(f"Campplus 模型构建失败: {exc}") from exc
+
+    def _resolve_weight_path(self) -> Optional[Path]:
+        """解析权重文件路径。
+
+        Returns:
+            权重文件路径（.bin/.pt/.pth），或 None 表示未找到。
+        """
+        model_id = self.cfg.model_id
+        if not model_id:
+            return None
+
+        # 1) model_id 直接是本地文件路径
+        candidate = Path(model_id)
+        if candidate.is_file():
+            return candidate
+
+        # 2) 在 P4_project/artifacts/models/ 下查找
+        p4_root = Path(__file__).resolve().parents[2]
+        models_dir = p4_root / "artifacts" / "models"
+        for name in ["campplus_cn_common.bin", "campplus_sv_zh-cn_16k-common.pt",
+                      "campplus_sv_zh-cn_16k-common.pth"]:
+            p = models_dir / name
+            if p.is_file():
+                return p
+
+        # 3) model_id 是 ModelScope ID，尝试标准与旧版 ModelScope 缓存布局
+        try:
+            cache_root = Path.home() / ".cache" / "modelscope"
+            model_parts = [part for part in model_id.split("/") if part]
+            direct_dirs = []
+            if len(model_parts) >= 2:
+                direct_dirs.extend([
+                    cache_root / "hub" / "models" / model_parts[-2] / model_parts[-1],
+                    cache_root / "hub" / model_parts[-2] / model_parts[-1],
+                ])
+            for candidate_dir in direct_dirs:
+                for name in ("campplus_cn_common.bin", "campplus_cn_common.pt",
+                             "campplus_cn_common.pth"):
+                    path = candidate_dir / name
+                    if path.is_file():
+                        return path
+            if cache_root.is_dir():
+                for path in cache_root.rglob("campplus_cn_common.bin"):
+                    if not model_parts or model_parts[-1] in path.parts:
+                        return path
+        except Exception:
+            pass
+
+        return None
+
+    def _load_weights(self, weight_path: Path) -> None:
+        """从 .bin/.pt/.pth 文件加载权重。
+
+        Args:
+            weight_path: 权重文件路径
+        """
+        import logging as _logging
+        _log = _logging.getLogger("campplus")
+
+        _log.info(f"加载权重: {weight_path}")
+        try:
+            state = torch.load(str(weight_path), map_location=self.device, weights_only=False)
+        except TypeError:
+            state = torch.load(str(weight_path), map_location=self.device)
+
+        # HuggingFace 格式: {"state_dict": {...}, ...} 或直接 state_dict
+        if isinstance(state, dict) and "state_dict" in state:
+            state = state["state_dict"]
+
+        if not isinstance(state, dict):
+            raise RuntimeError(f"权重格式异常: {type(state)}，期望 state_dict")
+
+        # 键名适配：HuggingFace 可能加前缀
+        model_state = self._model.state_dict()
+        adapted = {}
+        for k, v in state.items():
+            if k in model_state:
+                adapted[k] = v
+            else:
+                # 尝试去掉常见前缀
+                for prefix in ["model.", "module.", "encoder."]:
+                    stripped = k.removeprefix(prefix) if k.startswith(prefix) else k
+                    if stripped in model_state:
+                        adapted[stripped] = v
+                        break
+
+        missing = sorted(set(model_state) - set(adapted))
+        if missing:
+            raise RuntimeError(
+                f"CAMPPlus 权重不完整：仅匹配 {len(adapted)}/{len(model_state)} 个参数，"
+                f"缺失 {missing[:5]}"
+            )
+        self._model.load_state_dict(adapted, strict=True)
+        _log.info(f"权重完整加载: {len(adapted)}/{len(model_state)} 个参数")
+
+    def _extract_fbank(
+        self, wav: torch.Tensor, sample_rate: int = 16000
+    ) -> torch.Tensor:
+        """从波形提取 fbank 特征 [B, T, F]。
+
+        使用 torchaudio.compliance.kaldi.fbank（若可用），
+        否则退化为 mel 频谱 + 均值归一化。
+        """
+        try:
+            import torchaudio.compliance.kaldi as kaldi
+            # kaldi.fbank 期望 [batch, time] 或 [time]，直接传 [B, T]
+            fbank = kaldi.fbank(
+                wav,
+                num_mel_bins=self.cfg.feat_dim,
+                sample_frequency=sample_rate,
+            )
+            if fbank.ndim == 2:
+                fbank = fbank.unsqueeze(0)  # 确保 [B, T, F]
+            if self.cfg.mean_norm:
+                fbank = fbank - fbank.mean(dim=1, keepdim=True)
+            return fbank
+        except ImportError:
+            return self._mel_fallback(wav)
+
+    def _extract_fbank_trainable(
+        self, wav: torch.Tensor, sample_rate: int = 16000
+    ) -> torch.Tensor:
+        """逐样本提取 fbank 并 stack，全程保留梯度（供 id_loss 反传）。
+
+        注意：torchaudio 2.11 的 kaldi.fbank 对 2D [B, T] 批量输入会
+        静默只取第 0 通道（探针 5 实证：B=4 输出 [T', F] 且等于 ch0），
+        因此 _extract_fbank 的批量路径对 B>1 不安全；本方法逐样本调用，
+        与生产 embed_batch 逐样本用法数值一致（最大差 4.2e-07）。
+        """
+        import torchaudio.compliance.kaldi as kaldi
+        feats = []
+        for i in range(wav.shape[0]):
+            f = kaldi.fbank(
+                wav[i].unsqueeze(0),
+                num_mel_bins=self.cfg.feat_dim,
+                sample_frequency=sample_rate,
+            )
+            if f.ndim == 3:
+                f = f.squeeze(0)  # [1, T, F] → [T, F]
+            if self.cfg.mean_norm:
+                f = f - f.mean(dim=0, keepdim=True)
+            feats.append(f)
+        return torch.stack(feats, dim=0)
+
+    def _mel_fallback(self, wav: torch.Tensor) -> torch.Tensor:
+        """torchaudio 不可用时的 mel 频谱兜底实现。"""
+        n_fft = 400
+        hop_length = 160
+        win_length = 400
+        window = torch.hann_window(win_length, device=wav.device)
+        spec = torch.stft(
+            wav, n_fft=n_fft, hop_length=hop_length,
+            win_length=win_length, window=window,
+            return_complex=True,
         )
-    _model_sha256_verified = actual_hash
+        mag = spec.abs().transpose(1, 2)
+        n_mels = self.cfg.feat_dim
+        mel_bank = torch.zeros(n_fft // 2 + 1, n_mels, device=wav.device)
+        for m in range(n_mels):
+            f_center = 8000.0 * (m + 1) / n_mels
+            for k in range(n_fft // 2 + 1):
+                freqs = torch.linspace(0, 8000, n_fft // 2 + 1, device=wav.device)
+                mel_bank[k, m] = torch.exp(-0.5 * ((freqs[k] - f_center) / (8000.0 / n_mels)) ** 2)
+        mel = mag @ mel_bank
+        log_mel = torch.log(mel + 1e-8)
+        if self.cfg.mean_norm:
+            log_mel = log_mel - log_mel.mean(dim=1, keepdim=True)
+        return log_mel
 
-    # Load model
-    model = CAMPPlus(
-        feat_dim=CONFIG["feat_dim"],
-        embedding_size=CONFIG["embedding_size"],
-    )
-    state = torch.load(get_model_path(), map_location=device)
-    model.load_state_dict(state)
-    model.to(device)
-    model.eval()
+    @torch.no_grad()
+    def embed(self, wav: torch.Tensor) -> torch.Tensor:
+        """从波形提取嵌入。
 
-    # Create frontend
-    frontend = FBank(
-        CONFIG["feat_dim"],
-        sample_rate=CONFIG["sample_rate"],
-        mean_nor=CONFIG["mean_nor"],
-    )
+        Args:
+            wav: [B, T] float 波形（16 kHz）
 
-    _model = model
-    _frontend = frontend
-    return model, frontend
+        Returns:
+            emb: [B, D] L2 归一化嵌入
 
+        Raises:
+            ValueError: 输入形状错误、含 NaN/Inf
+            RuntimeError: 模型未加载
+        """
+        if not self._loaded or self._model is None:
+            raise RuntimeError("模型未加载，先调用 load()")
+        if wav.ndim != 2:
+            raise ValueError(f"wav 需为 [B,T]，得到 ndim={wav.ndim}")
+        if wav.numel() == 0:
+            raise ValueError("wav 为空数组")
+        if not torch.isfinite(wav).all():
+            raise ValueError("wav 含 NaN/Inf")
 
-def compute_embedding(
-    waveform: torch.Tensor,
-    model: Optional[CAMPPlus] = None,
-    frontend: Optional[FBank] = None,
-) -> np.ndarray:
-    """Compute CAM++ embedding from a preprocessed waveform.
+        wav = wav.to(self.device)
+        feats = self._extract_fbank(wav, self.cfg.sample_rate)
+        emb = self._model(feats)
+        emb = F.normalize(emb, p=2, dim=-1)
+        return emb
 
-    Args:
-        waveform: [1, T] float32 tensor at 16kHz mono.
-        model: Optional model instance (loads singleton if None).
-        frontend: Optional frontend instance.
+    def embed_trainable(self, wav: torch.Tensor) -> torch.Tensor:
+        """可微分嵌入提取（P2 id_loss 训练专用）。
 
-    Returns:
-        numpy array of shape [D] (192 for this model), float32, NOT L2-normalized.
-    """
-    if model is None or frontend is None:
-        model, frontend = load_model()
+        与生产逐样本 embed 用法数值一致（探针 5：最大差 4.2e-07），
+        但不包 no_grad，梯度可从嵌入回传至输入波形。
+        （勿与 embed() 的批量调用对比：kaldi.fbank 对 B>1 输入会静默
+        塌缩到第 0 通道，见 _extract_fbank_trainable 注释。）
 
-    feat = frontend(waveform)  # [T, 80]
-    feat = feat.unsqueeze(0)  # [1, T, 80]
-    with torch.no_grad():
-        embedding = model(feat).squeeze(0).cpu().numpy()
-    return embedding.astype(np.float32)
+        调用方责任：
+        - 本 backend 参数应已冻结（requires_grad_(False)），仅作梯度通路；
+        - 输入批次内各样本须等长（stack 约束，训练 collate 已保证）。
 
+        Args:
+            wav: [B, T] float 波形（16 kHz），可带 requires_grad
 
-def cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
-    """Compute cosine similarity between two embeddings."""
-    dot = np.dot(a, b)
-    norm_a = np.linalg.norm(a)
-    norm_b = np.linalg.norm(b)
-    if norm_a < 1e-10 or norm_b < 1e-10:
-        return 0.0
-    return float(dot / (norm_a * norm_b))
+        Returns:
+            emb: [B, D] L2 归一化嵌入（带梯度图）
+        """
+        if not self._loaded or self._model is None:
+            raise RuntimeError("模型未加载，先调用 load()")
+        if wav.ndim != 2:
+            raise ValueError(f"wav 需为 [B,T]，得到 ndim={wav.ndim}")
+        if wav.numel() == 0:
+            raise ValueError("wav 为空数组")
+        if not torch.isfinite(wav).all():
+            raise ValueError("wav 含 NaN/Inf")
 
+        wav = wav.to(self.device)
+        feats = self._extract_fbank_trainable(wav, self.cfg.sample_rate)
+        emb = self._model(feats)
+        emb = F.normalize(emb, p=2, dim=-1)
+        return emb
 
-def get_model_sha256() -> Optional[str]:
-    """Return the verified model SHA256, or None if not yet loaded."""
-    return _model_sha256_verified
+    @torch.no_grad()
+    def embed_batch(
+        self, wavs: Sequence[torch.Tensor]
+    ) -> torch.Tensor:
+        """批量嵌入提取（逐条处理，避免 fbank batch 问题）。
+
+        Args:
+            wavs: 多个 [T] 或 [1, T] 波形
+
+        Returns:
+            emb: [B, D] 批量嵌入
+        """
+        embs = []
+        for w in wavs:
+            w = w if w.ndim == 2 else w.unsqueeze(0)
+            embs.append(self.embed(w))
+        return torch.cat(embs, dim=0)
+
+    @staticmethod
+    def _pad_and_stack(wavs: Sequence[torch.Tensor]) -> torch.Tensor:
+        lengths = [w.shape[-1] for w in wavs]
+        max_len = max(lengths)
+        batch = []
+        for w in wavs:
+            w = w.squeeze(0) if w.ndim > 1 else w
+            if w.shape[-1] < max_len:
+                w = F.pad(w, (0, max_len - w.shape[-1]))
+            batch.append(w)
+        return torch.stack(batch, dim=0)
+
+    def unload(self) -> None:
+        """释放模型资源。"""
+        self._model = None
+        self._loaded = False
+
+    def __repr__(self) -> str:
+        status = "loaded" if self._loaded else "unloaded"
+        return (
+            f"CampplusBackend(model_id={self.cfg.model_id!r}, "
+            f"embedding_size={self.cfg.embedding_size}, "
+            f"device={self.cfg.device!r}, status={status})"
+        )
