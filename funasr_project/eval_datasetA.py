@@ -301,6 +301,7 @@ def build_report(args, pos_rows, neg_rows, details, pairs, rejected, started_at,
         "complete": complete,
         "mode": mode,
         "speaker_threshold": None if args.asr_only else args.sv_threshold,
+        "sv_source": None if args.asr_only else args.sv_source,
         "intent_filter": False if args.asr_only else args.intent_filter,
         "intent_threshold": None if args.asr_only or not args.intent_filter else args.intent_threshold,
         "decision_policy": "asr_only" if args.asr_only else args.decision_policy,
@@ -467,6 +468,8 @@ def main():
                         help="Optional DataSetA temporary-leaderboard JSON output path.")
     parser.add_argument("--asr-only", action="store_true",
                         help="Disable speaker rejection and run the old pure-ASR baseline.")
+    parser.add_argument("--sv-source", choices=("enhanced", "mix"), default="enhanced",
+                        help="SV gate embedding source: enhanced (default, P2/enhancer output) or mix (original mixture; P2 then serves ASR only).")
     parser.add_argument("--sv-threshold", type=float, default=None,
                         help="Speaker pre-gate threshold. Defaults: 0.0 for fusion, 0.30 for hard.")
     parser.add_argument("--intent-filter", action=argparse.BooleanOptionalAction, default=False,
@@ -678,7 +681,8 @@ def main():
             if accepted:
                 if wake_emb is None:
                     wake_emb = emb_cache.get(sv_model, wake_path)
-                cmd_emb = emb_cache.get(sv_model, processing_path)
+                sv_path = path if args.sv_source == "mix" else processing_path
+                cmd_emb = emb_cache.get(sv_model, sv_path)
                 sim = cosine_sim(wake_emb, cmd_emb)
                 accepted = sim >= args.sv_threshold
         asr_path = processing_path
@@ -813,7 +817,8 @@ def main():
             if accepted:
                 if wake_emb is None:
                     wake_emb = emb_cache.get(sv_model, wake_path)
-                cmd_emb = emb_cache.get(sv_model, processing_path)
+                sv_path = path if args.sv_source == "mix" else processing_path
+                cmd_emb = emb_cache.get(sv_model, sv_path)
                 sim = cosine_sim(wake_emb, cmd_emb)
                 accepted = sim >= args.sv_threshold
         asr_path = processing_path
