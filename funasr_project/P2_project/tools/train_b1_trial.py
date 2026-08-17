@@ -531,6 +531,8 @@ def evaluate_dev(model, loader, cfg, device, use_amp):
     """dev 集平均损失 + SI-SDR（不反向，不记录吞吐量）。"""
     model.eval()
     total_loss, total_sisdr, n = 0.0, 0.0, 0
+    total_idcos = 0.0
+    has_idcos = False
     nonfinite_batches = 0
     nonfinite_counts = {}
     for batch in loader:
@@ -547,15 +549,21 @@ def evaluate_dev(model, loader, cfg, device, use_amp):
                 nonfinite_counts[name] = nonfinite_counts.get(name, 0) + 1
         total_loss += float(loss.detach().cpu())
         total_sisdr += float(terms["si_sdr_db"].detach().cpu())
+        if "id_cos" in terms:
+            total_idcos += float(terms["id_cos"].detach().cpu())
+            has_idcos = True
         n += 1
     model.train()
-    return {
+    rec = {
         "dev_loss": total_loss / max(1, n),
         "dev_sisdr": total_sisdr / max(1, n),
         "dev_finite": nonfinite_batches == 0,
         "dev_nonfinite_batches": nonfinite_batches,
         "dev_nonfinite_terms": nonfinite_counts,
     }
+    if has_idcos:  # lambda_id > 0 时记录身份保持观测（lambda 扫描选择判据）
+        rec["dev_idcos"] = total_idcos / max(1, n)
+    return rec
 
 
 def main():
@@ -986,11 +994,12 @@ def main():
             dev_metrics_f.write(json.dumps(dev_rec, ensure_ascii=False) + "\n")
             dev_metrics_f.flush()
             LOG.info(
-                "  dev_loss=%.4f dev_sisdr=%.2f dB finite=%s nonfinite_batches=%d",
+                "  dev_loss=%.4f dev_sisdr=%.2f dB finite=%s nonfinite_batches=%d%s",
                 dev_rec["dev_loss"],
                 dev_rec["dev_sisdr"],
                 dev_rec["dev_finite"],
                 dev_rec["dev_nonfinite_batches"],
+                (" dev_idcos=%.4f" % dev_rec["dev_idcos"]) if "dev_idcos" in dev_rec else "",
             )
 
     metrics_f.close()
