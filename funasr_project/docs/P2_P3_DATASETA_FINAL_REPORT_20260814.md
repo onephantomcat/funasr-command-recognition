@@ -75,3 +75,54 @@ P2 训练稳定性修复已在仓库代码中：
 P2/P3 接入命令、paired CER 与聚合参数见 [P2/P3 接入说明](./P2_P3_INTEGRATION.md)。DataSetA 公平评测的命令和数据泄漏约束见根 [README](../README.md)。
 
 > 本报告不附 checkpoint、音频、`outputs/`、缓存或 DatasetA 标签；这些均由 `.gitignore` 排除。
+
+---
+
+# 附录：id_loss 修复轮三闸门评测（2026-08-18，冻结）
+
+本轮按上文"后续修复方向"第 2 条实施：在训练侧真实接入身份保持损失（`lambda_id` 形成可反传梯度），候选代号 `B3_SWAP_v4_idloss_L1.0`。lambda 扫描 4 个 run 全部 PASS 后选定 `lambda_id=1.0`，全量训练 20,000 optimizer updates 通过（训练种子 `20260817`）。
+
+候选 checkpoint：`P2_project/artifacts/B3_SWAP_v4_idloss_L1.0/checkpoint_step20000.pt`，SHA-256：`3b6b9678c25c1d7b37d2f7b37bd41e30c1f0b0ce9407e6e989c08334be8149a0`。
+
+## 三闸门结果
+
+| 闸门 | 数据域 | 结果 | 关键数字 |
+| --- | --- | --- | --- |
+| 闸门 1：20+20 预检 | DatasetA 小样 | PASS | 正样本接受 12/20；负样本 20/20 全拒；近静音 0/40 |
+| 闸门 2：6,000 条配对 CER | P1 合成分布 | PASS | 见下表，内置 verdict `PASS_SINGLE_RUN_THRESHOLDS`（8/8 checks） |
+| 闸门 3：DatasetA 全量冻结比较 | 真实竞赛分布 | **FAIL** | 见下表 |
+
+### 闸门 2：6,000 条配对 CER（P1 合成分布）
+
+`result_valid=true`、`asr_errors=0`、近静音 0/6000，predictions SHA-256：`98fac7a324b85bc35374fd6c30e77d673e71a3c82320f129923d8cf2a63bb4d5`。
+
+| bucket | B0 CER | B1 CER | 绝对变化 |
+| --- | ---: | ---: | ---: |
+| OVERALL | 64.16% | 59.59% | -4.57pp |
+| OVERLAP_100（判据 2） | 88.98% | 81.72% | -7.26pp（≥5pp ✓） |
+| SINGLE（判据 3） | 47.80% | 44.08% | -3.72pp（不恶化 ✓） |
+| OVERLAP_100_SIR_-5DB（判据 4） | 96.02% | 88.17% | -7.86pp（不反转 ✓） |
+
+### 闸门 3：DatasetA 全量冻结比较（第二次、即最后一次全量额度）
+
+与基线完全同参：`hard`、`--sv-threshold 0.30`、`--no-intent-filter`、`--no-phrase-correct`、新建空 `--p2-tse-dir`。1,364 正 + 474 负全部完成，`result_valid=true`、近静音 0/1838。
+
+| 指标 | 冻结基线 | 旧候选 9c0fe564 | 本轮候选 L1.0 |
+| --- | ---: | ---: | ---: |
+| 正样本 corpus CER | **53.43%** | 73.66% | 65.02% |
+| 正样本接受率 | **69.35%** | 47.21% | 59.24%（808/1364） |
+| 负样本拒绝率 | 91.14% | 91.56% | **92.41%**（438/474） |
+| 端到端耗时 | 221.03 s | 361.21 s | 764.4 s |
+
+失败机制与旧候选同方向、程度约减半：正样本 CAM++ 相似度分布下移（sim 区间 -0.1561 ~ 0.7417），更多正样本跌破 0.30 门限被硬门控误拒；被拒样本以删除错误计入 corpus CER，多拒约 10pp 恰好解释 CER +11.6pp。`near_silent_samples=0`、RMS 比中位 0.223，排除全静音故障。
+
+## 本轮结论（冻结）
+
+**REJECT 候选 `B3_SWAP_v4_idloss_L1.0`，继续保留冻结基线作为 DatasetA 正式提交配置。**
+
+- id_loss 接入本身成立：在 P1 合成分布上全部 bucket 一致改善（高重叠 -7.26pp），训练 bug 修复有效。
+- 但收益未迁移到 DatasetA 真实域：正样本接受率与 corpus CER 显著回退，neg RR +1.27pp 的改善不足以抵消。
+- 合规记录：DatasetA 全量评测两次额度已全部用完（backup 消融一次、本轮一次），不再对该数据集做任何重跑、调阈或重选。
+- 后续若再启动 P2 前端工作，应先解决"合成域改善 → 真实域 SV 路径退化"的泛化缺口（参见上文修复方向第 3、4 条），再按同样三闸门顺序验证。
+
+评测产物存证：闸门 2 `outputs/p3_external_gate/summary.json`、闸门 3 `outputs/gate3_datasetA_final/result.json`（均不入库，仅存摘要于本报告）。
