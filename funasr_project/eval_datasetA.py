@@ -96,7 +96,7 @@ class AsrCache:
     def key(self, path):
         return os.path.abspath(path)
 
-    def recognize(self, model, path, hotword=None):
+    def recognize(self, model, path):
         key = self.key(path)
         if key in self.data:
             cached = self.data[key]
@@ -108,7 +108,7 @@ class AsrCache:
                 "elapsed_sec": 0.0,
                 "status": "OK",
             }, True
-        result = recognize_quiet(model, path, hotword=hotword)
+        result = recognize_quiet(model, path)
         record = {
             "raw_text": result.raw_text,
             "normalized_text": result.normalized_text,
@@ -129,10 +129,10 @@ class AsrCache:
         os.replace(tmp, self.path)
 
 
-def recognize_quiet(model, path, hotword=None):
+def recognize_quiet(model, path):
     """FunASR prints per-file progress bars; hide them so long runs stay readable."""
     with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-        return recognize_result(model, path, hotword=hotword)
+        return recognize_result(model, path)
 
 
 def extract_embedding_quiet(sv_model, path):
@@ -500,8 +500,6 @@ def main():
                         help="Optional pickle cache for speaker embeddings during tuning runs.")
     parser.add_argument("--asr-cache", default=None,
                         help="Optional pickle cache for ASR text during tuning runs; do not use for formal timing.")
-    parser.add_argument("--hotword-file", default=None,
-                        help="Optional hotword file (one phrase per line) passed to SeACo-Paraformer contextual biasing. Use a fresh --asr-cache when enabling.")
     parser.add_argument("--enhancer-model", default=None,
                         help="Optional externally trained target enhancer checkpoint used before SV and ASR.")
     parser.add_argument("--enhancer-dir", default=os.path.join(ROOT, "enhanced_cache"),
@@ -547,14 +545,6 @@ def main():
         help="Only purify accepted audio at or below this speaker similarity; default purifies all accepted audio.",
     )
     args = parser.parse_args()
-    hotword_text = None
-    if args.hotword_file:
-        with open(args.hotword_file, encoding="utf-8") as f:
-            words = [normalize(line.strip()) for line in f]
-        hotword_text = " ".join(w for w in words if w)
-        if not hotword_text:
-            raise ValueError(f"hotword file is empty: {args.hotword_file}")
-        print(f"hotword biasing enabled: {len(hotword_text.split())} phrases")
     if args.p2_tse_dir is None:
         args.p2_tse_dir = os.path.join(args.root, "p2_tse_cache")
     if args.enhancer_model and args.p2_tse_checkpoint:
@@ -708,7 +698,7 @@ def main():
                     floor_gain=args.purify_floor_gain,
                 )
         if accepted:
-            asr_result, asr_cached = asr_cache.recognize(model, asr_path, hotword=hotword_text)
+            asr_result, asr_cached = asr_cache.recognize(model, asr_path)
         else:
             asr_result, asr_cached = ({
                 "raw_text": "",
@@ -844,7 +834,7 @@ def main():
                     floor_gain=args.purify_floor_gain,
                 )
         if accepted:
-            asr_result, asr_cached = asr_cache.recognize(model, asr_path, hotword=hotword_text)
+            asr_result, asr_cached = asr_cache.recognize(model, asr_path)
         else:
             asr_result, asr_cached = ({
                 "raw_text": "",

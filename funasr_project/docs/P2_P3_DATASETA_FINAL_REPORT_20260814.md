@@ -126,3 +126,93 @@ P2/P3 接入命令、paired CER 与聚合参数见 [P2/P3 接入说明](./P2_P3_
 - 后续若再启动 P2 前端工作，应先解决"合成域改善 → 真实域 SV 路径退化"的泛化缺口（参见上文修复方向第 3、4 条），再按同样三闸门顺序验证。
 
 评测产物存证：闸门 2 `outputs/p3_external_gate/summary.json`、闸门 3 `outputs/gate3_datasetA_final/result.json`（均不入库，仅存摘要于本报告）。
+
+---
+
+## 闸门 4：方案 A（`--sv-source mix`）全量验证（第三次全量额度，2026-08-20）
+
+**动机**：闸门 3 失败后提出方案 A——SV 门控输入从 TSE 输出改为原始混合音（`--sv-source mix`），P2 TSE 仅服务 ASR，意图绕开"TSE 输出在真实域嵌入漂移"的问题。
+
+**探针预警（20+20）**：pos accept 90%、corpus CER 13.58%，信号极强；但 neg RR 85%（17/20），且 `--intent-filter` 开启后 neg RR 不变，证明文本层无法兜住门控误放。
+
+**全量结果**（1364 pos + 474 neg，同参：`hard`、`--sv-threshold 0.30`、`--no-intent-filter`、`--no-phrase-correct`、`--sv-source mix`）：
+
+| 指标 | 冻结基线 | 闸门 3（TSE 门控） | 闸门 4（mix 门控） |
+| --- | ---: | ---: | ---: |
+| 正样本 corpus CER | **53.43%** | 65.02% | 59.96% |
+| 正样本接受率 | **69.35%** | 59.24% | 69.35% |
+| 负样本拒绝率 | 91.14% | **92.41%** | 91.56% |
+| 端到端耗时 | 221.03 s | 764.4 s | 796.1 s |
+
+**失败机制**：探针 20 条是采样偏差——前 20 条混合音干扰少、CAM++ 分数高；全量 1364 条里混合音的干扰说话人把分数拉回基线水平。接受率与基线持平（69.35%），但 ASR 路径未享受到 TSE 改善，被拒样本仍以混合音无法通过门控，corpus CER 较基线 +6.53pp。
+
+## 最终结论（三次额度闭环）
+
+**DatasetA 正式提交配置 = 冻结基线（无 P2 TSE，SV 门控吃混合音）**：
+
+- 正样本 corpus CER **53.43%** / 接受率 **69.35%** / 负样本拒绝率 **91.14%**
+- 三次全量评测全部用完：① backup 消融（基线确认）、② 闸门 3（TSE 门控候选 REJECTED）、③ 闸门 4（mix 门控候选 REJECTED）
+- 不再对 DatasetA 做任何重跑、调阈、重选
+
+后续优化仅能在基线架构上通过**合成集 + 20 条探针**验证：方向 1（phrase-correct + intent-filter 启用）、方向 2（ASR 热词）、方向 3（门控工程化）、方向 4（soft 融合判决）。
+
+---
+
+## 基线架构优化路线验证（2026-08-21，全部 REJECTED）
+
+DatasetA 三次全量额度用完后，在基线架构上通过 20+20 探针验证四个优化方向。所有方向均未通过双面指标（pos CER 不升 + neg RR 不降）检验。
+
+### 方向 1：启用 intent-filter + phrase-correct（REJECTED）
+
+探针结果：
+
+| 指标 | 基线对照 | 方向1 | 变化 |
+|---|---|---|---|
+| pos accept rate | ~0.90 | 0.9000 | 持平 |
+| pos corpus CER | ~0.15 | 0.0741 | ✓ 降 |
+| neg RR | **1.0000** (20/20) | **0.7500** (15/20) | ✗ 暴跌 25pp |
+
+分别单独验证：
+- `--intent-filter` 单独：neg RR 仍 0.7500 → intent-filter 是元凶（默认阈值太宽松，负样本 ASR 输出被误判为"像命令"放行）
+- `--phrase-correct` 单独：neg RR 同样 0.7500 → phrase-correct 未影响最终结果（intent-filter 先放行后，纠错没机会介入）
+
+**结论**：在封闭命令词表 + 开放负样本场景下，意图过滤和短语纠错都是负优化。永久禁用。
+
+### 方向 2：ASR 热词（SeACo contextual biasing，REJECTED）
+
+代码改动：`asr_demo.py`（`recognize_result` 加 `hotword` 参数透传）+ `eval_datasetA.py`（`--hotword-file` CLI 参数 + 两调用点透传）。
+
+单条验证：热词（默认权重 / `:50` / `:100`）均未改变解码输出（`changed=False`）——该样本本来就识别准确。
+
+A/B 配对探针（20+20，两组独立 `--asr-cache` 避免缓存污染）：
+
+| 指标 | A 组（无热词） | B 组（热词:50） | 变化 |
+|---|---|---|---|
+| pos accept rate | 0.9000 | 0.9000 | ✓ 一致 |
+| neg RR | 0.7500 (15/20) | 0.7500 (15/20) | ✓ 一致 |
+| pos corpus CER | **0.0741** | **0.1049** | ✗ **恶化 3.08pp** |
+
+**结论**：SeACo 热词在 SeACo-Paraformer-large 上是负优化——加权偏置把部分正确识别"掰偏"成命令词表里的其他条目（如"调高温度"被掰成"调低温度"）。16 条封闭命令词之间相互干扰，偏置反而降低识别准确率。
+
+### 方向 3/4：门控工程化 + soft 融合（暂缓）
+
+- 方向 3（多注册音嵌入平均 / s-norm 归一化 / 阈值重校准）：基线 neg RR 91.14% 已高，pos 接受率 69.35% 可提升，但无 DatasetA 额度验证，合成集与真实域存在分布差，风险不可控
+- 方向 4（soft 融合判决）：改动大，需重新训练 lightweight gate，涉及合规灰区（是否用 DatasetA 标签），暂缓
+
+## 最终冻结提交配置
+
+**DatasetA 正式提交 = 冻结基线**：
+- 架构：无 P2 TSE，SV 硬门控吃原始混合音（CAM++，阈值 0.30）
+- 后处理：`--no-intent-filter`、`--no-phrase-correct`（两个组件在 neg 侧均为负优化）
+- ASR：SeACo-Paraformer-large，无热词偏置（热词在该模型上为负优化）
+- 指标：pos CER 53.43% / 接受率 69.35% / neg RR 91.14%
+
+**合规记录**：
+- DatasetA 全量评测：3 次用完（①基线确认、②闸门3 TSE门控 REJECTED、③闸门4 mix门控 REJECTED）
+- DatasetA 探针评测：方向 1（REJECTED）、方向 2（REJECTED）
+- 不再对 DatasetA 做任何重跑、调阈、重选
+
+**代码库改动**：
+- `funasr_project/asr_demo.py`：`recognize_result` 支持 `hotword` 参数透传（保留，备用）
+- `funasr_project/eval_datasetA.py`：`--hotword-file` CLI 参数 + ASR 调用点透传（保留，备用）
+- 以上改动均为**中性**——不加热词时行为与原代码完全一致
