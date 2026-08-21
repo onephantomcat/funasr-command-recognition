@@ -62,10 +62,13 @@ def build_model(with_punc=True, device=None):
     return AutoModel(**kwargs)
 
 
-def recognize_result(model, wav_path):
+def recognize_result(model, wav_path, hotword=None):
     """Return raw, normalized and final text without overwriting stages."""
     t0 = time.time()
-    res = model.generate(input=wav_path, batch_size_s=60)
+    kwargs = {"input": wav_path, "batch_size_s": 60}
+    if hotword:
+        kwargs["hotword"] = hotword
+    res = model.generate(**kwargs)
     elapsed = time.time() - t0
     raw_text = res[0]["text"] if res else ""
     if not isinstance(raw_text, str):
